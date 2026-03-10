@@ -16,7 +16,7 @@ Collect or infer this contract before doing work:
   "task_mode": "create | modify",
   "wcag_version": "2.0 | 2.1 | 2.2",
   "conformance_level": "A | AA | AAA",
-  "target": "path, URL, or component scope",
+  "target": "local file path or URL",
   "output_language": "BCP-47, default zh-TW"
 }
 ```
@@ -25,6 +25,8 @@ Apply defaults when omitted:
 - `wcag_version`: `2.1`
 - `conformance_level`: `AA`
 - `output_language`: `zh-TW`
+
+Treat local file paths as first-class inputs. The audit runner converts existing local paths to `file://` URLs before invoking scanners.
 
 ## Fixed Workflow
 

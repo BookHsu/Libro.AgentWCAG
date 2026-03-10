@@ -31,14 +31,14 @@ MARKDOWN_COLUMNS = [
     "Status",
 ]
 
-SC_CITATIONS = {
-    "1.1.1": "https://www.w3.org/WAI/WCAG22/Understanding/non-text-content",
-    "1.3.1": "https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships",
-    "1.4.3": "https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum",
-    "2.1.1": "https://www.w3.org/WAI/WCAG22/Understanding/keyboard",
-    "2.4.7": "https://www.w3.org/WAI/WCAG22/Understanding/focus-visible",
-    "3.3.2": "https://www.w3.org/WAI/WCAG22/Understanding/labels-or-instructions",
-    "4.1.2": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value",
+WCAG_UNDERSTANDING_PATHS = {
+    "1.1.1": "non-text-content",
+    "1.3.1": "info-and-relationships",
+    "1.4.3": "contrast-minimum",
+    "2.1.1": "keyboard",
+    "2.4.7": "focus-visible",
+    "3.3.2": "labels-or-instructions",
+    "4.1.2": "name-role-value",
 }
 
 AXE_RULE_TO_SC = {
@@ -68,6 +68,14 @@ class Contract:
     conformance_level: str
     target: str
     output_language: str
+
+
+def build_citation_url(wcag_version: str, sc: str) -> str:
+    slug = WCAG_UNDERSTANDING_PATHS.get(sc)
+    if not slug:
+        return ""
+    normalized_version = wcag_version.replace(".", "")
+    return f"https://www.w3.org/WAI/WCAG{normalized_version}/Understanding/{slug}"
 
 
 def resolve_contract(raw: dict[str, Any]) -> Contract:
@@ -196,12 +204,18 @@ def normalize_report(
     lighthouse_data: dict[str, Any] | None,
     axe_error: str | None = None,
     lighthouse_error: str | None = None,
+    axe_skipped: bool = False,
+    lighthouse_skipped: bool = False,
 ) -> dict[str, Any]:
     findings = _map_axe_to_findings(axe_data) + _map_lighthouse_to_findings(lighthouse_data)
     notes: list[str] = []
     tools = {
-        "axe": "ok" if axe_data and not axe_error else "error",
-        "lighthouse": "ok" if lighthouse_data and not lighthouse_error else "error",
+        "axe": "skipped" if axe_skipped else ("ok" if axe_data and not axe_error else "error"),
+        "lighthouse": (
+            "skipped"
+            if lighthouse_skipped
+            else ("ok" if lighthouse_data and not lighthouse_error else "error")
+        ),
     }
 
     if tools["axe"] == "error":
@@ -221,7 +235,7 @@ def normalize_report(
         fix_id = f"FIX-{index:03d}"
         sc_values = raw.get("sc") or []
         first_sc = sc_values[0] if sc_values else ""
-        citation = SC_CITATIONS.get(first_sc, "")
+        citation = build_citation_url(contract.wcag_version, first_sc)
         normalized_findings.append(
             {
                 "id": issue_id,
@@ -239,7 +253,7 @@ def normalize_report(
                 "finding_id": issue_id,
                 "description": f"Remediate {raw['rule_id']} issue.",
                 "changed_target": raw["changed_target"],
-                "status": "planned" if raw["status"] == "open" else "verified",
+                "status": "verified" if raw["status"] == "fixed" else "planned",
             }
         )
         if first_sc and citation:
@@ -320,4 +334,3 @@ def write_report_files(report: dict[str, Any], json_path: str, markdown_path: st
     markdown_target.parent.mkdir(parents=True, exist_ok=True)
     json_target.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     markdown_target.write_text(to_markdown_table(report), encoding="utf-8")
-
