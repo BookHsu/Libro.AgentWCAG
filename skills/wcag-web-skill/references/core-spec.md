@@ -19,12 +19,13 @@ Validation rules:
 - `wcag_version` must be one of `2.0`, `2.1`, `2.2`.
 - `conformance_level` must be one of `A`, `AA`, `AAA`.
 - Apply defaults: `2.1`, `AA`, `zh-TW`.
+- Allow only `http`, `https`, `file`, or an existing local file path.
 - Existing local paths must be normalized to `file://` URLs before scanner execution.
 
 ## 2. Canonical Workflow
 
 1. Resolve defaults and lock selected standard.
-2. Run axe and Lighthouse scans.
+2. Validate the target, then run axe and Lighthouse scans with a bounded timeout.
 3. Normalize findings into unified IDs.
 4. Map each finding/fix to WCAG SC and citations.
 5. Output Markdown table and JSON report.
