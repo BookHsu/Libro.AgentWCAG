@@ -7,7 +7,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from wcag_workflow import normalize_report, resolve_contract, to_markdown_table, write_report_files
+from wcag_workflow import (
+    build_citation_url,
+    normalize_report,
+    resolve_contract,
+    to_markdown_table,
+    write_report_files,
+)
 
 
 class WorkflowTests(unittest.TestCase):
@@ -72,12 +78,35 @@ class WorkflowTests(unittest.TestCase):
         report = normalize_report(contract, axe_data, None, lighthouse_error="missing")
         citation_urls = [item["url"] for item in report["citations"]]
         self.assertTrue(any("w3.org" in url for url in citation_urls))
+        self.assertTrue(any("/WCAG21/" in url for url in citation_urls))
 
     def test_manual_fallback_when_tool_fails(self) -> None:
         contract = resolve_contract({"target": "https://example.com"})
         report = normalize_report(contract, None, {"audits": {}}, axe_error="command failed")
         self.assertEqual(report["run_meta"]["tools"]["axe"], "error")
         self.assertTrue(any(item["status"] == "needs-review" for item in report["findings"]))
+
+    def test_skipped_tool_is_not_reported_as_error(self) -> None:
+        contract = resolve_contract({"target": "https://example.com"})
+        report = normalize_report(
+            contract,
+            {"violations": []},
+            None,
+            lighthouse_skipped=True,
+        )
+        self.assertEqual(report["run_meta"]["tools"]["lighthouse"], "skipped")
+        self.assertFalse(any("lighthouse failed" in note for note in report["run_meta"]["notes"]))
+
+    def test_manual_fallback_fix_remains_planned(self) -> None:
+        contract = resolve_contract({"target": "https://example.com"})
+        report = normalize_report(contract, None, {"audits": {}}, axe_error="command failed")
+        manual_fix = next(item for item in report["fixes"] if item["finding_id"] == "ISSUE-001")
+        self.assertEqual(manual_fix["status"], "planned")
+
+    def test_citation_url_uses_selected_version(self) -> None:
+        self.assertIn("/WCAG20/", build_citation_url("2.0", "1.1.1"))
+        self.assertIn("/WCAG21/", build_citation_url("2.1", "1.1.1"))
+        self.assertIn("/WCAG22/", build_citation_url("2.2", "1.1.1"))
 
     def test_write_report_files(self) -> None:
         contract = resolve_contract({"target": "https://example.com"})
@@ -94,4 +123,3 @@ class WorkflowTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -9,7 +9,7 @@ Use this schema as the single source of truth:
   "task_mode": "create | modify",
   "wcag_version": "2.0 | 2.1 | 2.2",
   "conformance_level": "A | AA | AAA",
-  "target": "string",
+  "target": "local file path or URL",
   "output_language": "string"
 }
 ```
@@ -19,6 +19,7 @@ Validation rules:
 - `wcag_version` must be one of `2.0`, `2.1`, `2.2`.
 - `conformance_level` must be one of `A`, `AA`, `AAA`.
 - Apply defaults: `2.1`, `AA`, `zh-TW`.
+- Existing local paths must be normalized to `file://` URLs before scanner execution.
 
 ## 2. Canonical Workflow
 
@@ -37,8 +38,8 @@ Validation rules:
     "generated_at": "ISO-8601",
     "workflow_version": "1.0.0",
     "tools": {
-      "axe": "ok | error",
-      "lighthouse": "ok | error"
+      "axe": "ok | skipped | error",
+      "lighthouse": "ok | skipped | error"
     },
     "notes": []
   },
@@ -94,4 +95,3 @@ Use exactly these columns and order:
 Status vocabulary:
 - Findings: `open`, `fixed`, `partial`, `needs-review`
 - Fixes: `planned`, `implemented`, `verified`
-

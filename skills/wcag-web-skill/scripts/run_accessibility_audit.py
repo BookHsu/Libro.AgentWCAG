@@ -7,6 +7,7 @@ import argparse
 import json
 import subprocess
 from pathlib import Path
+from urllib.parse import urlparse
 from typing import Any
 
 from wcag_workflow import normalize_report, resolve_contract, write_report_files
@@ -52,6 +53,16 @@ def _try_run_lighthouse(target: str, output_dir: Path) -> tuple[dict[str, Any] |
         return json.load(handle), None
 
 
+def _resolve_target_for_scanners(target: str) -> str:
+    parsed = urlparse(target)
+    if parsed.scheme in {"http", "https", "file"}:
+        return target
+    local_path = Path(target)
+    if local_path.exists():
+        return local_path.resolve().as_uri()
+    return target
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run WCAG audit with axe+Lighthouse.")
     parser.add_argument("--task-mode", default="modify", choices=["create", "modify"])
@@ -79,16 +90,17 @@ def main() -> int:
             "output_language": args.output_language,
         }
     )
+    scanner_target = _resolve_target_for_scanners(contract.target)
 
     axe_data = None
     axe_error = None
     if not args.skip_axe:
-        axe_data, axe_error = _try_run_axe(contract.target, output_dir)
+        axe_data, axe_error = _try_run_axe(scanner_target, output_dir)
 
     lighthouse_data = None
     lighthouse_error = None
     if not args.skip_lighthouse:
-        lighthouse_data, lighthouse_error = _try_run_lighthouse(contract.target, output_dir)
+        lighthouse_data, lighthouse_error = _try_run_lighthouse(scanner_target, output_dir)
 
     report = normalize_report(
         contract=contract,
@@ -96,6 +108,8 @@ def main() -> int:
         lighthouse_data=lighthouse_data,
         axe_error=axe_error,
         lighthouse_error=lighthouse_error,
+        axe_skipped=args.skip_axe,
+        lighthouse_skipped=args.skip_lighthouse,
     )
 
     output_json = output_dir / "wcag-report.json"
@@ -113,4 +127,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
