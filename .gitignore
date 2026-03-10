@@ -12,6 +12,10 @@ Desktop.ini
 # Logs
 *.log
 
+# Python
+__pycache__/
+*.pyc
+
 # Environment
 .env
 .env.*
