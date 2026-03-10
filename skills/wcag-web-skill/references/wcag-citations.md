@@ -28,6 +28,5 @@ Use official W3C sources only (`w3.org`).
 ## Citation policy
 
 - Attach at least one official citation for each major finding/fix.
-- If version-specific understanding pages differ, pick the matching WCAG version when available.
+- Build Understanding URLs from the selected WCAG version (`20`, `21`, `22`) whenever the SC slug exists.
 - If an SC is unresolved automatically, emit `needs-review` and include the nearest canonical SC page.
-
