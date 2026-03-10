@@ -26,6 +26,7 @@ from wcag_workflow import (
 class WorkflowTests(unittest.TestCase):
     def test_default_standard_fallback(self) -> None:
         contract = resolve_contract({"target": "https://example.com"})
+        self.assertEqual(contract.execution_mode, "suggest-only")
         self.assertEqual(contract.wcag_version, "2.1")
         self.assertEqual(contract.conformance_level, "AA")
         self.assertEqual(contract.output_language, "zh-TW")
@@ -35,11 +36,13 @@ class WorkflowTests(unittest.TestCase):
             contract = resolve_contract(
                 {
                     "task_mode": "modify",
+                    "execution_mode": "apply-fixes",
                     "wcag_version": version,
                     "conformance_level": level,
                     "target": "https://example.com",
                 }
             )
+            self.assertEqual(contract.execution_mode, "apply-fixes")
             self.assertEqual(contract.wcag_version, version)
             self.assertEqual(contract.conformance_level, level)
 
@@ -67,6 +70,8 @@ class WorkflowTests(unittest.TestCase):
         }
         report = normalize_report(contract, axe_data, lighthouse_data)
         markdown = to_markdown_table(report)
+        self.assertIn("Execution mode: suggest-only", markdown)
+        self.assertIn("Files modified: no", markdown)
         for finding in report["findings"]:
             self.assertIn(finding["id"], markdown)
 
@@ -146,6 +151,19 @@ class WorkflowTests(unittest.TestCase):
             self.assertTrue(md_path.exists())
             payload = json.loads(json_path.read_text(encoding="utf-8"))
             self.assertIn("summary", payload)
+
+    def test_apply_fixes_mode_is_reported(self) -> None:
+        contract = resolve_contract(
+            {
+                "target": "https://example.com",
+                "execution_mode": "apply-fixes",
+            }
+        )
+        report = normalize_report(contract, {"violations": []}, {"audits": {}}, None, None)
+        markdown = to_markdown_table(report)
+        self.assertEqual(report["run_meta"]["execution_mode"], "apply-fixes")
+        self.assertIn("Execution mode: apply-fixes", markdown)
+        self.assertIn("Files modified: yes", markdown)
 
 
 if __name__ == "__main__":

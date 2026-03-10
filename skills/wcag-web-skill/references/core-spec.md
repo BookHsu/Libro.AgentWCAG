@@ -7,6 +7,7 @@ Use this schema as the single source of truth:
 ```json
 {
   "task_mode": "create | modify",
+  "execution_mode": "audit-only | suggest-only | apply-fixes",
   "wcag_version": "2.0 | 2.1 | 2.2",
   "conformance_level": "A | AA | AAA",
   "target": "local file path or URL",
@@ -16,9 +17,10 @@ Use this schema as the single source of truth:
 
 Validation rules:
 - `task_mode` must be `create` or `modify`.
+- `execution_mode` must be `audit-only`, `suggest-only`, or `apply-fixes`.
 - `wcag_version` must be one of `2.0`, `2.1`, `2.2`.
 - `conformance_level` must be one of `A`, `AA`, `AAA`.
-- Apply defaults: `2.1`, `AA`, `zh-TW`.
+- Apply defaults: `suggest-only`, `2.1`, `AA`, `zh-TW`.
 - Allow only `http`, `https`, `file`, or an existing local file path.
 - Existing local paths must be normalized to `file://` URLs before scanner execution.
 
@@ -27,9 +29,13 @@ Validation rules:
 1. Resolve defaults and lock selected standard.
 2. Validate the target, then run axe and Lighthouse scans with a bounded timeout.
 3. Normalize findings into unified IDs.
-4. Map each finding/fix to WCAG SC and citations.
-5. Output Markdown table and JSON report.
-6. If one scanner fails, continue with available scanner and add manual fallback steps.
+4. Respect `execution_mode`:
+   - `audit-only`: do not propose or apply code changes
+   - `suggest-only`: propose fixes but do not modify code
+   - `apply-fixes`: apply fixes when safe and requested
+5. Map each finding/fix to WCAG SC and citations.
+6. Output Markdown table and JSON report.
+7. If one scanner fails, continue with available scanner and add manual fallback steps.
 
 ## 3. JSON Output Contract
 
@@ -38,6 +44,7 @@ Validation rules:
   "run_meta": {
     "generated_at": "ISO-8601",
     "workflow_version": "1.0.0",
+    "execution_mode": "audit-only | suggest-only | apply-fixes",
     "tools": {
       "axe": "ok | skipped | error",
       "lighthouse": "ok | skipped | error"
@@ -92,6 +99,8 @@ Validation rules:
 Use exactly these columns and order:
 
 `Issue ID | Source | WCAG Version | Level | SC | Current | Fix | Changed Target | Citation | Status`
+
+Prefix the table with a short summary line that states the execution mode and whether files were modified.
 
 Status vocabulary:
 - Findings: `open`, `fixed`, `partial`, `needs-review`

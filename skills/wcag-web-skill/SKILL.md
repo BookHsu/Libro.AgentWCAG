@@ -14,6 +14,7 @@ Collect or infer this contract before doing work:
 ```json
 {
   "task_mode": "create | modify",
+  "execution_mode": "audit-only | suggest-only | apply-fixes",
   "wcag_version": "2.0 | 2.1 | 2.2",
   "conformance_level": "A | AA | AAA",
   "target": "local file path or URL",
@@ -22,6 +23,7 @@ Collect or infer this contract before doing work:
 ```
 
 Apply defaults when omitted:
+- `execution_mode`: `suggest-only`
 - `wcag_version`: `2.1`
 - `conformance_level`: `AA`
 - `output_language`: `zh-TW`
@@ -33,7 +35,10 @@ Treat local file paths as first-class inputs. The audit runner converts existing
 1. Lock the selected WCAG model and note defaults used.
 2. Run automated checks with both axe and Lighthouse via `scripts/run_accessibility_audit.py`.
 3. Rank findings by severity and impact, then map each item to WCAG SC.
-4. Implement remediation or generate implementation-ready remediation steps.
+4. Respect `execution_mode`:
+   - `audit-only`: find issues only
+   - `suggest-only`: find issues and propose remediation steps without editing
+   - `apply-fixes`: find issues and apply remediations when the agent can safely modify the target
 5. Produce the two required outputs:
    - Markdown comparison table
    - JSON structured report
@@ -50,6 +55,8 @@ Markdown columns:
 JSON top-level keys:
 
 `run_meta`, `target`, `standard`, `findings[]`, `fixes[]`, `citations[]`, `summary`
+
+Report the chosen `execution_mode` in both JSON and Markdown summary text.
 
 Use `scripts/normalize_report.py` to normalize mixed tool outputs into the contract.
 

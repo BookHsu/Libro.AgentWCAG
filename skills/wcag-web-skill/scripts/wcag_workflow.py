@@ -12,11 +12,13 @@ from typing import Any
 DEFAULT_WCAG_VERSION = "2.1"
 DEFAULT_LEVEL = "AA"
 DEFAULT_LANGUAGE = "zh-TW"
+DEFAULT_EXECUTION_MODE = "suggest-only"
 WORKFLOW_VERSION = "1.0.0"
 
 VALID_VERSIONS = {"2.0", "2.1", "2.2"}
 VALID_LEVELS = {"A", "AA", "AAA"}
 VALID_TASK_MODES = {"create", "modify"}
+VALID_EXECUTION_MODES = {"audit-only", "suggest-only", "apply-fixes"}
 
 MARKDOWN_COLUMNS = [
     "Issue ID",
@@ -181,6 +183,7 @@ SEVERITY_ORDER = {"critical": 4, "serious": 3, "moderate": 2, "minor": 1, "info"
 @dataclass
 class Contract:
     task_mode: str
+    execution_mode: str
     wcag_version: str
     conformance_level: str
     target: str
@@ -197,6 +200,7 @@ def build_citation_url(wcag_version: str, sc: str) -> str:
 
 def resolve_contract(raw: dict[str, Any]) -> Contract:
     task_mode = raw.get("task_mode", "modify")
+    execution_mode = raw.get("execution_mode", DEFAULT_EXECUTION_MODE)
     wcag_version = raw.get("wcag_version", DEFAULT_WCAG_VERSION)
     conformance_level = raw.get("conformance_level", DEFAULT_LEVEL)
     target = str(raw.get("target", "")).strip()
@@ -204,6 +208,8 @@ def resolve_contract(raw: dict[str, Any]) -> Contract:
 
     if task_mode not in VALID_TASK_MODES:
         raise ValueError(f"Unsupported task_mode: {task_mode}")
+    if execution_mode not in VALID_EXECUTION_MODES:
+        raise ValueError(f"Unsupported execution_mode: {execution_mode}")
     if wcag_version not in VALID_VERSIONS:
         raise ValueError(f"Unsupported wcag_version: {wcag_version}")
     if conformance_level not in VALID_LEVELS:
@@ -213,6 +219,7 @@ def resolve_contract(raw: dict[str, Any]) -> Contract:
 
     return Contract(
         task_mode=task_mode,
+        execution_mode=execution_mode,
         wcag_version=wcag_version,
         conformance_level=conformance_level,
         target=target,
@@ -388,6 +395,7 @@ def normalize_report(
         "run_meta": {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "workflow_version": WORKFLOW_VERSION,
+            "execution_mode": contract.execution_mode,
             "tools": tools,
             "notes": notes,
         },
@@ -407,9 +415,16 @@ def normalize_report(
 
 
 def to_markdown_table(report: dict[str, Any]) -> str:
+    execution_mode = report["run_meta"]["execution_mode"]
+    modified_text = "yes" if execution_mode == "apply-fixes" else "no"
+    summary_lines = [
+        f"Execution mode: {execution_mode}",
+        f"Files modified: {modified_text}",
+        "",
+    ]
     header = "| " + " | ".join(MARKDOWN_COLUMNS) + " |"
     separator = "| " + " | ".join(["---"] * len(MARKDOWN_COLUMNS)) + " |"
-    lines = [header, separator]
+    lines = summary_lines + [header, separator]
     version = report["standard"]["wcag_version"]
     level = report["standard"]["conformance_level"]
     fixes_by_finding = {fix["finding_id"]: fix for fix in report.get("fixes", [])}

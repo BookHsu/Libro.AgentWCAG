@@ -30,6 +30,12 @@ The platform-neutral contract lives here:
 
 Adapters can translate the same core contract into each platform's prompt or tool syntax.
 
+The shared contract supports three execution modes:
+
+- `audit-only`: find issues only
+- `suggest-only`: find issues and propose fixes
+- `apply-fixes`: apply fixes when the user explicitly requests modification
+
 Current adapter coverage:
 
 - OpenAI/Codex

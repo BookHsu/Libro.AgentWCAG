@@ -16,6 +16,7 @@ class AdapterContractTests(unittest.TestCase):
         claude_template = self._read("adapters", "claude", "prompt-template.md")
         required_keys = [
             "task_mode",
+            "execution_mode",
             "wcag_version",
             "conformance_level",
             "target",
@@ -37,6 +38,7 @@ class AdapterContractTests(unittest.TestCase):
         copilot_template = self._read("adapters", "copilot", "prompt-template.md")
         required_keys = [
             "task_mode",
+            "execution_mode",
             "wcag_version",
             "conformance_level",
             "target",
@@ -51,6 +53,18 @@ class AdapterContractTests(unittest.TestCase):
         copilot_template = self._read("adapters", "copilot", "prompt-template.md")
         self.assertIn("W3C citation URL that matches the selected WCAG version", gemini_template)
         self.assertIn("version-matched W3C Understanding links", copilot_template)
+
+    def test_all_adapters_default_to_suggest_only(self) -> None:
+        templates = [
+            self._read("adapters", "openai-codex", "prompt-template.md"),
+            self._read("adapters", "claude", "prompt-template.md"),
+            self._read("adapters", "gemini", "prompt-template.md"),
+            self._read("adapters", "copilot", "prompt-template.md"),
+        ]
+        for template in templates:
+            self.assertIn("suggest-only", template)
+            self.assertIn("apply-fixes", template)
+            self.assertIn("audit-only", template)
 
 
 if __name__ == "__main__":
