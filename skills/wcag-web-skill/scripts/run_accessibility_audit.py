@@ -97,6 +97,11 @@ def _resolve_target_for_scanners(target: str) -> str:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run WCAG audit with axe+Lighthouse.")
     parser.add_argument("--task-mode", default="modify", choices=["create", "modify"])
+    parser.add_argument(
+        "--execution-mode",
+        default="suggest-only",
+        choices=["audit-only", "suggest-only", "apply-fixes"],
+    )
     parser.add_argument("--wcag-version", default="2.1", choices=["2.0", "2.1", "2.2"])
     parser.add_argument("--conformance-level", default="AA", choices=["A", "AA", "AAA"])
     parser.add_argument("--target", required=True)
@@ -116,6 +121,7 @@ def main() -> int:
     contract = resolve_contract(
         {
             "task_mode": args.task_mode,
+            "execution_mode": args.execution_mode,
             "wcag_version": args.wcag_version,
             "conformance_level": args.conformance_level,
             "target": args.target,
