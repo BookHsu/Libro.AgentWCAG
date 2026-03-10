@@ -3,11 +3,18 @@
 from __future__ import annotations
 
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
+SCRIPT_ROOT = Path(__file__).resolve().parents[1]
+if str(SCRIPT_ROOT) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_ROOT))
+
 from wcag_workflow import (
+    AXE_RULE_TO_SC,
+    LIGHTHOUSE_RULE_TO_SC,
     build_citation_url,
     normalize_report,
     resolve_contract,
@@ -107,6 +114,26 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("/WCAG20/", build_citation_url("2.0", "1.1.1"))
         self.assertIn("/WCAG21/", build_citation_url("2.1", "1.1.1"))
         self.assertIn("/WCAG22/", build_citation_url("2.2", "1.1.1"))
+
+    def test_expanded_rule_mapping_generates_citation(self) -> None:
+        contract = resolve_contract({"target": "https://example.com"})
+        axe_data = {
+            "violations": [
+                {
+                    "id": "link-name",
+                    "impact": "serious",
+                    "description": "Links must have discernible text",
+                    "nodes": [{"target": ["a.cta"]}],
+                }
+            ]
+        }
+        report = normalize_report(contract, axe_data, {"audits": {}}, None, None)
+        citation_urls = [item["url"] for item in report["citations"]]
+        self.assertTrue(any("/WCAG21/" in url for url in citation_urls))
+
+    def test_rule_mappings_cover_broad_common_rules(self) -> None:
+        self.assertGreaterEqual(len(AXE_RULE_TO_SC), 30)
+        self.assertGreaterEqual(len(LIGHTHOUSE_RULE_TO_SC), 20)
 
     def test_write_report_files(self) -> None:
         contract = resolve_contract({"target": "https://example.com"})

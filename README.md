@@ -41,7 +41,7 @@ Current adapter coverage:
 
 ```powershell
 python -m unittest discover -s skills/wcag-web-skill/scripts/tests -p "test_*.py"
-python C:\Users\book.hsu\.codex\skills\.system\skill-creator\scripts\quick_validate.py skills/wcag-web-skill
+python scripts/validate_skill.py skills/wcag-web-skill
 ```
 
 ## Runtime requirements
@@ -49,3 +49,4 @@ python C:\Users\book.hsu\.codex\skills\.system\skill-creator\scripts\quick_valid
 - Python 3.12+
 - Node.js and `npx`
 - `@axe-core/cli` and `lighthouse` available through `npx`
+- `PyYAML` for skill validation

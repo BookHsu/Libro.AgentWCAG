@@ -30,3 +30,4 @@ Use official W3C sources only (`w3.org`).
 - Attach at least one official citation for each major finding/fix.
 - Build Understanding URLs from the selected WCAG version (`20`, `21`, `22`) whenever the SC slug exists.
 - If an SC is unresolved automatically, emit `needs-review` and include the nearest canonical SC page.
+- Keep rule mappings broad enough to cover the most common axe and Lighthouse accessibility rules before falling back to manual review.
