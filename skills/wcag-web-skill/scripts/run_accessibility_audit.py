@@ -7,24 +7,41 @@ import argparse
 import json
 import subprocess
 from pathlib import Path
+from urllib.request import url2pathname
 from urllib.parse import urlparse
 from typing import Any
 
 from wcag_workflow import normalize_report, resolve_contract, write_report_files
 
+DEFAULT_TIMEOUT_SECONDS = 120
+ALLOWED_URL_SCHEMES = {"http", "https", "file"}
 
-def _run_command(command: list[str]) -> tuple[bool, str]:
-    completed = subprocess.run(command, capture_output=True, text=True, check=False)
+
+def _run_command(command: list[str], timeout_seconds: int) -> tuple[bool, str]:
+    try:
+        completed = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=timeout_seconds,
+        )
+    except subprocess.TimeoutExpired:
+        return False, f"command timed out after {timeout_seconds} seconds"
     if completed.returncode == 0:
         return True, completed.stdout
     error = completed.stderr.strip() or completed.stdout.strip() or "unknown error"
     return False, error
 
 
-def _try_run_axe(target: str, output_dir: Path) -> tuple[dict[str, Any] | None, str | None]:
+def _try_run_axe(
+    target: str,
+    output_dir: Path,
+    timeout_seconds: int,
+) -> tuple[dict[str, Any] | None, str | None]:
     axe_json = output_dir / "axe.raw.json"
     command = ["npx", "@axe-core/cli", target, "--save", str(axe_json)]
-    ok, result = _run_command(command)
+    ok, result = _run_command(command, timeout_seconds)
     if not ok:
         return None, result
     if not axe_json.exists():
@@ -33,7 +50,11 @@ def _try_run_axe(target: str, output_dir: Path) -> tuple[dict[str, Any] | None, 
         return json.load(handle), None
 
 
-def _try_run_lighthouse(target: str, output_dir: Path) -> tuple[dict[str, Any] | None, str | None]:
+def _try_run_lighthouse(
+    target: str,
+    output_dir: Path,
+    timeout_seconds: int,
+) -> tuple[dict[str, Any] | None, str | None]:
     lighthouse_json = output_dir / "lighthouse.raw.json"
     command = [
         "npx",
@@ -44,7 +65,7 @@ def _try_run_lighthouse(target: str, output_dir: Path) -> tuple[dict[str, Any] |
         f"--output-path={lighthouse_json}",
         "--chrome-flags=--headless=new",
     ]
-    ok, result = _run_command(command)
+    ok, result = _run_command(command, timeout_seconds)
     if not ok:
         return None, result
     if not lighthouse_json.exists():
@@ -54,13 +75,23 @@ def _try_run_lighthouse(target: str, output_dir: Path) -> tuple[dict[str, Any] |
 
 
 def _resolve_target_for_scanners(target: str) -> str:
-    parsed = urlparse(target)
-    if parsed.scheme in {"http", "https", "file"}:
-        return target
     local_path = Path(target)
     if local_path.exists():
         return local_path.resolve().as_uri()
-    return target
+    parsed = urlparse(target)
+    if parsed.scheme:
+        if parsed.scheme not in ALLOWED_URL_SCHEMES:
+            raise ValueError(f"Unsupported target scheme: {parsed.scheme}")
+        if parsed.scheme == "file":
+            if parsed.netloc not in {"", "localhost"}:
+                raise ValueError(f"Unsupported file target host: {parsed.netloc}")
+            file_path = Path(url2pathname(parsed.path))
+            if not file_path.exists():
+                raise ValueError(f"Target file does not exist: {target}")
+        return target
+    if "://" in target:
+        raise ValueError(f"Unsupported target scheme in: {target}")
+    raise ValueError(f"Target must be an existing local file or a valid URL: {target}")
 
 
 def parse_args() -> argparse.Namespace:
@@ -71,6 +102,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--target", required=True)
     parser.add_argument("--output-language", default="zh-TW")
     parser.add_argument("--output-dir", default="out")
+    parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT_SECONDS)
     parser.add_argument("--skip-axe", action="store_true")
     parser.add_argument("--skip-lighthouse", action="store_true")
     return parser.parse_args()
@@ -95,12 +127,16 @@ def main() -> int:
     axe_data = None
     axe_error = None
     if not args.skip_axe:
-        axe_data, axe_error = _try_run_axe(scanner_target, output_dir)
+        axe_data, axe_error = _try_run_axe(scanner_target, output_dir, args.timeout)
 
     lighthouse_data = None
     lighthouse_error = None
     if not args.skip_lighthouse:
-        lighthouse_data, lighthouse_error = _try_run_lighthouse(scanner_target, output_dir)
+        lighthouse_data, lighthouse_error = _try_run_lighthouse(
+            scanner_target,
+            output_dir,
+            args.timeout,
+        )
 
     report = normalize_report(
         contract=contract,
