@@ -25,8 +25,14 @@ Translate platform prompt syntax while preserving the core contract.
 - Keep input/output contract fields unchanged.
 - Keep the same finding IDs between Markdown and JSON.
 
-### Gemini/Copilot placeholders (v2)
+### Gemini adapter
 
-- Keep directories and template stubs present.
-- Do not implement platform-specific logic in v1.
+- Use direct prompt instructions with the canonical JSON contract inline.
+- Preserve `ok | skipped | error` tool status semantics.
+- Require version-matched W3C Understanding URLs.
 
+### Copilot adapter
+
+- Use plain-language instructions with the canonical contract inline.
+- Preserve canonical JSON keys and Markdown column order verbatim.
+- Require stable issue IDs across Markdown and JSON.

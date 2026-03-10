@@ -57,7 +57,8 @@ Use `scripts/normalize_report.py` to normalize mixed tool outputs into the contr
 
 - Use `adapters/openai-codex/prompt-template.md` for OpenAI/Codex orchestration.
 - Use `adapters/claude/prompt-template.md` for Claude orchestration.
-- Keep `adapters/gemini/` and `adapters/copilot/` as v2 placeholders.
+- Use `adapters/gemini/prompt-template.md` for Gemini orchestration.
+- Use `adapters/copilot/prompt-template.md` for Copilot orchestration.
 - Never add adapter-specific business logic that alters core output semantics.
 
 ## References

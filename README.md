@@ -7,8 +7,8 @@ Cross-agent WCAG web accessibility skill for creating or remediating web pages w
 - `skills/wcag-web-skill`: installable skill payload
 - `skills/wcag-web-skill/adapters/openai-codex`: v1 adapter for OpenAI/Codex
 - `skills/wcag-web-skill/adapters/claude`: v1 adapter for Claude
-- `skills/wcag-web-skill/adapters/gemini`: v2 placeholder
-- `skills/wcag-web-skill/adapters/copilot`: v2 placeholder
+- `skills/wcag-web-skill/adapters/gemini`: v2 adapter for Gemini
+- `skills/wcag-web-skill/adapters/copilot`: v2 adapter for Copilot
 
 ## Install into Codex
 
@@ -29,6 +29,13 @@ The platform-neutral contract lives here:
 - `skills/wcag-web-skill/references/adapter-mapping.md`
 
 Adapters can translate the same core contract into each platform's prompt or tool syntax.
+
+Current adapter coverage:
+
+- OpenAI/Codex
+- Claude
+- Gemini
+- Copilot
 
 ## Local validation
 
