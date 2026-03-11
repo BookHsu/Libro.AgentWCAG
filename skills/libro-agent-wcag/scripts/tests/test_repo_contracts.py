@@ -29,9 +29,10 @@ class RepoContractTests(unittest.TestCase):
         content = self._read(self.repo_root / 'TESTING-PLAN.md')
         for heading in ['## Test Matrix', '## Repo Mapping', '## Already Implemented', '## Still Worth Adding']:
             self.assertIn(heading, content)
-        self.assertIn('Unit Test', content)
-        self.assertIn('Installation Test', content)
-        self.assertIn('Not Applicable', content)
+        self.assertIn('Automation Target', content)
+        self.assertIn('Coverage Mode', content)
+        self.assertIn('Scripted Manual', content)
+        self.assertIn('Automated', content)
 
     def test_manual_testing_assets_exist_for_non_automated_matrix_types(self) -> None:
         manual = self._read(self.repo_root / 'docs' / 'testing' / 'manual-checklists.md')
@@ -115,6 +116,8 @@ class RepoContractTests(unittest.TestCase):
             'LICENSE',
             'README.md',
             'TESTING-PLAN.md',
+            'docs/automations/test-plan-automation.md',
+            'docs/automations/test-plan-review-policy.md',
             'docs/testing/manual-checklists.md',
             'docs/testing/nonfunctional-checks.md',
             'docs/testing/scenario-assets.md',
