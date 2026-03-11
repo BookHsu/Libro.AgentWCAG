@@ -75,6 +75,30 @@ def _fix_image_alt(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, A
     }
 
 
+def _fix_input_image_alt(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    pattern = re.compile(r"<input\b(?=[^>]*\btype\s*=\s*['\"]image['\"])(?![^>]*\balt\s*=)([^>]*?)(/?)>", flags=re.IGNORECASE)
+    updated, count = pattern.subn(r'<input\1 alt=""\2>', html, count=1)
+    if count == 0:
+        return html, None
+    return updated, {
+        'rule_id': finding['rule_id'],
+        'changed_target': finding['changed_target'],
+        'description': 'Added an empty alt attribute to an image input missing alt text.',
+    }
+
+
+def _fix_area_alt(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    pattern = re.compile(r'<area\b(?![^>]*\balt\s*=)([^>]*?)(/?)>', flags=re.IGNORECASE)
+    updated, count = pattern.subn(r'<area\1 alt=""\2>', html, count=1)
+    if count == 0:
+        return html, None
+    return updated, {
+        'rule_id': finding['rule_id'],
+        'changed_target': finding['changed_target'],
+        'description': 'Added an empty alt attribute to an area element missing alt text.',
+    }
+
+
 def _guess_accessible_name(attributes: str, fallback: str = 'Control') -> str:
     for attribute in ('aria-label', 'title', 'placeholder', 'name', 'id'):
         match = re.search(rf'\b{attribute}\s*=\s*["\']([^"\']+)["\']', attributes, flags=re.IGNORECASE)
@@ -148,6 +172,70 @@ def _fix_label(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] 
     return html, None
 
 
+def _fix_html_xml_lang_mismatch(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    match = re.search(r'<html\b([^>]*)>', html, flags=re.IGNORECASE)
+    if not match:
+        return html, None
+    tag = match.group(0)
+    lang_match = re.search(r"\blang\s*=\s*['\"]([^'\"]+)['\"]", tag, flags=re.IGNORECASE)
+    xml_lang_match = re.search(r"\bxml:lang\s*=\s*['\"]([^'\"]+)['\"]", tag, flags=re.IGNORECASE)
+    preferred = None
+    if lang_match and LANG_PATTERN.match(lang_match.group(1)):
+        preferred = lang_match.group(1)
+    elif xml_lang_match and LANG_PATTERN.match(xml_lang_match.group(1)):
+        preferred = xml_lang_match.group(1)
+    if not preferred:
+        preferred = 'en'
+    if not lang_match:
+        replacement = tag[:-1] + f' lang="{preferred}">'
+    elif not xml_lang_match:
+        replacement = tag[:-1] + f' xml:lang="{preferred}">'
+    elif lang_match.group(1) == preferred and xml_lang_match.group(1) == preferred:
+        return html, None
+    else:
+        replacement = re.sub(r"(\bxml:lang\s*=\s*['\"])[^'\"]+(['\"])", rf'\g<1>{preferred}\g<2>', tag, flags=re.IGNORECASE)
+        replacement = re.sub(r"(\blang\s*=\s*['\"])[^'\"]+(['\"])", rf'\g<1>{preferred}\g<2>', replacement, flags=re.IGNORECASE)
+    updated, changed = replace_first(re.escape(tag), replacement, html)
+    if not changed:
+        return html, None
+    return updated, {
+        'rule_id': finding['rule_id'],
+        'changed_target': finding['changed_target'],
+        'description': f'Synchronized lang and xml:lang to "{preferred}".',
+    }
+
+
+def _fix_valid_lang(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    pattern = re.compile(r"(<(?!html\b)[^>]*?\blang\s*=\s*['\"])([^'\"]+)(['\"])", flags=re.IGNORECASE)
+
+    def replacer(match: re.Match[str]) -> str:
+        value = match.group(3)
+        if LANG_PATTERN.match(value):
+            return match.group(0)
+        return f'{match.group(1)}en{match.group(3)}'
+
+    updated, changed = replace_first(pattern, replacer, html)
+    if not changed or updated == html:
+        return html, None
+    return updated, {
+        'rule_id': finding['rule_id'],
+        'changed_target': finding['changed_target'],
+        'description': 'Normalized an invalid language-of-parts lang attribute to "en".',
+    }
+
+
+def _fix_meta_refresh(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    pattern = re.compile(r"\s*<meta\b[^>]*\bhttp-equiv\s*=\s*['\"]refresh['\"][^>]*>\s*", flags=re.IGNORECASE)
+    updated, count = pattern.subn('\n', html, count=1)
+    if count == 0:
+        return html, None
+    return updated, {
+        'rule_id': finding['rule_id'],
+        'changed_target': finding['changed_target'],
+        'description': 'Removed an automatic meta refresh tag.',
+    }
+
+
 def _fix_meta_viewport(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
     viewport_pattern = re.compile(r'<meta\b[^>]*\bname\s*=\s*["\']viewport["\'][^>]*\bcontent\s*=\s*["\']([^"\']*)["\'][^>]*>', flags=re.IGNORECASE)
     match = viewport_pattern.search(html)
@@ -183,12 +271,16 @@ FIXERS: dict[str, Callable[[str, dict[str, Any]], tuple[str, dict[str, Any] | No
     'html-has-lang': _fix_html_has_lang,
     'html-lang-valid': _fix_html_lang_valid,
     'image-alt': _fix_image_alt,
-    'input-image-alt': _fix_image_alt,
+    'input-image-alt': _fix_input_image_alt,
+    'area-alt': _fix_area_alt,
     'button-name': _fix_button_name,
     'link-name': _fix_link_name,
     'label': _fix_label,
     'select-name': _fix_label,
+    'meta-refresh': _fix_meta_refresh,
     'meta-viewport': _fix_meta_viewport,
+    'html-xml-lang-mismatch': _fix_html_xml_lang_mismatch,
+    'valid-lang': _fix_valid_lang,
 }
 
 
@@ -270,3 +362,4 @@ def write_diff(diff_text: str, diff_path: Path) -> None:
 def write_snapshot(report: dict[str, Any], snapshot_path: Path) -> None:
     snapshot_path.parent.mkdir(parents=True, exist_ok=True)
     snapshot_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
+

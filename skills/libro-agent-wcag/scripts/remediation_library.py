@@ -31,6 +31,30 @@ RULE_STRATEGIES = {
         "confidence": "high",
         "auto_fix_supported": True,
     },
+    "area-alt": {
+        "summary": "Provide alternative text for image map areas via the alt attribute.",
+        "priority": "high",
+        "confidence": "high",
+        "auto_fix_supported": True,
+    },
+    "meta-refresh": {
+        "summary": "Remove timed refresh behavior or replace it with a user-triggered control.",
+        "priority": "medium",
+        "confidence": "high",
+        "auto_fix_supported": True,
+    },
+    "html-xml-lang-mismatch": {
+        "summary": "Keep lang and xml:lang synchronized with the same valid language code.",
+        "priority": "medium",
+        "confidence": "high",
+        "auto_fix_supported": True,
+    },
+    "valid-lang": {
+        "summary": "Normalize invalid language-of-parts lang attributes to a valid BCP-47 value.",
+        "priority": "medium",
+        "confidence": "high",
+        "auto_fix_supported": True,
+    },
     "label": {
         "summary": "Associate each form control with a visible label or accessible name.",
         "priority": "high",
