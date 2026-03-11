@@ -20,7 +20,7 @@ class RemediationLibraryTests(unittest.TestCase):
         self.assertTrue(strategy["auto_fix_supported"])
 
     def test_new_safe_rules_are_marked_auto_fix_supported(self) -> None:
-        for rule_id in ('area-alt', 'meta-refresh', 'html-xml-lang-mismatch', 'valid-lang'):
+        for rule_id in ('area-alt', 'meta-refresh', 'html-xml-lang-mismatch', 'valid-lang', 'aria-toggle-field-name', 'aria-tooltip-name', 'aria-progressbar-name', 'aria-meter-name', 'document-title'):
             with self.subTest(rule_id=rule_id):
                 strategy = get_strategy(rule_id)
                 self.assertTrue(strategy['auto_fix_supported'])

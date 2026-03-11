@@ -122,6 +122,7 @@ class RepoContractTests(unittest.TestCase):
             '.gitignore',
             'LICENSE',
             'README.md',
+            'SKILL-TODO.md',
             'TESTING-PLAN.md',
             'docs/automations/test-plan-automation.md',
             'docs/automations/test-plan-review-policy.md',
