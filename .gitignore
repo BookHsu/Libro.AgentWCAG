@@ -26,3 +26,5 @@ obj/
 dist/
 build/
 node_modules/
+.tmp/
+out-test-invalid/

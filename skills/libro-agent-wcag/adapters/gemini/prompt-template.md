@@ -26,7 +26,7 @@ Execution rules:
 6. Respect execution_mode:
    - audit-only: report findings only
    - suggest-only: report findings and remediation suggestions without editing
-   - apply-fixes: let the agent perform the actual file modification when safe and requested
+   - apply-fixes: allow the core workflow to apply safe first-pass local HTML fixes, then let the agent handle unsupported or higher-risk changes
 7. Deduplicate overlapping axe/Lighthouse findings that refer to the same rule and target.
 8. Map each major finding and fix to WCAG SC plus a W3C citation URL that matches the selected WCAG version.
 9. Return both outputs in the same response:

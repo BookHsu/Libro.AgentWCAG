@@ -487,6 +487,17 @@ def normalize_report(
         fix_id = f"FIX-{index:03d}"
         sc_values = raw.get("sc") or []
         strategy = get_strategy(raw["rule_id"])
+        fixability = (
+            "auto-fix"
+            if strategy["auto_fix_supported"]
+            else ("manual" if raw["status"] == "needs-review" else "assisted")
+        )
+        verification_status = (
+            "verified"
+            if raw["status"] == "fixed"
+            else ("manual-review" if raw["status"] == "needs-review" else "not-run")
+        )
+        manual_review_required = raw["status"] == "needs-review"
         normalized_findings.append(
             {
                 "id": issue_id,
@@ -499,6 +510,9 @@ def normalize_report(
                 "current": raw["current"],
                 "changed_target": raw["changed_target"],
                 "status": raw["status"],
+                "fixability": fixability,
+                "verification_status": verification_status,
+                "manual_review_required": manual_review_required,
             }
         )
         fixes.append(
@@ -511,6 +525,9 @@ def normalize_report(
                 "remediation_priority": strategy["priority"],
                 "confidence": strategy["confidence"],
                 "auto_fix_supported": strategy["auto_fix_supported"],
+                "fixability": fixability,
+                "verification_status": verification_status,
+                "manual_review_required": manual_review_required,
                 "framework_hints": strategy["framework_hints"],
             }
         )
@@ -535,6 +552,13 @@ def normalize_report(
             1 for item in normalized_findings if item["status"] == "needs-review"
         ),
         "change_summary": change_summary,
+        "diff_summary": [],
+        "remediation_lifecycle": {
+            "planned": sum(1 for item in fixes if item["status"] == "planned"),
+            "implemented": sum(1 for item in fixes if item["status"] == "implemented"),
+            "verified": sum(1 for item in fixes if item["status"] == "verified"),
+            "manual_review_required": sum(1 for item in fixes if item["manual_review_required"]),
+        },
     }
 
     return {
@@ -545,6 +569,7 @@ def normalize_report(
             "output_language": contract.output_language,
             "files_modified": False,
             "modification_owner": "agent-or-adapter",
+            "diff_artifacts": [],
             "tools": tools,
             "notes": notes,
         },

@@ -6,6 +6,7 @@
     "output_language": "en",
     "files_modified": false,
     "modification_owner": "agent-or-adapter",
+    "diff_artifacts": [],
     "tools": {
       "axe": "ok",
       "lighthouse": "ok"
@@ -36,7 +37,10 @@
       ],
       "current": "Image elements have [alt] attributes",
       "changed_target": "img.hero",
-      "status": "open"
+      "status": "open",
+      "fixability": "auto-fix",
+      "verification_status": "not-run",
+      "manual_review_required": false
     }
   ],
   "fixes": [
@@ -49,6 +53,9 @@
       "remediation_priority": "high",
       "confidence": "high",
       "auto_fix_supported": true,
+      "fixability": "auto-fix",
+      "verification_status": "not-run",
+      "manual_review_required": false,
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
         "react": "Prefer semantic JSX and explicit aria/label props.",
@@ -76,6 +83,13 @@
         "recommended_action": "Add a meaningful alt attribute or mark decorative images with empty alt text.",
         "remediation_priority": "high"
       }
-    ]
+    ],
+    "diff_summary": [],
+    "remediation_lifecycle": {
+      "planned": 1,
+      "implemented": 0,
+      "verified": 0,
+      "manual_review_required": 0
+    }
   }
 }

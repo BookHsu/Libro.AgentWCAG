@@ -1,0 +1,494 @@
+{
+  "run_meta": {
+    "generated_at": "<generated>",
+    "workflow_version": "1.0.0",
+    "execution_mode": "suggest-only",
+    "output_language": "en",
+    "files_modified": false,
+    "modification_owner": "agent-or-adapter",
+    "diff_artifacts": [],
+    "tools": {
+      "axe": "ok",
+      "lighthouse": "ok"
+    },
+    "notes": []
+  },
+  "target": {
+    "value": "fixtures/wcag22-manual-review.html",
+    "task_mode": "modify"
+  },
+  "standard": {
+    "wcag_version": "2.2",
+    "conformance_level": "AA"
+  },
+  "findings": [
+    {
+      "id": "ISSUE-001",
+      "source": "manual",
+      "sources": [
+        "manual"
+      ],
+      "rule_id": "wcag22-manual-2.4.11",
+      "severity": "info",
+      "confidence": "medium",
+      "sc": [
+        "2.4.11"
+      ],
+      "current": "Review whether focused elements remain at least partially visible.",
+      "changed_target": "manual-review",
+      "status": "needs-review",
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true
+    },
+    {
+      "id": "ISSUE-002",
+      "source": "manual",
+      "sources": [
+        "manual"
+      ],
+      "rule_id": "wcag22-manual-2.4.12",
+      "severity": "info",
+      "confidence": "medium",
+      "sc": [
+        "2.4.12"
+      ],
+      "current": "Review whether focused elements remain fully unobscured in enhanced scenarios.",
+      "changed_target": "manual-review",
+      "status": "needs-review",
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true
+    },
+    {
+      "id": "ISSUE-003",
+      "source": "manual",
+      "sources": [
+        "manual"
+      ],
+      "rule_id": "wcag22-manual-2.4.13",
+      "severity": "info",
+      "confidence": "medium",
+      "sc": [
+        "2.4.13"
+      ],
+      "current": "Review whether focus appearance meets WCAG 2.2 requirements.",
+      "changed_target": "manual-review",
+      "status": "needs-review",
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true
+    },
+    {
+      "id": "ISSUE-004",
+      "source": "manual",
+      "sources": [
+        "manual"
+      ],
+      "rule_id": "wcag22-manual-2.5.7",
+      "severity": "info",
+      "confidence": "medium",
+      "sc": [
+        "2.5.7"
+      ],
+      "current": "Review whether dragging interactions have a single-pointer alternative.",
+      "changed_target": "manual-review",
+      "status": "needs-review",
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true
+    },
+    {
+      "id": "ISSUE-005",
+      "source": "manual",
+      "sources": [
+        "manual"
+      ],
+      "rule_id": "wcag22-manual-2.5.8",
+      "severity": "info",
+      "confidence": "medium",
+      "sc": [
+        "2.5.8"
+      ],
+      "current": "Review whether targets meet minimum target size requirements.",
+      "changed_target": "manual-review",
+      "status": "needs-review",
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true
+    },
+    {
+      "id": "ISSUE-006",
+      "source": "manual",
+      "sources": [
+        "manual"
+      ],
+      "rule_id": "wcag22-manual-3.2.6",
+      "severity": "info",
+      "confidence": "medium",
+      "sc": [
+        "3.2.6"
+      ],
+      "current": "Review whether help mechanisms remain consistent across pages.",
+      "changed_target": "manual-review",
+      "status": "needs-review",
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true
+    },
+    {
+      "id": "ISSUE-007",
+      "source": "manual",
+      "sources": [
+        "manual"
+      ],
+      "rule_id": "wcag22-manual-3.3.7",
+      "severity": "info",
+      "confidence": "medium",
+      "sc": [
+        "3.3.7"
+      ],
+      "current": "Review whether redundant-entry protections are provided where needed.",
+      "changed_target": "manual-review",
+      "status": "needs-review",
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true
+    },
+    {
+      "id": "ISSUE-008",
+      "source": "manual",
+      "sources": [
+        "manual"
+      ],
+      "rule_id": "wcag22-manual-3.3.8",
+      "severity": "info",
+      "confidence": "medium",
+      "sc": [
+        "3.3.8"
+      ],
+      "current": "Review accessible authentication without cognitive function tests.",
+      "changed_target": "manual-review",
+      "status": "needs-review",
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true
+    },
+    {
+      "id": "ISSUE-009",
+      "source": "manual",
+      "sources": [
+        "manual"
+      ],
+      "rule_id": "wcag22-manual-3.3.9",
+      "severity": "info",
+      "confidence": "medium",
+      "sc": [
+        "3.3.9"
+      ],
+      "current": "Review enhanced accessible authentication support.",
+      "changed_target": "manual-review",
+      "status": "needs-review",
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true
+    }
+  ],
+  "fixes": [
+    {
+      "id": "FIX-001",
+      "finding_id": "ISSUE-001",
+      "description": "Review the affected element and implement a WCAG-conformant remediation.",
+      "changed_target": "manual-review",
+      "status": "planned",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": false,
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-002",
+      "finding_id": "ISSUE-002",
+      "description": "Review the affected element and implement a WCAG-conformant remediation.",
+      "changed_target": "manual-review",
+      "status": "planned",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": false,
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-003",
+      "finding_id": "ISSUE-003",
+      "description": "Review the affected element and implement a WCAG-conformant remediation.",
+      "changed_target": "manual-review",
+      "status": "planned",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": false,
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-004",
+      "finding_id": "ISSUE-004",
+      "description": "Review the affected element and implement a WCAG-conformant remediation.",
+      "changed_target": "manual-review",
+      "status": "planned",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": false,
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-005",
+      "finding_id": "ISSUE-005",
+      "description": "Review the affected element and implement a WCAG-conformant remediation.",
+      "changed_target": "manual-review",
+      "status": "planned",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": false,
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-006",
+      "finding_id": "ISSUE-006",
+      "description": "Review the affected element and implement a WCAG-conformant remediation.",
+      "changed_target": "manual-review",
+      "status": "planned",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": false,
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-007",
+      "finding_id": "ISSUE-007",
+      "description": "Review the affected element and implement a WCAG-conformant remediation.",
+      "changed_target": "manual-review",
+      "status": "planned",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": false,
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-008",
+      "finding_id": "ISSUE-008",
+      "description": "Review the affected element and implement a WCAG-conformant remediation.",
+      "changed_target": "manual-review",
+      "status": "planned",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": false,
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-009",
+      "finding_id": "ISSUE-009",
+      "description": "Review the affected element and implement a WCAG-conformant remediation.",
+      "changed_target": "manual-review",
+      "status": "planned",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": false,
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    }
+  ],
+  "citations": [
+    {
+      "finding_id": "ISSUE-001",
+      "sc": "2.4.11",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum"
+    },
+    {
+      "finding_id": "ISSUE-002",
+      "sc": "2.4.12",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-enhanced"
+    },
+    {
+      "finding_id": "ISSUE-003",
+      "sc": "2.4.13",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/focus-appearance"
+    },
+    {
+      "finding_id": "ISSUE-004",
+      "sc": "2.5.7",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements"
+    },
+    {
+      "finding_id": "ISSUE-005",
+      "sc": "2.5.8",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum"
+    },
+    {
+      "finding_id": "ISSUE-006",
+      "sc": "3.2.6",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/consistent-help"
+    },
+    {
+      "finding_id": "ISSUE-007",
+      "sc": "3.3.7",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/redundant-entry"
+    },
+    {
+      "finding_id": "ISSUE-008",
+      "sc": "3.3.8",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/accessible-authentication-minimum"
+    },
+    {
+      "finding_id": "ISSUE-009",
+      "sc": "3.3.9",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/accessible-authentication-enhanced"
+    }
+  ],
+  "summary": {
+    "total_findings": 9,
+    "fixed_findings": 0,
+    "needs_manual_review": 9,
+    "change_summary": [
+      {
+        "finding_id": "ISSUE-001",
+        "rule_id": "wcag22-manual-2.4.11",
+        "changed_target": "manual-review",
+        "recommended_action": "Review the affected element and implement a WCAG-conformant remediation.",
+        "remediation_priority": "medium"
+      },
+      {
+        "finding_id": "ISSUE-002",
+        "rule_id": "wcag22-manual-2.4.12",
+        "changed_target": "manual-review",
+        "recommended_action": "Review the affected element and implement a WCAG-conformant remediation.",
+        "remediation_priority": "medium"
+      },
+      {
+        "finding_id": "ISSUE-003",
+        "rule_id": "wcag22-manual-2.4.13",
+        "changed_target": "manual-review",
+        "recommended_action": "Review the affected element and implement a WCAG-conformant remediation.",
+        "remediation_priority": "medium"
+      },
+      {
+        "finding_id": "ISSUE-004",
+        "rule_id": "wcag22-manual-2.5.7",
+        "changed_target": "manual-review",
+        "recommended_action": "Review the affected element and implement a WCAG-conformant remediation.",
+        "remediation_priority": "medium"
+      },
+      {
+        "finding_id": "ISSUE-005",
+        "rule_id": "wcag22-manual-2.5.8",
+        "changed_target": "manual-review",
+        "recommended_action": "Review the affected element and implement a WCAG-conformant remediation.",
+        "remediation_priority": "medium"
+      },
+      {
+        "finding_id": "ISSUE-006",
+        "rule_id": "wcag22-manual-3.2.6",
+        "changed_target": "manual-review",
+        "recommended_action": "Review the affected element and implement a WCAG-conformant remediation.",
+        "remediation_priority": "medium"
+      },
+      {
+        "finding_id": "ISSUE-007",
+        "rule_id": "wcag22-manual-3.3.7",
+        "changed_target": "manual-review",
+        "recommended_action": "Review the affected element and implement a WCAG-conformant remediation.",
+        "remediation_priority": "medium"
+      },
+      {
+        "finding_id": "ISSUE-008",
+        "rule_id": "wcag22-manual-3.3.8",
+        "changed_target": "manual-review",
+        "recommended_action": "Review the affected element and implement a WCAG-conformant remediation.",
+        "remediation_priority": "medium"
+      },
+      {
+        "finding_id": "ISSUE-009",
+        "rule_id": "wcag22-manual-3.3.9",
+        "changed_target": "manual-review",
+        "recommended_action": "Review the affected element and implement a WCAG-conformant remediation.",
+        "remediation_priority": "medium"
+      }
+    ],
+    "diff_summary": [],
+    "remediation_lifecycle": {
+      "planned": 9,
+      "implemented": 0,
+      "verified": 0,
+      "manual_review_required": 9
+    }
+  }
+}
