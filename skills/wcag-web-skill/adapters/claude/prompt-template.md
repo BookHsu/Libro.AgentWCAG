@@ -17,11 +17,15 @@ Invoke wcag-web-skill core contract:
 
 Execution requirements:
 - Apply defaults: execution_mode=suggest-only, wcag_version=2.1, conformance_level=AA, output_language=zh-TW.
-- Audit with axe and Lighthouse.
+- Respect task_mode:
+  - create: work from a draft or generated target; if there is no existing target to scan, provide guidance and manual-review items instead of claiming a scan ran
+  - modify: audit the existing target before proposing or applying changes
+- Audit with axe and Lighthouse when a concrete target exists.
 - Respect execution_mode:
   - audit-only: return findings only
   - suggest-only: return findings plus remediation suggestions without editing
-  - apply-fixes: apply fixes when safe and requested
+  - apply-fixes: let the agent perform the actual file modification when safe and requested
+- Deduplicate overlapping axe/Lighthouse findings that refer to the same rule and target.
 - Map each finding/fix to WCAG SC + official W3C citation.
 - Return both:
   1. Markdown table with required columns and order.
