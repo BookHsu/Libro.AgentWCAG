@@ -73,7 +73,8 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('execution_mode', content)
         self.assertIn('task_mode', content)
         self.assertIn('local file path or URL', content)
-        self.assertIn('agent or adapter', content)
+        self.assertIn('safe first-pass remediations', content)
+        self.assertIn('usage-example.md', content)
 
     def test_openai_agent_yaml_points_to_libro_agentwcag_prompt(self) -> None:
         payload = yaml.safe_load((self.skill_root / 'agents' / 'openai.yaml').read_text(encoding='utf-8'))
@@ -84,8 +85,9 @@ class RepoContractTests(unittest.TestCase):
         core_spec = self._read(self.skill_root / 'references' / 'core-spec.md')
         adapter_mapping = self._read(self.skill_root / 'references' / 'adapter-mapping.md')
         self.assertIn('audit-only | suggest-only | apply-fixes', core_spec)
-        self.assertIn('files_modified', core_spec)
-        self.assertIn('agent-or-adapter', core_spec)
+        self.assertIn('core-workflow', core_spec)
+        self.assertIn('safe first-pass fixes', core_spec)
+        self.assertIn('usage-example.md', adapter_mapping)
         self.assertIn('apply-fixes', adapter_mapping)
         self.assertIn('create', adapter_mapping)
         self.assertIn('modify', adapter_mapping)
@@ -131,19 +133,25 @@ class RepoContractTests(unittest.TestCase):
             'skills/libro-agent-wcag/SKILL.md',
             'skills/libro-agent-wcag/agents/openai.yaml',
             'skills/libro-agent-wcag/adapters/claude/prompt-template.md',
+            'skills/libro-agent-wcag/adapters/claude/usage-example.md',
             'skills/libro-agent-wcag/adapters/copilot/prompt-template.md',
+            'skills/libro-agent-wcag/adapters/copilot/usage-example.md',
             'skills/libro-agent-wcag/adapters/gemini/prompt-template.md',
+            'skills/libro-agent-wcag/adapters/gemini/usage-example.md',
             'skills/libro-agent-wcag/adapters/openai-codex/prompt-template.md',
+            'skills/libro-agent-wcag/adapters/openai-codex/usage-example.md',
             'skills/libro-agent-wcag/references/adapter-mapping.md',
             'skills/libro-agent-wcag/references/core-spec.md',
             'skills/libro-agent-wcag/references/framework-patterns-nextjs.md',
             'skills/libro-agent-wcag/references/framework-patterns-react.md',
             'skills/libro-agent-wcag/references/framework-patterns-vue.md',
             'skills/libro-agent-wcag/references/wcag-citations.md',
+            'skills/libro-agent-wcag/scripts/auto_fix.py',
             'skills/libro-agent-wcag/scripts/normalize_report.py',
             'skills/libro-agent-wcag/scripts/remediation_library.py',
             'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
             'skills/libro-agent-wcag/scripts/wcag_workflow.py',
+            '.codex/environments/environment.toml',
         }
         actual = {
             str(path.relative_to(self.repo_root)).replace('\\', '/')

@@ -1,0 +1,81 @@
+{
+  "run_meta": {
+    "generated_at": "<generated>",
+    "workflow_version": "1.0.0",
+    "execution_mode": "suggest-only",
+    "output_language": "en",
+    "files_modified": false,
+    "modification_owner": "agent-or-adapter",
+    "tools": {
+      "axe": "ok",
+      "lighthouse": "ok"
+    },
+    "notes": []
+  },
+  "target": {
+    "value": "fixtures/missing-alt.html",
+    "task_mode": "modify"
+  },
+  "standard": {
+    "wcag_version": "2.1",
+    "conformance_level": "AA"
+  },
+  "findings": [
+    {
+      "id": "ISSUE-001",
+      "source": "axe+lighthouse",
+      "sources": [
+        "axe",
+        "lighthouse"
+      ],
+      "rule_id": "image-alt",
+      "severity": "critical",
+      "confidence": "high",
+      "sc": [
+        "1.1.1"
+      ],
+      "current": "Image elements have [alt] attributes",
+      "changed_target": "img.hero",
+      "status": "open"
+    }
+  ],
+  "fixes": [
+    {
+      "id": "FIX-001",
+      "finding_id": "ISSUE-001",
+      "description": "Add a meaningful alt attribute or mark decorative images with empty alt text.",
+      "changed_target": "img.hero",
+      "status": "planned",
+      "remediation_priority": "high",
+      "confidence": "high",
+      "auto_fix_supported": true,
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    }
+  ],
+  "citations": [
+    {
+      "finding_id": "ISSUE-001",
+      "sc": "1.1.1",
+      "url": "https://www.w3.org/WAI/WCAG21/Understanding/non-text-content"
+    }
+  ],
+  "summary": {
+    "total_findings": 1,
+    "fixed_findings": 0,
+    "needs_manual_review": 0,
+    "change_summary": [
+      {
+        "finding_id": "ISSUE-001",
+        "rule_id": "image-alt",
+        "changed_target": "img.hero",
+        "recommended_action": "Add a meaningful alt attribute or mark decorative images with empty alt text.",
+        "remediation_priority": "high"
+      }
+    ]
+  }
+}
