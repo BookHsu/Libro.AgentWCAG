@@ -1,0 +1,4 @@
+interface:
+  display_name: "Libro.AgentWCAG"
+  short_description: "Cross-agent WCAG web audit and remediation"
+  default_prompt: "Use $libro-agent-wcag to audit or remediate a web page using a selected WCAG version and level."

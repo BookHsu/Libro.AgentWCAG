@@ -18,7 +18,7 @@ class RepoInvocationTests(unittest.TestCase):
                 "unittest",
                 "discover",
                 "-s",
-                "skills/wcag-web-skill/scripts/tests",
+                "skills/libro-agent-wcag/scripts/tests",
                 "-p",
                 "test_runner.py",
             ],

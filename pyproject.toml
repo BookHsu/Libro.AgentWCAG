@@ -3,12 +3,12 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "wcag-web-skill-repo"
+name = "Libro.AgentWCAG"
 version = "0.1.0"
-description = "Publishable repository for the cross-agent WCAG web skill."
+description = "Publishable repository for the Libro.AgentWCAG cross-agent WCAG web skill."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = []
 
 [tool.pytest.ini_options]
-testpaths = ["skills/wcag-web-skill/scripts/tests"]
+testpaths = ["skills/libro-agent-wcag/scripts/tests"]
