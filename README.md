@@ -149,6 +149,7 @@ python scripts/validate_skill.py skills/libro-agent-wcag
 ## Testing Strategy
 
 - See `TESTING-PLAN.md` for the applicable test matrix, repo mapping, and current coverage status.
+- See `SKILL-TODO.md` for the remaining skill-completion backlog and implementation checklist.
 
 ## Codex Automation
 
