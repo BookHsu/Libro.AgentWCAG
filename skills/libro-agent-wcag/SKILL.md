@@ -38,7 +38,7 @@ Treat local file paths as first-class inputs. The audit runner converts existing
 4. Respect `execution_mode`:
    - `audit-only`: find issues only
    - `suggest-only`: find issues and propose remediation steps without editing
-   - `apply-fixes`: allow the agent or adapter to apply remediations when it can safely modify the target
+   - `apply-fixes`: apply safe first-pass remediations for supported local HTML targets, then let the agent or adapter handle any remaining changes
 5. Produce the two required outputs:
    - Markdown comparison table
    - JSON structured report
@@ -61,7 +61,7 @@ JSON top-level keys:
 `run_meta`, `target`, `standard`, `findings[]`, `fixes[]`, `citations[]`, `summary`
 
 Report the chosen `execution_mode` in both JSON and Markdown summary text.
-Treat `apply-fixes` as an execution intent. The core scripts emit the intent and report structure; the actual file modification step is performed by the calling agent or adapter.
+For `apply-fixes`, the core scripts may modify supported local HTML targets, emit a diff artifact, and mark `files_modified=true`; unsupported cases still fall back to agent or adapter-driven remediation.
 
 Use `scripts/normalize_report.py` to normalize mixed tool outputs into the contract.
 
@@ -71,6 +71,7 @@ Use `scripts/normalize_report.py` to normalize mixed tool outputs into the contr
 - Use `adapters/claude/prompt-template.md` for Claude orchestration.
 - Use `adapters/gemini/prompt-template.md` for Gemini orchestration.
 - Use `adapters/copilot/prompt-template.md` for Copilot orchestration.
+- Use each adapter's `usage-example.md` for install and invocation examples.
 - Never add adapter-specific business logic that alters core output semantics.
 
 ## References
@@ -85,3 +86,5 @@ Use `scripts/normalize_report.py` to normalize mixed tool outputs into the contr
 ## Remediation Support
 
 Use `scripts/remediation_library.py` as the shared strategy library for common fixes. It provides remediation summary text, priority, confidence, auto-fix support flags, and framework hints for the most common accessibility rules.
+
+Use `scripts/auto_fix.py` for safe first-pass local HTML rewrites. It currently supports a focused set of rules such as missing `lang`, missing `alt`, missing button names, and missing simple form control labels, and emits a unified diff for verification.

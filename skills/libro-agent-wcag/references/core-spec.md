@@ -32,7 +32,7 @@ Validation rules:
 4. Respect `execution_mode`:
    - `audit-only`: do not propose or apply code changes
    - `suggest-only`: propose fixes but do not modify code
-   - `apply-fixes`: authorize the calling agent or adapter to apply fixes when safe and requested
+   - `apply-fixes`: apply safe first-pass fixes for supported local HTML targets, then let the calling agent or adapter handle any unsupported or higher-risk changes
 5. Map each finding/fix to WCAG SC and citations.
 6. Output Markdown table and JSON report.
 7. If one scanner fails, continue with available scanner and add manual fallback steps.
@@ -51,7 +51,7 @@ Interpret `task_mode` as follows:
     "execution_mode": "audit-only | suggest-only | apply-fixes",
     "output_language": "string",
     "files_modified": "boolean",
-    "modification_owner": "agent-or-adapter",
+    "modification_owner": "agent-or-adapter | core-workflow",
     "tools": {
       "axe": "ok | skipped | error",
       "lighthouse": "ok | skipped | error"
@@ -117,7 +117,7 @@ Use exactly these columns and order:
 
 Prefix the table with a short summary line that states the execution mode and whether files were modified.
 Support localized summary lines and column headers while keeping JSON keys canonical.
-Because the current core workflow does not rewrite target files, `files_modified` should remain `false` and the modification owner should stay `agent-or-adapter` unless a future remediation engine is added.
+For `apply-fixes`, `files_modified` may become `true` and `modification_owner` may become `core-workflow` when the target is a supported local HTML file and safe rewrite helpers succeed. Otherwise the workflow should keep `files_modified=false` and leave ownership with `agent-or-adapter`.
 
 Status vocabulary:
 - Findings: `open`, `fixed`, `partial`, `needs-review`

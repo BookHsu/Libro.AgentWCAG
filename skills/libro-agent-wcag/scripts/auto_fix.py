@@ -1,0 +1,196 @@
+#!/usr/bin/env python3
+"""Safe first-pass auto remediation helpers for local HTML files."""
+
+from __future__ import annotations
+
+import difflib
+import json
+import re
+from pathlib import Path
+from typing import Any, Callable
+from urllib.parse import urlparse
+from urllib.request import url2pathname
+
+LANG_PATTERN = re.compile(r'^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$')
+
+
+def target_to_local_path(target: str) -> Path | None:
+    candidate = Path(target)
+    if candidate.exists():
+        return candidate.resolve()
+    parsed = urlparse(target)
+    if parsed.scheme == 'file' and parsed.netloc in {'', 'localhost'}:
+        return Path(url2pathname(parsed.path)).resolve()
+    return None
+
+
+def _fix_html_has_lang(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    match = re.search(r'<html\b([^>]*)>', html, flags=re.IGNORECASE)
+    if not match:
+        return html, None
+    tag = match.group(0)
+    if re.search(r'\blang\s*=', tag, flags=re.IGNORECASE):
+        return html, None
+    replacement = tag[:-1] + ' lang="en">'
+    updated = html.replace(tag, replacement, 1)
+    return updated, {
+        'rule_id': finding['rule_id'],
+        'changed_target': finding['changed_target'],
+        'description': 'Added lang="en" to the html element.',
+    }
+
+
+def _fix_html_lang_valid(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    pattern = re.compile(r'(\blang\s*=\s*["\'])([^"\']+)(["\'])', flags=re.IGNORECASE)
+
+    def replacer(match: re.Match[str]) -> str:
+        value = match.group(2)
+        if LANG_PATTERN.match(value):
+            return match.group(0)
+        return f'{match.group(1)}en{match.group(3)}'
+
+    updated = pattern.sub(replacer, html, count=1)
+    if updated == html:
+        return html, None
+    return updated, {
+        'rule_id': finding['rule_id'],
+        'changed_target': finding['changed_target'],
+        'description': 'Normalized invalid lang attribute value to "en".',
+    }
+
+
+def _fix_image_alt(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    pattern = re.compile(r'<img\b(?![^>]*\balt\s*=)([^>]*?)(/?)>', flags=re.IGNORECASE)
+    updated, count = pattern.subn(r'<img\1 alt=""\2>', html, count=1)
+    if count == 0:
+        return html, None
+    return updated, {
+        'rule_id': finding['rule_id'],
+        'changed_target': finding['changed_target'],
+        'description': 'Added an empty alt attribute to an img element missing alt text.',
+    }
+
+
+def _guess_accessible_name(attributes: str, fallback: str = 'Control') -> str:
+    for attribute in ('aria-label', 'title', 'placeholder', 'name', 'id'):
+        match = re.search(rf'\b{attribute}\s*=\s*["\']([^"\']+)["\']', attributes, flags=re.IGNORECASE)
+        if match:
+            value = match.group(1).strip().replace('-', ' ').replace('_', ' ')
+            return value[:1].upper() + value[1:] if value else fallback
+    return fallback
+
+
+def _fix_button_name(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    pattern = re.compile(r'<button\b([^>]*)>(.*?)</button>', flags=re.IGNORECASE | re.DOTALL)
+    for match in pattern.finditer(html):
+        attributes = match.group(1)
+        inner_html = match.group(2)
+        if re.search(r'\baria-label\s*=|\baria-labelledby\s*=|\btitle\s*=', attributes, flags=re.IGNORECASE):
+            continue
+        visible_text = re.sub(r'<[^>]+>', '', inner_html).strip()
+        if visible_text and re.search(r'[A-Za-z0-9]', visible_text):
+            continue
+        label = _guess_accessible_name(attributes, fallback='Button')
+        replacement = f'<button{attributes} aria-label="{label}">{inner_html}</button>'
+        updated = html[: match.start()] + replacement + html[match.end() :]
+        return updated, {
+            'rule_id': finding['rule_id'],
+            'changed_target': finding['changed_target'],
+            'description': f'Added aria-label="{label}" to an icon-only button.',
+        }
+    return html, None
+
+
+def _fix_label(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    pattern = re.compile(r'<(input|select|textarea)\b(?![^>]*\b(?:aria-label|aria-labelledby)\s*=)([^>]*)>', flags=re.IGNORECASE)
+    for match in pattern.finditer(html):
+        tag = match.group(1)
+        attributes = match.group(2)
+        control_id_match = re.search(r'\bid\s*=\s*["\']([^"\']+)["\']', attributes, flags=re.IGNORECASE)
+        control_id = control_id_match.group(1) if control_id_match else None
+        if control_id:
+            label_pattern = re.compile(rf'<label\b[^>]*\bfor\s*=\s*["\']{re.escape(control_id)}["\'][^>]*>.*?</label>', flags=re.IGNORECASE | re.DOTALL)
+            if label_pattern.search(html):
+                continue
+        label = _guess_accessible_name(attributes)
+        replacement = f'<{tag}{attributes} aria-label="{label}">'
+        updated = html[: match.start()] + replacement + html[match.end() :]
+        return updated, {
+            'rule_id': finding['rule_id'],
+            'changed_target': finding['changed_target'],
+            'description': f'Added aria-label="{label}" to an unlabeled form control.',
+        }
+    return html, None
+
+
+FIXERS: dict[str, Callable[[str, dict[str, Any]], tuple[str, dict[str, Any] | None]]] = {
+    'html-has-lang': _fix_html_has_lang,
+    'html-lang-valid': _fix_html_lang_valid,
+    'image-alt': _fix_image_alt,
+    'input-image-alt': _fix_image_alt,
+    'button-name': _fix_button_name,
+    'label': _fix_label,
+    'select-name': _fix_label,
+}
+
+
+def apply_report_fixes(local_target: Path, report: dict[str, Any]) -> tuple[dict[str, Any], str]:
+    original = local_target.read_text(encoding='utf-8')
+    updated = original
+    applied_changes: list[dict[str, Any]] = []
+    fixes_by_finding = {item['finding_id']: item for item in report.get('fixes', [])}
+
+    for finding in report.get('findings', []):
+        helper = FIXERS.get(finding.get('rule_id', ''))
+        fix_record = fixes_by_finding.get(finding['id'])
+        if helper is None or not fix_record or not fix_record.get('auto_fix_supported'):
+            continue
+        updated_candidate, change = helper(updated, finding)
+        if change is None or updated_candidate == updated:
+            continue
+        updated = updated_candidate
+        applied_changes.append(change)
+        finding['status'] = 'fixed'
+        fix_record['status'] = 'implemented'
+
+    if updated == original:
+        report['run_meta']['notes'].append('No safe auto-fix changes were applied by the core workflow.')
+        return report, ''
+
+    local_target.write_text(updated, encoding='utf-8')
+    diff = ''.join(
+        difflib.unified_diff(
+            original.splitlines(keepends=True),
+            updated.splitlines(keepends=True),
+            fromfile=str(local_target),
+            tofile=str(local_target),
+        )
+    )
+    report['run_meta']['files_modified'] = True
+    report['run_meta']['modification_owner'] = 'core-workflow'
+    report['run_meta']['notes'].append(f'Applied {len(applied_changes)} safe auto-fix change(s) to the local target.')
+    report['summary']['fixed_findings'] = sum(1 for item in report['findings'] if item['status'] == 'fixed')
+    report['summary']['change_summary'].extend(
+        {
+            'finding_id': f'FIXED-{index + 1:03d}',
+            'rule_id': change['rule_id'],
+            'changed_target': change['changed_target'],
+            'recommended_action': change['description'],
+            'remediation_priority': 'high',
+        }
+        for index, change in enumerate(applied_changes)
+    )
+    report['run_meta']['applied_changes'] = applied_changes
+    return report, diff
+
+
+def write_diff(diff_text: str, diff_path: Path) -> None:
+    if not diff_text:
+        return
+    diff_path.parent.mkdir(parents=True, exist_ok=True)
+    diff_path.write_text(diff_text, encoding='utf-8')
+
+
+def write_snapshot(report: dict[str, Any], snapshot_path: Path) -> None:
+    snapshot_path.parent.mkdir(parents=True, exist_ok=True)
+    snapshot_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
