@@ -8,6 +8,48 @@ On each automation run, identify the highest-value missing or weak test coverage
 
 The automation must prefer writing tests over writing documentation.
 
+## Testing Lane Only
+
+This automation owns the testing lane only.
+
+It is allowed to:
+
+- develop tests
+- add fixtures, snapshots, and test helpers
+- update `TESTING-PLAN.md`
+- update testing-related documentation when needed
+- commit and push completed testing increments
+
+It must not take ownership of feature development.
+
+Feature development belongs outside this automation lane and must not be bundled into a testing iteration except for the smallest change strictly required to make a valid test possible.
+
+## Fixed Iteration Loop
+
+This automation is a repeating loop, not a one-off task.
+
+Each loop iteration must do the following in order:
+
+1. inspect the repo and locate the next automatable gap
+2. implement one meaningful increment of test development
+3. update `TESTING-PLAN.md` so the matrix matches reality
+4. run validation commands
+5. create a git commit for that increment
+6. push the result when the automation environment has remote write access
+7. continue on the next scheduled run until all automatable categories are complete
+
+The loop ends only when no automatable gap remains.
+
+## Definition Of Complete
+
+The automation is complete only when all applicable categories with `Automation Target = Yes` in `TESTING-PLAN.md` are honestly backed by real test code or valid static contract checks.
+
+A category is not complete if:
+
+- it is still documentation-only while real automated testing is feasible
+- the matrix claims coverage that is not backed by code or meaningful checks
+- the category was left weakly covered without justification
+
 ## Automation Mission
 
 The automation is responsible for all of the following:
@@ -18,6 +60,8 @@ The automation is responsible for all of the following:
 - strengthen weak tests when only shallow coverage exists
 - add fixtures, snapshots, harnesses, or support assets when needed
 - use manual testing assets only for categories that cannot be honestly automated in-repo
+- commit each completed testing increment
+- push each completed testing increment when write access is available
 
 ## Recommended Codex Automation Trigger
 
@@ -30,7 +74,7 @@ Recommended schedule:
 
 Recommended automation instruction:
 
-> Read `docs/automations/test-plan-automation.md` and `docs/automations/test-plan-review-policy.md`. Inspect the repository, identify the highest-priority missing automated test coverage, implement the next increment of test development, update the testing plan to reflect actual coverage mode, run full validation, and prepare a reviewable change set without changing protected contract semantics.
+> Read `docs/automations/test-plan-automation.md` and `docs/automations/test-plan-review-policy.md`. Inspect the repository, identify the highest-priority missing automated test coverage, implement the next increment of test development, update the testing plan to reflect actual coverage mode, run full validation, create a commit, push if remote write access is available, and prepare a reviewable change set without taking ownership of feature development.
 
 ## Success Definition
 
@@ -132,6 +176,15 @@ The automation may inspect but should not freely rewrite unless required to make
 - `skills/libro-agent-wcag/adapters/*`
 - `skills/libro-agent-wcag/agents/openai.yaml`
 
+## Out Of Scope
+
+The automation must not independently perform:
+
+- product feature development
+- refactors unrelated to testability
+- behavior changes made only to satisfy a new test without reviewer awareness
+- broad edits outside the testing lane
+
 ## Protected Files and Semantics
 
 Do not modify these unless explicitly requested by a human reviewer:
@@ -158,10 +211,29 @@ Do not change business semantics just to satisfy tests.
 5. Select the next highest-value automatable gap.
 6. Implement tests, fixtures, or helper assets for that gap.
 7. Update static/manual assets only when the gap is truly non-automatable.
-8. Update `TESTING-PLAN.md` so that `Current Status` and `Coverage Mode` match reality.
+8. Update `TESTING-PLAN.md` so that `Current Status`, `Coverage Mode`, and `Automation Target` match reality.
 9. Update `README.md` only if validation or testing guidance changed.
 10. Run validation commands.
-11. Summarize exactly what test-development work was completed.
+11. Create a commit for the completed increment.
+12. Push to the remote branch when remote write access is available.
+13. If push is not possible, leave a clearly reviewable committed change set.
+14. Summarize exactly what test-development work was completed and what gap remains next.
+
+## Commit And Push Rules
+
+Every successful automation iteration must produce a git commit.
+
+Preferred commit message format:
+
+- `test: add <category> coverage for <area>`
+- `test: strengthen <category> coverage for <area>`
+- `test: add fixtures for <area>`
+
+Push rules:
+
+- If the automation environment has remote write access, push after a successful validation pass.
+- If the environment does not have remote write access, still create the commit and leave the branch ready for push or review.
+- Do not skip the commit step just because push is unavailable.
 
 ## Prioritization Rules
 
@@ -210,6 +282,8 @@ The automation output must include:
 - test types added or strengthened
 - whether `TESTING-PLAN.md` changed
 - validation command results
+- commit hash created for the iteration
+- whether push succeeded or was blocked by environment permissions
 - remaining automatable gaps, if any
 
 ## Completion Criteria
@@ -221,6 +295,7 @@ A run is complete only if all of the following are true:
 - `TESTING-PLAN.md` matches the current repo coverage state
 - no protected semantics were changed
 - at least one meaningful increment of test development was completed unless no automatable gap remains
+- a git commit was created for the iteration
 - any remaining non-automated category is explicitly justified as `Scripted Manual`
 
 ## Refusal Conditions
@@ -231,4 +306,6 @@ Do not auto-merge or silently commit changes that:
 - remove existing coverage without replacement
 - downgrade an automatable category from automated coverage to manual-only coverage
 - claim a category is complete when only documentation was added but real test code is still feasible
+- skip the commit step on a successful iteration
 - introduce external dependencies without a strong reason and corresponding test updates
+- take ownership of feature development instead of test development
