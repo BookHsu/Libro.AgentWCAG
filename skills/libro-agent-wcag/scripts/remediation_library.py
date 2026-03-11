@@ -79,6 +79,30 @@ RULE_STRATEGIES = {
         "confidence": "high",
         "auto_fix_supported": True,
     },
+    "aria-toggle-field-name": {
+        "summary": "Ensure toggle widgets expose a discernible accessible name.",
+        "priority": "high",
+        "confidence": "high",
+        "auto_fix_supported": True,
+    },
+    "aria-tooltip-name": {
+        "summary": "Ensure tooltips expose a discernible accessible name.",
+        "priority": "medium",
+        "confidence": "high",
+        "auto_fix_supported": True,
+    },
+    "aria-progressbar-name": {
+        "summary": "Ensure progress bars expose a discernible accessible name.",
+        "priority": "medium",
+        "confidence": "high",
+        "auto_fix_supported": True,
+    },
+    "aria-meter-name": {
+        "summary": "Ensure meters expose a discernible accessible name.",
+        "priority": "medium",
+        "confidence": "high",
+        "auto_fix_supported": True,
+    },
     "link-name": {
         "summary": "Ensure each link has meaningful, discernible text.",
         "priority": "high",
@@ -108,6 +132,12 @@ RULE_STRATEGIES = {
         "priority": "medium",
         "confidence": "medium",
         "auto_fix_supported": False,
+    },
+    "document-title": {
+        "summary": "Ensure the document has a non-empty, descriptive title.",
+        "priority": "medium",
+        "confidence": "high",
+        "auto_fix_supported": True,
     },
     "meta-viewport": {
         "summary": "Allow zoom and avoid viewport settings that block reflow or text resize.",

@@ -150,6 +150,78 @@ def _fix_link_name(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, A
     return html, None
 
 
+def _fix_role_name(html: str, finding: dict[str, Any], role: str, fallback: str) -> tuple[str, dict[str, Any] | None]:
+    pattern = re.compile(rf"<([a-z0-9:-]+)\b([^>]*)\brole\s*=\s*['\"]{role}['\"]([^>]*)>(.*?)</\1>", flags=re.IGNORECASE | re.DOTALL)
+    for match in pattern.finditer(html):
+        attributes = f'{match.group(2)}{match.group(3)}'
+        inner_html = match.group(4)
+        if re.search(r'\baria-label\s*=|\baria-labelledby\s*=|\btitle\s*=', attributes, flags=re.IGNORECASE):
+            continue
+        visible_text = re.sub(r'<[^>]+>', '', inner_html).strip()
+        if visible_text and re.search(r'[A-Za-z0-9]', visible_text):
+            continue
+        label = _guess_accessible_name(attributes, fallback=fallback)
+        replacement = f'<{match.group(1)}{match.group(2)} role="{role}"{match.group(3)} aria-label="{label}">{inner_html}</{match.group(1)}>'
+        updated = html[: match.start()] + replacement + html[match.end() :]
+        return updated, {
+            'rule_id': finding['rule_id'],
+            'changed_target': finding['changed_target'],
+            'description': f'Added aria-label="{label}" to a {role} widget missing an accessible name.',
+        }
+    return html, None
+
+
+def _fix_aria_toggle_field_name(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    return _fix_role_name(html, finding, 'switch', 'Toggle')
+
+
+def _fix_aria_tooltip_name(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    return _fix_role_name(html, finding, 'tooltip', 'Tooltip')
+
+
+def _fix_aria_progressbar_name(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    return _fix_role_name(html, finding, 'progressbar', 'Progress')
+
+
+def _fix_aria_meter_name(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    return _fix_role_name(html, finding, 'meter', 'Meter')
+
+
+def _fix_document_title(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    title_match = re.search(r'<title\b[^>]*>(.*?)</title>', html, flags=re.IGNORECASE | re.DOTALL)
+    replacement_text = 'Document'
+    h1_match = re.search(r'<h1\b[^>]*>(.*?)</h1>', html, flags=re.IGNORECASE | re.DOTALL)
+    if h1_match:
+        candidate = re.sub(r'<[^>]+>', '', h1_match.group(1)).strip()
+        if candidate:
+            replacement_text = candidate
+    if title_match:
+        current = re.sub(r'<[^>]+>', '', title_match.group(1)).strip()
+        if current:
+            return html, None
+        replacement = f'<title>{replacement_text}</title>'
+        updated, changed = replace_first(re.escape(title_match.group(0)), replacement, html)
+        if not changed:
+            return html, None
+        return updated, {
+            'rule_id': finding['rule_id'],
+            'changed_target': finding['changed_target'],
+            'description': f'Set a non-empty document title to "{replacement_text}".',
+        }
+    head_match = re.search(r'<head\b[^>]*>', html, flags=re.IGNORECASE)
+    if not head_match:
+        return html, None
+    insertion = f'{head_match.group(0)}\n  <title>{replacement_text}</title>'
+    updated, changed = replace_first(re.escape(head_match.group(0)), insertion, html)
+    if not changed:
+        return html, None
+    return updated, {
+        'rule_id': finding['rule_id'],
+        'changed_target': finding['changed_target'],
+        'description': f'Inserted a document title "{replacement_text}".',
+    }
+
+
 def _fix_label(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
     pattern = re.compile(r'<(input|select|textarea)\b(?![^>]*\b(?:aria-label|aria-labelledby)\s*=)([^>]*)>', flags=re.IGNORECASE)
     for match in pattern.finditer(html):
@@ -274,6 +346,10 @@ FIXERS: dict[str, Callable[[str, dict[str, Any]], tuple[str, dict[str, Any] | No
     'input-image-alt': _fix_input_image_alt,
     'area-alt': _fix_area_alt,
     'button-name': _fix_button_name,
+    'aria-toggle-field-name': _fix_aria_toggle_field_name,
+    'aria-tooltip-name': _fix_aria_tooltip_name,
+    'aria-progressbar-name': _fix_aria_progressbar_name,
+    'aria-meter-name': _fix_aria_meter_name,
     'link-name': _fix_link_name,
     'label': _fix_label,
     'select-name': _fix_label,
@@ -281,6 +357,7 @@ FIXERS: dict[str, Callable[[str, dict[str, Any]], tuple[str, dict[str, Any] | No
     'meta-viewport': _fix_meta_viewport,
     'html-xml-lang-mismatch': _fix_html_xml_lang_mismatch,
     'valid-lang': _fix_valid_lang,
+    'document-title': _fix_document_title,
 }
 
 

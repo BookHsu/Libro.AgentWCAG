@@ -6,11 +6,11 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 - [ ] Add safe auto-fix support for `aria-valid-attr-value`
 - [ ] Add safe auto-fix support for `aria-required-attr`
-- [ ] Add safe auto-fix support for `aria-toggle-field-name`
-- [ ] Add safe auto-fix support for `aria-tooltip-name`
-- [ ] Add safe auto-fix support for `aria-progressbar-name`
-- [ ] Add safe auto-fix support for `aria-meter-name`
-- [ ] Add safe auto-fix support for `document-title`
+- [x] Add safe auto-fix support for `aria-toggle-field-name`
+- [x] Add safe auto-fix support for `aria-tooltip-name`
+- [x] Add safe auto-fix support for `aria-progressbar-name`
+- [x] Add safe auto-fix support for `aria-meter-name`
+- [x] Add safe auto-fix support for `document-title`
 - [ ] Add safe auto-fix support for `list`
 - [ ] Add safe auto-fix support for `listitem`
 - [ ] Add safe auto-fix support for `table-fake-caption`

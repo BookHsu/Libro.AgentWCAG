@@ -117,7 +117,7 @@ The shared contract also distinguishes task intent:
 Current implementation note:
 
 - `apply-fixes` is an execution intent exposed through the contract and report output.
-- For supported local HTML targets, the core Python workflow can now apply a safe first-pass remediation pass for language attributes, alt text gaps, simple control naming, meta refresh removal, and viewport normalization, then emit a diff artifact. Remaining or unsupported changes still belong to the calling agent or adapter.
+- For supported local HTML targets, the core Python workflow can now apply a safe first-pass remediation pass for language attributes, alt text gaps, simple control naming, ARIA naming widgets, document titles, meta refresh removal, and viewport normalization, then emit a diff artifact. Remaining or unsupported changes still belong to the calling agent or adapter.
 - The core workflow still reports canonical fix metadata, and now includes a reusable remediation strategy library plus safe local HTML rewrite helpers for supported rules.
 
 Current adapter coverage:

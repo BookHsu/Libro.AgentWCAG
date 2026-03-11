@@ -97,6 +97,41 @@ class AutoFixTests(unittest.TestCase):
             self.assertIn('http-equiv="refresh"', diff_text)
             self.assertGreaterEqual(updated_report['summary']['remediation_lifecycle']['implemented'], 5)
 
+    def test_apply_report_fixes_supports_document_title_and_aria_name_rules(self) -> None:
+        fixture = Path(__file__).parent / 'fixtures' / 'aria-title.html'
+        with tempfile.TemporaryDirectory() as tmp:
+            working = Path(tmp) / fixture.name
+            working.write_text(fixture.read_text(encoding='utf-8'), encoding='utf-8')
+            contract = resolve_contract({'target': str(working), 'execution_mode': 'apply-fixes'})
+            axe_data = {
+                'violations': [
+                    {'id': 'aria-toggle-field-name', 'impact': 'serious', 'description': 'toggle needs name', 'nodes': [{'target': ['.switch-icon']}]},
+                    {'id': 'aria-tooltip-name', 'impact': 'moderate', 'description': 'tooltip needs name', 'nodes': [{'target': ['.tooltip-shell']}]},
+                    {'id': 'aria-progressbar-name', 'impact': 'moderate', 'description': 'progressbar needs name', 'nodes': [{'target': ['.progress-shell']}]},
+                    {'id': 'aria-meter-name', 'impact': 'moderate', 'description': 'meter needs name', 'nodes': [{'target': ['.meter-shell']}]},
+                ]
+            }
+            lighthouse_data = {
+                'audits': {
+                    'document-title': {
+                        'score': 0,
+                        'scoreDisplayMode': 'binary',
+                        'title': 'Document has a title',
+                        'details': {'items': [{'node': {'selector': 'title'}}]},
+                    }
+                }
+            }
+            report = normalize_report(contract, axe_data, lighthouse_data, None, None)
+            updated_report, diff_text = apply_report_fixes(working, report)
+            updated_html = working.read_text(encoding='utf-8')
+            self.assertIn('<title>Dashboard</title>', updated_html)
+            self.assertIn('role="switch" aria-label="Toggle"', updated_html)
+            self.assertIn('role="tooltip" aria-label="Tooltip"', updated_html)
+            self.assertIn('role="progressbar" aria-label="Progress"', updated_html)
+            self.assertIn('role="meter" aria-label="Meter"', updated_html)
+            self.assertIn('<title>Dashboard</title>', diff_text)
+            self.assertGreaterEqual(updated_report['summary']['remediation_lifecycle']['implemented'], 5)
+
     def test_apply_report_fixes_is_idempotent(self) -> None:
         fixture = Path(__file__).parent / 'fixtures' / 'empty-link-viewport.html'
         with tempfile.TemporaryDirectory() as tmp:
