@@ -34,6 +34,15 @@ def adapter_name(agent: str) -> str:
     return "openai-codex" if agent == "codex" else agent
 
 
+def invoke_example(agent: str) -> str:
+    if agent == "codex":
+        return "Use $libro-agent-wcag to audit or remediate a web page using a selected WCAG version and level."
+    return (
+        "Load the adapter prompt from "
+        f"adapters/{adapter_name(agent)}/prompt-template.md and inject the shared contract into your agent workflow."
+    )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Install libro-agent-wcag for a target AI agent.")
     parser.add_argument("--agent", required=True, choices=ALL_AGENTS)
@@ -49,6 +58,8 @@ def write_manifest(destination: Path, agent: str) -> None:
         "skill_entrypoint": "SKILL.md",
         "adapter_prompt": f"adapters/{adapter_name(agent)}/prompt-template.md",
         "notes": "For non-Codex agents, wire the adapter prompt into your agent's prompt or skill system.",
+        "invoke_example": invoke_example(agent),
+        "doctor_command": f"python scripts/doctor-agent.py --agent {agent}",
     }
     (destination / "install-manifest.json").write_text(
         json.dumps(manifest, indent=2, ensure_ascii=False),
