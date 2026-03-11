@@ -149,3 +149,8 @@ python scripts/validate_skill.py skills/libro-agent-wcag
 ## Testing Strategy
 
 - See `TESTING-PLAN.md` for the applicable test matrix, repo mapping, and current coverage status.
+
+## Codex Automation
+
+- Use `docs/automations/test-plan-automation.md` as the execution spec for scheduled Codex maintenance of the testing plan and coverage assets.
+- Use `docs/automations/test-plan-review-policy.md` as the review policy before accepting automation-generated changes.
