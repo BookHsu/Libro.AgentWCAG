@@ -152,5 +152,5 @@ python scripts/validate_skill.py skills/libro-agent-wcag
 
 ## Codex Automation
 
-- Use `docs/automations/test-plan-automation.md` as the execution spec for scheduled Codex maintenance of the testing plan and coverage assets.
+- Use `docs/automations/test-plan-automation.md` as the execution spec for scheduled Codex test-development automation. This lane focuses only on test development, testing-plan updates, commits, and pushes.
 - Use `docs/automations/test-plan-review-policy.md` as the review policy before accepting automation-generated changes.

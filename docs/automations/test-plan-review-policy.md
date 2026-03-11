@@ -13,10 +13,12 @@ Check the following in order:
 1. Scope control
 - Changes stay within allowed automation scope or have a clear justification.
 - Protected files and semantics were not modified unexpectedly.
+- The automation stayed inside the testing lane.
 
 2. Test-development progress
 - The run added or strengthened actual test code for an automatable category, unless no automatable gap remained.
 - The automation did not stop at documentation-only changes when real tests were still feasible.
+- The automation did not take ownership of product feature development.
 
 3. Matrix integrity
 - `TESTING-PLAN.md` reflects the actual repo state.
@@ -37,6 +39,7 @@ Check the following in order:
 - No contract semantics changed just to satisfy tests.
 - No hidden dependency or environment assumption was introduced.
 - No unrelated repo areas were rewritten.
+- No feature-development change was bundled into the testing iteration beyond the minimum test-enabling edit.
 
 ## When To Reject Or Send Back
 
@@ -48,6 +51,7 @@ Reject or request revision if any of these occur:
 - automation changed `LICENSE`, skill identity, adapter naming, or canonical output semantics
 - new files were added without updating the file-to-coverage relationship
 - the automation summary does not explain remaining automatable gaps or why a manual fallback is necessary
+- the automation took ownership of feature development instead of staying in the testing lane
 
 ## Preferred Change Pattern
 
@@ -67,6 +71,7 @@ Escalate to human review before acceptance when:
 - the automation proposes deleting tests or coverage assets
 - the automation touches adapter semantics or installation destinations
 - the automation concludes a category must remain manual-only for a non-obvious reason
+- the automation needs a non-trivial feature change to make a test possible
 
 ## Review Queue Summary Template
 
