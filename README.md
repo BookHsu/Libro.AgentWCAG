@@ -11,6 +11,7 @@ Libro.AgentWCAG is a cross-agent WCAG web accessibility skill repository for cre
 - `skills/libro-agent-wcag/adapters/copilot`: v2 adapter for Copilot
 - `scripts/install-agent.py`: repo-native installer for supported agents
 - `scripts/uninstall-agent.py`: repo-native uninstaller for supported agents
+- `scripts/doctor-agent.py`: installation health check for supported agents
 
 ## Install
 
@@ -53,7 +54,14 @@ sh ./scripts/install-agent.sh all
 Use `--dest <path>` to override, and `--force` to replace an existing installation.
 When `--agent all` is combined with `--dest`, the installer creates `codex/`, `claude/`, `gemini/`, and `copilot/` subdirectories under that base path.
 
-After installation, check `install-manifest.json` inside the installed folder. It points to the correct adapter prompt for the selected agent.
+After installation, check `install-manifest.json` inside the installed folder. It points to the correct adapter prompt for the selected agent and includes a usage example.
+
+### Verify installation
+
+```powershell
+python .\scripts\doctor-agent.py --agent codex
+python .\scripts\doctor-agent.py --agent all
+```
 
 ### Uninstall
 
@@ -81,6 +89,13 @@ Adapters can translate the same core contract into each platform's prompt or too
 - `claude`: `adapters/claude/prompt-template.md`
 - `gemini`: `adapters/gemini/prompt-template.md`
 - `copilot`: `adapters/copilot/prompt-template.md`
+
+### First-use guidance
+
+- `codex`: invoke `$libro-agent-wcag` directly after installation.
+- `claude`: load the installed `adapters/claude/prompt-template.md` into your Claude project/system prompt.
+- `gemini`: load the installed `adapters/gemini/prompt-template.md` into your Gemini custom instruction or agent wrapper.
+- `copilot`: load the installed `adapters/copilot/prompt-template.md` into your Copilot instruction or prompt file.
 
 The shared contract supports three execution modes:
 

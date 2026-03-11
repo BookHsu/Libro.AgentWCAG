@@ -33,6 +33,7 @@ class InstallAgentTests(unittest.TestCase):
             manifest = json.loads((destination / 'install-manifest.json').read_text(encoding='utf-8'))
             self.assertEqual(manifest['agent'], 'claude')
             self.assertEqual(manifest['adapter_prompt'], 'adapters/claude/prompt-template.md')
+            self.assertIn('doctor-agent.py', manifest['doctor_command'])
 
     def test_installer_can_install_all_agents(self) -> None:
         repo_root = Path(__file__).resolve().parents[4]
@@ -75,6 +76,43 @@ class InstallAgentTests(unittest.TestCase):
                 check=False,
             )
             self.assertNotEqual(completed.returncode, 0)
+
+    def test_doctor_reports_valid_installation(self) -> None:
+        repo_root = Path(__file__).resolve().parents[4]
+        with tempfile.TemporaryDirectory() as tmp:
+            destination = Path(tmp) / 'gemini-skill'
+            install = subprocess.run(
+                [
+                    sys.executable,
+                    'scripts/install-agent.py',
+                    '--agent',
+                    'gemini',
+                    '--dest',
+                    str(destination),
+                ],
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(install.returncode, 0, install.stdout + install.stderr)
+            doctor = subprocess.run(
+                [
+                    sys.executable,
+                    'scripts/doctor-agent.py',
+                    '--agent',
+                    'gemini',
+                    '--dest',
+                    str(destination),
+                ],
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(doctor.returncode, 0, doctor.stdout + doctor.stderr)
+            payload = json.loads(doctor.stdout)
+            self.assertTrue(payload['ok'])
 
     def test_uninstall_removes_destination(self) -> None:
         repo_root = Path(__file__).resolve().parents[4]
