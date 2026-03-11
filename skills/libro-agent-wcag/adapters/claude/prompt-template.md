@@ -3,7 +3,7 @@
 Use this wrapper prompt while keeping core semantics unchanged:
 
 ```text
-Invoke wcag-web-skill core contract:
+Invoke libro-agent-wcag core contract:
 <contract>
 {
   "task_mode": "<create|modify>",

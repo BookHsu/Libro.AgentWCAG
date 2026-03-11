@@ -1,9 +1,9 @@
 ---
-name: wcag-web-skill
+name: libro-agent-wcag
 description: Vendor-neutral WCAG workflow for creating new web pages or remediating existing pages with selectable WCAG model (2.0/2.1/2.2 and A/AA/AAA). Use when any AI agent must perform consistent accessibility audit/remediation, produce aligned Markdown+JSON outputs, and attach W3C official citations.
 ---
 
-# WCAG Web Skill
+# Libro.AgentWCAG
 
 Use this skill as a cross-agent accessibility contract. Keep business logic in the core spec and only adapt prompt syntax per platform adapter.
 

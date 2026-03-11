@@ -3,7 +3,7 @@
 Use this wrapper prompt to invoke the core WCAG workflow:
 
 ```text
-Use $wcag-web-skill with the following contract:
+Use $libro-agent-wcag with the following contract:
 {
   "task_mode": "<create|modify>",
   "execution_mode": "<audit-only|suggest-only|apply-fixes>",
