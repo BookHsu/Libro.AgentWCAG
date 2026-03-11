@@ -2,16 +2,25 @@
 
 from __future__ import annotations
 
+import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 SCRIPT_ROOT = Path(__file__).resolve().parents[1]
 if str(SCRIPT_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPT_ROOT))
 
-from run_accessibility_audit import DEFAULT_TIMEOUT_SECONDS, _resolve_target_for_scanners, parse_args
+from run_accessibility_audit import (
+    DEFAULT_TIMEOUT_SECONDS,
+    _resolve_target_for_scanners,
+    _run_command,
+    _try_run_axe,
+    _try_run_lighthouse,
+    parse_args,
+)
 
 
 class RunnerTests(unittest.TestCase):
@@ -49,6 +58,41 @@ class RunnerTests(unittest.TestCase):
         finally:
             sys.argv = original
         self.assertEqual(args.timeout, DEFAULT_TIMEOUT_SECONDS)
+
+    @patch("run_accessibility_audit.subprocess.run")
+    def test_run_command_returns_stdout_on_success(self, mock_run) -> None:
+        mock_run.return_value = type("Result", (), {"returncode": 0, "stdout": "ok", "stderr": ""})()
+        ok, result = _run_command(["npx", "tool"], timeout_seconds=30)
+        self.assertTrue(ok)
+        self.assertEqual(result, "ok")
+
+    @patch("run_accessibility_audit.subprocess.run")
+    def test_run_command_returns_stderr_on_failure(self, mock_run) -> None:
+        mock_run.return_value = type("Result", (), {"returncode": 1, "stdout": "out", "stderr": "boom"})()
+        ok, result = _run_command(["npx", "tool"], timeout_seconds=30)
+        self.assertFalse(ok)
+        self.assertEqual(result, "boom")
+
+    @patch("run_accessibility_audit.subprocess.run")
+    def test_run_command_returns_timeout_message(self, mock_run) -> None:
+        mock_run.side_effect = subprocess.TimeoutExpired(cmd=["npx", "tool"], timeout=7)
+        ok, result = _run_command(["npx", "tool"], timeout_seconds=7)
+        self.assertFalse(ok)
+        self.assertEqual(result, "command timed out after 7 seconds")
+
+    def test_try_run_axe_returns_error_when_output_missing(self) -> None:
+        output_dir = Path(__file__).parent / "fixtures"
+        with patch("run_accessibility_audit._run_command", return_value=(True, "")):
+            payload, err = _try_run_axe("https://example.com", output_dir, timeout_seconds=15)
+        self.assertIsNone(payload)
+        self.assertEqual(err, "axe did not generate output json")
+
+    def test_try_run_lighthouse_returns_error_when_output_missing(self) -> None:
+        output_dir = Path(__file__).parent / "fixtures"
+        with patch("run_accessibility_audit._run_command", return_value=(True, "")):
+            payload, err = _try_run_lighthouse("https://example.com", output_dir, timeout_seconds=15)
+        self.assertIsNone(payload)
+        self.assertEqual(err, "lighthouse did not generate output json")
 
 
 if __name__ == "__main__":
