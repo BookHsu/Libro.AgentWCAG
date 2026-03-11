@@ -332,7 +332,7 @@ class WorkflowTests(unittest.TestCase):
             completed = subprocess.run(
                 [
                     sys.executable,
-                    "skills/wcag-web-skill/scripts/normalize_report.py",
+                    "skills/libro-agent-wcag/scripts/normalize_report.py",
                     "--target",
                     "https://example.com",
                     "--execution-mode",

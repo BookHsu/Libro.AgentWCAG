@@ -3,7 +3,7 @@
 Use this wrapper prompt to keep Copilot aligned with the core WCAG contract:
 
 ```text
-Use the wcag-web-skill shared contract without renaming fields.
+Use the libro-agent-wcag shared contract without renaming fields.
 
 Contract:
 {

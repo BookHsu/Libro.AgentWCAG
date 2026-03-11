@@ -3,7 +3,7 @@
 Use this wrapper prompt to keep Gemini aligned with the core WCAG contract:
 
 ```text
-Follow the wcag-web-skill core contract exactly.
+Follow the libro-agent-wcag core contract exactly.
 
 Input contract:
 {
