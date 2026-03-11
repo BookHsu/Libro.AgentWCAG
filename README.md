@@ -145,3 +145,7 @@ python scripts/validate_skill.py skills/libro-agent-wcag
 
 - Actual file-rewriting auto-remediation engine for `apply-fixes`
 - Release packaging extras such as demos, templates, and issue forms
+
+## Testing Strategy
+
+- See `TESTING-PLAN.md` for the applicable test matrix, repo mapping, and current coverage status.
