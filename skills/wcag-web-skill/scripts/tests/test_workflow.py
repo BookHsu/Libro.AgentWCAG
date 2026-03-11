@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -15,6 +16,7 @@ if str(SCRIPT_ROOT) not in sys.path:
 from wcag_workflow import (
     AXE_RULE_TO_SC,
     LIGHTHOUSE_RULE_TO_SC,
+    _escape_pipe,
     build_citation_url,
     normalize_report,
     resolve_contract,
@@ -70,10 +72,12 @@ class WorkflowTests(unittest.TestCase):
         }
         report = normalize_report(contract, axe_data, lighthouse_data)
         markdown = to_markdown_table(report)
-        self.assertIn("Execution mode: suggest-only", markdown)
-        self.assertIn("Files modified: no", markdown)
+        self.assertIn("執行模式: suggest-only", markdown)
+        self.assertIn("核心流程是否已修改檔案: 否", markdown)
+        self.assertIn("實際修改執行者: agent-or-adapter", markdown)
         for finding in report["findings"]:
             self.assertIn(finding["id"], markdown)
+        self.assertIn("問題編號", markdown)
 
     def test_citation_presence_for_major_finding(self) -> None:
         contract = resolve_contract({"target": "https://example.com"})
@@ -162,8 +166,195 @@ class WorkflowTests(unittest.TestCase):
         report = normalize_report(contract, {"violations": []}, {"audits": {}}, None, None)
         markdown = to_markdown_table(report)
         self.assertEqual(report["run_meta"]["execution_mode"], "apply-fixes")
-        self.assertIn("Execution mode: apply-fixes", markdown)
-        self.assertIn("Files modified: yes", markdown)
+        self.assertFalse(report["run_meta"]["files_modified"])
+        self.assertIn("執行模式: apply-fixes", markdown)
+        self.assertIn("核心流程是否已修改檔案: 否", markdown)
+
+    def test_dedupes_same_rule_and_target_across_sources(self) -> None:
+        contract = resolve_contract({"target": "https://example.com", "output_language": "en"})
+        axe_data = {
+            "violations": [
+                {
+                    "id": "image-alt",
+                    "impact": "serious",
+                    "description": "Images must have alternate text",
+                    "nodes": [{"target": ["img.hero"]}],
+                }
+            ]
+        }
+        lighthouse_data = {
+            "audits": {
+                "image-alt": {
+                    "score": 0,
+                    "scoreDisplayMode": "binary",
+                    "title": "Image elements have [alt] attributes",
+                    "details": {"items": [{"node": {"selector": "img.hero"}}]},
+                }
+            }
+        }
+        report = normalize_report(contract, axe_data, lighthouse_data)
+        self.assertEqual(len(report["findings"]), 1)
+        self.assertEqual(report["findings"][0]["source"], "axe+lighthouse")
+        self.assertEqual(report["findings"][0]["sources"], ["axe", "lighthouse"])
+
+    def test_multiple_sc_generate_multiple_citations(self) -> None:
+        contract = resolve_contract({"target": "https://example.com"})
+        axe_data = {
+            "violations": [
+                {
+                    "id": "label",
+                    "impact": "serious",
+                    "description": "Form elements need labels",
+                    "nodes": [{"target": ["input#email"]}],
+                }
+            ]
+        }
+        report = normalize_report(contract, axe_data, {"audits": {}}, None, None)
+        finding_id = report["findings"][0]["id"]
+        citations = [item for item in report["citations"] if item["finding_id"] == finding_id]
+        self.assertEqual(len(citations), 2)
+        self.assertEqual({item["sc"] for item in citations}, {"1.3.1", "3.3.2"})
+
+    def test_fix_metadata_includes_strategy_fields(self) -> None:
+        contract = resolve_contract({"target": "https://example.com"})
+        axe_data = {
+            "violations": [
+                {
+                    "id": "image-alt",
+                    "impact": "serious",
+                    "description": "Images must have alternate text",
+                    "nodes": [{"target": ["img.hero"]}],
+                }
+            ]
+        }
+        report = normalize_report(contract, axe_data, {"audits": {}}, None, None)
+        fix = report["fixes"][0]
+        self.assertIn("remediation_priority", fix)
+        self.assertIn("confidence", fix)
+        self.assertIn("auto_fix_supported", fix)
+        self.assertIn("framework_hints", fix)
+        self.assertTrue(fix["auto_fix_supported"])
+
+    def test_summary_includes_change_summary(self) -> None:
+        contract = resolve_contract({"target": "https://example.com"})
+        report = normalize_report(contract, {"violations": []}, {"audits": {}}, None, None)
+        self.assertIn("change_summary", report["summary"])
+
+    def test_findings_include_confidence(self) -> None:
+        contract = resolve_contract({"target": "https://example.com"})
+        axe_data = {
+            "violations": [
+                {
+                    "id": "button-name",
+                    "impact": "serious",
+                    "description": "Buttons must have discernible text",
+                    "nodes": [{"target": ["button.icon"]}],
+                }
+            ]
+        }
+        report = normalize_report(contract, axe_data, {"audits": {}}, None, None)
+        self.assertEqual(report["findings"][0]["confidence"], "high")
+
+    def test_invalid_execution_mode_raises(self) -> None:
+        with self.assertRaises(ValueError):
+            resolve_contract({"target": "https://example.com", "execution_mode": "rewrite-all"})
+
+    def test_escape_pipe_handles_none(self) -> None:
+        self.assertEqual(_escape_pipe(None), "None")
+
+    def test_empty_nodes_default_changed_target(self) -> None:
+        contract = resolve_contract({"target": "https://example.com"})
+        axe_data = {
+            "violations": [
+                {
+                    "id": "image-alt",
+                    "impact": "serious",
+                    "description": "Images must have alternate text",
+                    "nodes": [],
+                }
+            ]
+        }
+        report = normalize_report(contract, axe_data, {"audits": {}}, None, None)
+        self.assertEqual(report["findings"][0]["changed_target"], "unknown")
+
+    def test_output_language_english_changes_markdown_labels(self) -> None:
+        contract = resolve_contract({"target": "https://example.com", "output_language": "en-US"})
+        report = normalize_report(contract, {"violations": []}, {"audits": {}}, None, None)
+        markdown = to_markdown_table(report)
+        self.assertIn("Execution mode: suggest-only", markdown)
+        self.assertIn("Files modified by core workflow: no", markdown)
+        self.assertIn("Modification executed by: agent-or-adapter", markdown)
+        self.assertIn("Issue ID", markdown)
+
+    def test_wcag_22_manual_review_findings_are_added(self) -> None:
+        contract = resolve_contract({"target": "https://example.com", "wcag_version": "2.2"})
+        report = normalize_report(contract, {"violations": []}, {"audits": {}}, None, None)
+        manual_sc = {item["sc"][0] for item in report["findings"] if item["source"] == "manual" and item["sc"]}
+        self.assertIn("2.4.11", manual_sc)
+        self.assertIn("3.3.9", manual_sc)
+
+    def test_lighthouse_severity_uses_score_bands(self) -> None:
+        contract = resolve_contract({"target": "https://example.com"})
+        lighthouse_data = {
+            "audits": {
+                "image-alt": {
+                    "score": 0.9,
+                    "scoreDisplayMode": "binary",
+                    "title": "Images have alt text",
+                    "details": {"items": [{"node": {"selector": "img.hero"}}]},
+                }
+            }
+        }
+        report = normalize_report(contract, {"violations": []}, lighthouse_data, None, None)
+        self.assertEqual(report["findings"][0]["severity"], "minor")
+
+    def test_normalize_report_cli_generates_outputs(self) -> None:
+        repo_root = Path(__file__).resolve().parents[4]
+        with tempfile.TemporaryDirectory() as tmp:
+            raw_json = Path(tmp) / "axe.json"
+            output_json = Path(tmp) / "report.json"
+            output_md = Path(tmp) / "report.md"
+            raw_json.write_text(
+                json.dumps(
+                    {
+                        "violations": [
+                            {
+                                "id": "image-alt",
+                                "impact": "serious",
+                                "description": "Images must have alternate text",
+                                "nodes": [{"target": ["img.hero"]}],
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "skills/wcag-web-skill/scripts/normalize_report.py",
+                    "--target",
+                    "https://example.com",
+                    "--execution-mode",
+                    "audit-only",
+                    "--output-language",
+                    "en",
+                    "--axe-json",
+                    str(raw_json),
+                    "--output-json",
+                    str(output_json),
+                    "--output-md",
+                    str(output_md),
+                ],
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+            payload = json.loads(output_json.read_text(encoding="utf-8"))
+            self.assertEqual(payload["run_meta"]["execution_mode"], "audit-only")
+            self.assertTrue(output_md.exists())
 
 
 if __name__ == "__main__":

@@ -11,7 +11,7 @@ SCRIPT_ROOT = Path(__file__).resolve().parents[1]
 if str(SCRIPT_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPT_ROOT))
 
-from run_accessibility_audit import _resolve_target_for_scanners
+from run_accessibility_audit import DEFAULT_TIMEOUT_SECONDS, _resolve_target_for_scanners, parse_args
 
 
 class RunnerTests(unittest.TestCase):
@@ -40,6 +40,15 @@ class RunnerTests(unittest.TestCase):
     def test_missing_local_file_is_rejected(self) -> None:
         with self.assertRaises(ValueError):
             _resolve_target_for_scanners("missing-file.html")
+
+    def test_cli_has_timeout_default(self) -> None:
+        original = sys.argv
+        sys.argv = ["run_accessibility_audit.py", "--target", "https://example.com"]
+        try:
+            args = parse_args()
+        finally:
+            sys.argv = original
+        self.assertEqual(args.timeout, DEFAULT_TIMEOUT_SECONDS)
 
 
 if __name__ == "__main__":

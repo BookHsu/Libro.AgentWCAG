@@ -38,11 +38,15 @@ Treat local file paths as first-class inputs. The audit runner converts existing
 4. Respect `execution_mode`:
    - `audit-only`: find issues only
    - `suggest-only`: find issues and propose remediation steps without editing
-   - `apply-fixes`: find issues and apply remediations when the agent can safely modify the target
+   - `apply-fixes`: allow the agent or adapter to apply remediations when it can safely modify the target
 5. Produce the two required outputs:
    - Markdown comparison table
    - JSON structured report
 6. Attach W3C official citations for all major findings/fixes.
+
+Interpret `task_mode` as follows:
+- `create`: work on a draft, generated page, or template before release. If no concrete page exists yet, fall back to guidance and manual review rather than pretending a scan was executed.
+- `modify`: audit an existing target first, then propose or apply changes based on `execution_mode`.
 
 ## Output Contract
 
@@ -57,6 +61,7 @@ JSON top-level keys:
 `run_meta`, `target`, `standard`, `findings[]`, `fixes[]`, `citations[]`, `summary`
 
 Report the chosen `execution_mode` in both JSON and Markdown summary text.
+Treat `apply-fixes` as an execution intent. The core scripts emit the intent and report structure; the actual file modification step is performed by the calling agent or adapter.
 
 Use `scripts/normalize_report.py` to normalize mixed tool outputs into the contract.
 
@@ -73,3 +78,10 @@ Use `scripts/normalize_report.py` to normalize mixed tool outputs into the contr
 - Load `references/core-spec.md` for strict field definitions and process details.
 - Load `references/wcag-citations.md` for official W3C citation mapping.
 - Load `references/adapter-mapping.md` for cross-agent translation rules.
+- Load `references/framework-patterns-react.md` when the target is React or Next.js JSX.
+- Load `references/framework-patterns-vue.md` when the target is Vue or Nuxt.
+- Load `references/framework-patterns-nextjs.md` when the target is specifically Next.js routing/layout output.
+
+## Remediation Support
+
+Use `scripts/remediation_library.py` as the shared strategy library for common fixes. It provides remediation summary text, priority, confidence, auto-fix support flags, and framework hints for the most common accessibility rules.
