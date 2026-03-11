@@ -9,18 +9,60 @@ Libro.AgentWCAG is a cross-agent WCAG web accessibility skill repository for cre
 - `skills/libro-agent-wcag/adapters/claude`: v1 adapter for Claude
 - `skills/libro-agent-wcag/adapters/gemini`: v2 adapter for Gemini
 - `skills/libro-agent-wcag/adapters/copilot`: v2 adapter for Copilot
+- `scripts/install-agent.py`: repo-native installer for supported agents
+- `scripts/uninstall-agent.py`: repo-native uninstaller for supported agents
 
-## Install into Codex
+## Install
 
-After publishing this repository to GitHub, install the skill from the repo path:
+Recommended installation uses the repo-native installer instead of a Codex-internal helper path.
+
+### Install a single agent bundle
 
 ```powershell
-python ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py --repo <owner>/<repo> --path skills/libro-agent-wcag
+python .\scripts\install-agent.py --agent codex
+python .\scripts\install-agent.py --agent claude
+python .\scripts\install-agent.py --agent gemini
+python .\scripts\install-agent.py --agent copilot
 ```
 
-Restart Codex after installation.
+### Install all supported agent bundles at once
 
-## Use in other AI agents
+```powershell
+python .\scripts\install-agent.py --agent all
+```
+
+### Wrapper scripts
+
+```powershell
+pwsh -File .\scripts\install-agent.ps1 -Agent codex
+pwsh -File .\scripts\install-agent.ps1 -Agent all
+```
+
+```sh
+sh ./scripts/install-agent.sh codex
+sh ./scripts/install-agent.sh all
+```
+
+### Default destinations
+
+- `codex`: `~/.codex/skills/libro-agent-wcag`
+- `claude`: `~/.claude/skills/libro-agent-wcag`
+- `gemini`: `~/.gemini/skills/libro-agent-wcag`
+- `copilot`: `~/.copilot/skills/libro-agent-wcag`
+
+Use `--dest <path>` to override, and `--force` to replace an existing installation.
+When `--agent all` is combined with `--dest`, the installer creates `codex/`, `claude/`, `gemini/`, and `copilot/` subdirectories under that base path.
+
+After installation, check `install-manifest.json` inside the installed folder. It points to the correct adapter prompt for the selected agent.
+
+### Uninstall
+
+```powershell
+python .\scripts\uninstall-agent.py --agent codex
+python .\scripts\uninstall-agent.py --agent all
+```
+
+## Use in AI agents
 
 The platform-neutral contract lives here:
 
@@ -32,6 +74,13 @@ The platform-neutral contract lives here:
 - `skills/libro-agent-wcag/references/framework-patterns-nextjs.md`
 
 Adapters can translate the same core contract into each platform's prompt or tool syntax.
+
+### Agent-specific entrypoints
+
+- `codex`: `adapters/openai-codex/prompt-template.md`
+- `claude`: `adapters/claude/prompt-template.md`
+- `gemini`: `adapters/gemini/prompt-template.md`
+- `copilot`: `adapters/copilot/prompt-template.md`
 
 The shared contract supports three execution modes:
 
