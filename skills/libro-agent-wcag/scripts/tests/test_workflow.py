@@ -264,6 +264,12 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("diff_summary", report["summary"])
         self.assertIn("remediation_lifecycle", report["summary"])
         self.assertIn("diff_artifacts", report["run_meta"])
+        self.assertIn("risk_level", finding)
+        self.assertIn("downgrade_reason", finding)
+        self.assertIn("risk_level", fix)
+        self.assertIn("downgrade_reason", fix)
+        self.assertIn("fix_blockers", fix)
+        self.assertIn("fix_blockers", report["summary"])
 
     def test_manual_review_items_are_flagged_in_contract(self) -> None:
         contract = resolve_contract({"target": "https://example.com", "wcag_version": "2.2"})
@@ -340,6 +346,32 @@ class WorkflowTests(unittest.TestCase):
         }
         report = normalize_report(contract, {"violations": []}, lighthouse_data, None, None)
         self.assertEqual(report["findings"][0]["severity"], "minor")
+
+
+    def test_apply_fixes_mode_records_downgrade_and_blockers_for_non_auto_fix(self) -> None:
+        contract = resolve_contract(
+            {
+                "target": "https://example.com",
+                "execution_mode": "apply-fixes",
+            }
+        )
+        axe_data = {
+            "violations": [
+                {
+                    "id": "heading-order",
+                    "impact": "moderate",
+                    "description": "Heading levels should only increase by one",
+                    "nodes": [{"target": ["h3.section"]}],
+                }
+            ]
+        }
+        report = normalize_report(contract, axe_data, {"audits": {}}, None, None)
+        finding = report["findings"][0]
+        fix = report["fixes"][0]
+        self.assertEqual(finding["downgrade_reason"], "auto-fix-not-supported")
+        self.assertEqual(fix["downgrade_reason"], "auto-fix-not-supported")
+        self.assertIn("no-safe-auto-fix", fix["fix_blockers"])
+        self.assertEqual(report["summary"]["fix_blockers"][0]["rule_id"], "heading-order")
 
     def test_normalize_report_cli_generates_outputs(self) -> None:
         repo_root = Path(__file__).resolve().parents[4]

@@ -380,8 +380,11 @@ def apply_report_fixes(local_target: Path, report: dict[str, Any]) -> tuple[dict
         finding['status'] = 'fixed'
         finding['manual_review_required'] = False
         finding['verification_status'] = 'diff-generated'
+        finding['downgrade_reason'] = None
         fix_record['status'] = 'implemented'
         fix_record['verification_status'] = 'diff-generated'
+        fix_record['downgrade_reason'] = None
+        fix_record['fix_blockers'] = []
 
     if updated == original:
         report['run_meta']['notes'].append('No safe auto-fix changes were applied by the core workflow.')
@@ -406,6 +409,11 @@ def apply_report_fixes(local_target: Path, report: dict[str, Any]) -> tuple[dict
     )
     report['summary'].setdefault('diff_summary', [])
     report['summary']['diff_summary'].extend(applied_changes)
+    report['summary']['fix_blockers'] = [
+        item
+        for item in report['summary'].get('fix_blockers', [])
+        if any(finding['id'] == item.get('finding_id') and finding.get('status') != 'fixed' for finding in report['findings'])
+    ]
     report['summary'].setdefault('remediation_lifecycle', {})
     report['summary']['remediation_lifecycle'].update(
         {

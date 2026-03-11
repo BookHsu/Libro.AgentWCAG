@@ -36,9 +36,9 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [ ] Add `verification_evidence` fields to fixes or run metadata
 - [ ] Add `before_after_targets` evidence for modified findings
 - [ ] Add `rule_family` classification to findings and fixes
-- [ ] Add `risk_level` classification to findings and fixes
-- [ ] Add `downgrade_reason` reporting when fixes fall back to suggest-only or manual review
-- [ ] Add `fix_blockers` reporting for unsupported remediation cases
+- [x] Add `risk_level` classification to findings and fixes
+- [x] Add `downgrade_reason` reporting when fixes fall back to suggest-only or manual review
+- [x] Add `fix_blockers` reporting for unsupported remediation cases
 
 ## M8 Fixture And Snapshot Corpus
 
