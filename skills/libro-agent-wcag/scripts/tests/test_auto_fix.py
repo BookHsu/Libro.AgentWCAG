@@ -70,6 +70,33 @@ class AutoFixTests(unittest.TestCase):
             self.assertIn('width=device-width, initial-scale=1', diff_text)
             self.assertEqual(updated_report['summary']['remediation_lifecycle']['implemented'], 2)
 
+    def test_apply_report_fixes_supports_lang_refresh_and_image_map_rules(self) -> None:
+        fixture = Path(__file__).parent / 'fixtures' / 'deep-auto-fix.html'
+        with tempfile.TemporaryDirectory() as tmp:
+            working = Path(tmp) / fixture.name
+            working.write_text(fixture.read_text(encoding='utf-8'), encoding='utf-8')
+            contract = resolve_contract({'target': str(working), 'execution_mode': 'apply-fixes'})
+            axe_data = {
+                'violations': [
+                    {'id': 'html-xml-lang-mismatch', 'impact': 'moderate', 'description': 'lang and xml:lang should match', 'nodes': [{'target': ['html']}]},
+                    {'id': 'valid-lang', 'impact': 'moderate', 'description': 'invalid language code', 'nodes': [{'target': ['p[lang]']}]},
+                    {'id': 'meta-refresh', 'impact': 'moderate', 'description': 'refresh should be removed', 'nodes': [{'target': ['meta[http-equiv="refresh"]']}]},
+                    {'id': 'input-image-alt', 'impact': 'serious', 'description': 'image input needs alt', 'nodes': [{'target': ['input[type="image"]']}]},
+                    {'id': 'area-alt', 'impact': 'serious', 'description': 'area needs alt', 'nodes': [{'target': ['area']}]},
+                ]
+            }
+            report = normalize_report(contract, axe_data, {'audits': {}}, None, None)
+            updated_report, diff_text = apply_report_fixes(working, report)
+            updated_html = working.read_text(encoding='utf-8')
+            self.assertIn('xml:lang="en-US"', updated_html)
+            self.assertIn('<p lang="en">', updated_html)
+            self.assertNotIn('http-equiv="refresh"', updated_html)
+            self.assertIn('<input type="image" src="submit.png" alt="">', updated_html)
+            self.assertIn('<area shape="rect" coords="0,0,100,100" href="/promo" alt="">', updated_html)
+            self.assertIn('xml:lang', diff_text)
+            self.assertIn('http-equiv="refresh"', diff_text)
+            self.assertGreaterEqual(updated_report['summary']['remediation_lifecycle']['implemented'], 5)
+
     def test_apply_report_fixes_is_idempotent(self) -> None:
         fixture = Path(__file__).parent / 'fixtures' / 'empty-link-viewport.html'
         with tempfile.TemporaryDirectory() as tmp:
