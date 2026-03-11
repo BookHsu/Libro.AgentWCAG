@@ -54,7 +54,7 @@ Coverage target in this repo:
 | Volume / Capacity Test | Yes | Yes | Large report / many fixtures | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/nonfunctional-checks.md` |
 | Scalability Test | Yes | Yes | Batch audit workflows | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/nonfunctional-checks.md` |
 | Security Test | Yes | Yes | CLI input boundaries, install path handling | Implemented | Automated + Scripted Manual | `test_runner.py`, `test_cli_flows.py`, install overwrite tests, `docs/testing/nonfunctional-checks.md` |
-| Vulnerability Scan | Yes | Yes | Dependencies and scripts | Implemented | Scripted Manual | `docs/testing/nonfunctional-checks.md` |
+| Vulnerability Scan | Yes | Yes | Dependencies and scripts | Implemented | Automated + Scripted Manual | `test_repo_invocation.py`, `docs/testing/nonfunctional-checks.md` |
 | Penetration Test | No | No | N/A | Not Applicable | None | no exposed service |
 | Authorization Test | No | No | N/A | Not Applicable | None | no auth system |
 | Authentication Test | No | No | N/A | Not Applicable | None | no login flow |
@@ -153,6 +153,7 @@ Coverage target in this repo:
 - Static contract checks for all non-test repo files.
 - Scripted manual assets for inherently human-evaluated categories and for mixed-mode categories that still benefit from review checklists.
 - Root-level smoke coverage through repo discovery and validator execution.
+- Automated baseline vulnerability dependency check coverage via `python -m pip check` in `test_repo_invocation.py`.
 
 ## Still Worth Adding
 
