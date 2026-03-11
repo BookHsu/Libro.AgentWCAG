@@ -40,7 +40,8 @@ This file defines the non-functional checks that apply to this repo.
 
 ## Vulnerability Scan
 
-- Run dependency and script review before release.
+- Automated baseline: `test_repo_invocation.py` runs `python -m pip check`.
+- Keep dependency and script review before release.
 - Current minimum command set:
   - `python -m pip check`
   - `python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"`
