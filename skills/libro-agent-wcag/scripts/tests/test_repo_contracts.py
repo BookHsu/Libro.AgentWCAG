@@ -75,6 +75,8 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('local file path or URL', content)
         self.assertIn('safe first-pass remediations', content)
         self.assertIn('usage-example.md', content)
+        self.assertIn('failure-guide.md', content)
+        self.assertIn('e2e-example.md', content)
 
     def test_openai_agent_yaml_points_to_libro_agentwcag_prompt(self) -> None:
         payload = yaml.safe_load((self.skill_root / 'agents' / 'openai.yaml').read_text(encoding='utf-8'))
@@ -87,7 +89,10 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('audit-only | suggest-only | apply-fixes', core_spec)
         self.assertIn('core-workflow', core_spec)
         self.assertIn('safe first-pass fixes', core_spec)
+        self.assertIn('fixability', core_spec)
         self.assertIn('usage-example.md', adapter_mapping)
+        self.assertIn('failure-guide.md', adapter_mapping)
+        self.assertIn('e2e-example.md', adapter_mapping)
         self.assertIn('apply-fixes', adapter_mapping)
         self.assertIn('create', adapter_mapping)
         self.assertIn('modify', adapter_mapping)
@@ -132,12 +137,20 @@ class RepoContractTests(unittest.TestCase):
             'scripts/validate_skill.py',
             'skills/libro-agent-wcag/SKILL.md',
             'skills/libro-agent-wcag/agents/openai.yaml',
+            'skills/libro-agent-wcag/adapters/claude/e2e-example.md',
+            'skills/libro-agent-wcag/adapters/claude/failure-guide.md',
             'skills/libro-agent-wcag/adapters/claude/prompt-template.md',
             'skills/libro-agent-wcag/adapters/claude/usage-example.md',
+            'skills/libro-agent-wcag/adapters/copilot/e2e-example.md',
+            'skills/libro-agent-wcag/adapters/copilot/failure-guide.md',
             'skills/libro-agent-wcag/adapters/copilot/prompt-template.md',
             'skills/libro-agent-wcag/adapters/copilot/usage-example.md',
+            'skills/libro-agent-wcag/adapters/gemini/e2e-example.md',
+            'skills/libro-agent-wcag/adapters/gemini/failure-guide.md',
             'skills/libro-agent-wcag/adapters/gemini/prompt-template.md',
             'skills/libro-agent-wcag/adapters/gemini/usage-example.md',
+            'skills/libro-agent-wcag/adapters/openai-codex/e2e-example.md',
+            'skills/libro-agent-wcag/adapters/openai-codex/failure-guide.md',
             'skills/libro-agent-wcag/adapters/openai-codex/prompt-template.md',
             'skills/libro-agent-wcag/adapters/openai-codex/usage-example.md',
             'skills/libro-agent-wcag/references/adapter-mapping.md',
@@ -147,6 +160,7 @@ class RepoContractTests(unittest.TestCase):
             'skills/libro-agent-wcag/references/framework-patterns-vue.md',
             'skills/libro-agent-wcag/references/wcag-citations.md',
             'skills/libro-agent-wcag/scripts/auto_fix.py',
+            'skills/libro-agent-wcag/scripts/rewrite_helpers.py',
             'skills/libro-agent-wcag/scripts/normalize_report.py',
             'skills/libro-agent-wcag/scripts/remediation_library.py',
             'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
@@ -159,6 +173,8 @@ class RepoContractTests(unittest.TestCase):
             if path.is_file()
             and '.git' not in path.parts
             and '__pycache__' not in path.parts
+            and '.tmp' not in path.parts
+            and 'out-test-invalid' not in path.parts
             and 'scripts/tests' not in str(path).replace('\\', '/')
         }
         self.assertEqual(actual, expected)

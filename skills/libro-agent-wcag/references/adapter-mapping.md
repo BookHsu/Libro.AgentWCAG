@@ -13,6 +13,8 @@ Translate platform prompt syntax while preserving the core contract.
 - Treat `apply-fixes` as permission for safe core local rewrites first, then agent or adapter-driven modification for anything unsupported.
 - Respect `task_mode`: `create` targets drafts/templates, `modify` targets existing pages that should be audited first.
 - Keep adapter-specific invocation examples in each `usage-example.md` file aligned with the prompt template.
+- Keep `failure-guide.md` aligned with downgrade and recovery behavior.
+- Keep `e2e-example.md` aligned with realistic install and invocation flows.
 
 ## Platform mapping
 
@@ -23,6 +25,8 @@ Translate platform prompt syntax while preserving the core contract.
 - Output both Markdown and JSON in one response.
 - Localize human-facing Markdown text based on `output_language` when possible.
 - Keep `$libro-agent-wcag` invocation examples current in `adapters/openai-codex/usage-example.md`.
+- Keep failure handling current in `adapters/openai-codex/failure-guide.md`.
+- Keep end-to-end flow examples current in `adapters/openai-codex/e2e-example.md`.
 
 ### Claude adapter
 
@@ -31,6 +35,8 @@ Translate platform prompt syntax while preserving the core contract.
 - Keep the same finding IDs between Markdown and JSON.
 - Preserve deduped findings instead of re-expanding tool-specific duplicates.
 - Keep project/system prompt examples current in `adapters/claude/usage-example.md`.
+- Keep recovery guidance current in `adapters/claude/failure-guide.md`.
+- Keep end-to-end examples current in `adapters/claude/e2e-example.md`.
 
 ### Gemini adapter
 
@@ -39,6 +45,8 @@ Translate platform prompt syntax while preserving the core contract.
 - Require version-matched W3C Understanding URLs.
 - Keep WCAG 2.2-only manual-review findings visible when automatic mapping is unavailable.
 - Keep custom-instruction examples current in `adapters/gemini/usage-example.md`.
+- Keep downgrade rules current in `adapters/gemini/failure-guide.md`.
+- Keep end-to-end examples current in `adapters/gemini/e2e-example.md`.
 
 ### Copilot adapter
 
@@ -47,3 +55,5 @@ Translate platform prompt syntax while preserving the core contract.
 - Require stable issue IDs across Markdown and JSON.
 - Treat `create` mode as draft guidance when no concrete existing target can be scanned.
 - Keep instruction-file examples current in `adapters/copilot/usage-example.md`.
+- Keep unsupported-change fallback guidance current in `adapters/copilot/failure-guide.md`.
+- Keep end-to-end examples current in `adapters/copilot/e2e-example.md`.

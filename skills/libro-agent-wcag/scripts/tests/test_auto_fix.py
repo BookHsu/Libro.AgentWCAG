@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import sys
 import tempfile
 import unittest
@@ -45,7 +44,50 @@ class AutoFixTests(unittest.TestCase):
             self.assertTrue(diff_text.startswith('---'))
             self.assertTrue(updated_report['run_meta']['files_modified'])
             self.assertEqual(updated_report['run_meta']['modification_owner'], 'core-workflow')
+            self.assertEqual(updated_report['findings'][0]['verification_status'], 'diff-generated')
+            self.assertTrue(updated_report['run_meta']['diff_artifacts'])
             self.assertGreaterEqual(updated_report['summary']['fixed_findings'], 1)
+            self.assertTrue(updated_report['summary']['diff_summary'])
+
+    def test_apply_report_fixes_supports_link_name_and_meta_viewport(self) -> None:
+        fixture = Path(__file__).parent / 'fixtures' / 'empty-link-viewport.html'
+        with tempfile.TemporaryDirectory() as tmp:
+            working = Path(tmp) / fixture.name
+            working.write_text(fixture.read_text(encoding='utf-8'), encoding='utf-8')
+            contract = resolve_contract({'target': str(working), 'execution_mode': 'apply-fixes'})
+            axe_data = {
+                'violations': [
+                    {'id': 'link-name', 'impact': 'serious', 'description': 'Links need names', 'nodes': [{'target': ['a.cta']}]},
+                    {'id': 'meta-viewport', 'impact': 'moderate', 'description': 'Viewport must allow zoom', 'nodes': [{'target': ['meta[name="viewport"]']}]},
+                ]
+            }
+            report = normalize_report(contract, axe_data, {'audits': {}}, None, None)
+            updated_report, diff_text = apply_report_fixes(working, report)
+            updated_html = working.read_text(encoding='utf-8')
+            self.assertIn('aria-label="Link"', updated_html)
+            self.assertIn('content="width=device-width, initial-scale=1"', updated_html)
+            self.assertIn('aria-label="Link"', diff_text)
+            self.assertIn('width=device-width, initial-scale=1', diff_text)
+            self.assertEqual(updated_report['summary']['remediation_lifecycle']['implemented'], 2)
+
+    def test_apply_report_fixes_is_idempotent(self) -> None:
+        fixture = Path(__file__).parent / 'fixtures' / 'empty-link-viewport.html'
+        with tempfile.TemporaryDirectory() as tmp:
+            working = Path(tmp) / fixture.name
+            working.write_text(fixture.read_text(encoding='utf-8'), encoding='utf-8')
+            contract = resolve_contract({'target': str(working), 'execution_mode': 'apply-fixes'})
+            axe_data = {
+                'violations': [
+                    {'id': 'link-name', 'impact': 'serious', 'description': 'Links need names', 'nodes': [{'target': ['a.cta']}]},
+                    {'id': 'meta-viewport', 'impact': 'moderate', 'description': 'Viewport must allow zoom', 'nodes': [{'target': ['meta[name="viewport"]']}]},
+                ]
+            }
+            first_report = normalize_report(contract, axe_data, {'audits': {}}, None, None)
+            updated_report, first_diff = apply_report_fixes(working, first_report)
+            second_report, second_diff = apply_report_fixes(working, updated_report)
+            self.assertTrue(first_diff)
+            self.assertEqual(second_diff, '')
+            self.assertIn('No safe auto-fix changes were applied', ' '.join(second_report['run_meta']['notes']))
 
     def test_apply_report_fixes_noop_when_no_supported_rules_match(self) -> None:
         fixture = Path(__file__).parent / 'fixtures' / 'missing-alt.html'

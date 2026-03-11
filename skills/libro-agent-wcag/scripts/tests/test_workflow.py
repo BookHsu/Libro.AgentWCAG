@@ -240,6 +240,39 @@ class WorkflowTests(unittest.TestCase):
         report = normalize_report(contract, {"violations": []}, {"audits": {}}, None, None)
         self.assertIn("change_summary", report["summary"])
 
+
+    def test_report_contract_includes_fixability_verification_and_diff_fields(self) -> None:
+        contract = resolve_contract({"target": "https://example.com"})
+        axe_data = {
+            "violations": [
+                {
+                    "id": "image-alt",
+                    "impact": "serious",
+                    "description": "Images must have alternate text",
+                    "nodes": [{"target": ["img.hero"]}],
+                }
+            ]
+        }
+        report = normalize_report(contract, axe_data, {"audits": {}}, None, None)
+        finding = report["findings"][0]
+        fix = report["fixes"][0]
+        self.assertEqual(finding["fixability"], "auto-fix")
+        self.assertEqual(finding["verification_status"], "not-run")
+        self.assertFalse(finding["manual_review_required"])
+        self.assertEqual(fix["fixability"], "auto-fix")
+        self.assertEqual(fix["verification_status"], "not-run")
+        self.assertIn("diff_summary", report["summary"])
+        self.assertIn("remediation_lifecycle", report["summary"])
+        self.assertIn("diff_artifacts", report["run_meta"])
+
+    def test_manual_review_items_are_flagged_in_contract(self) -> None:
+        contract = resolve_contract({"target": "https://example.com", "wcag_version": "2.2"})
+        report = normalize_report(contract, {"violations": []}, {"audits": {}}, None, None)
+        manual = next(item for item in report["findings"] if item["status"] == "needs-review")
+        self.assertEqual(manual["fixability"], "manual")
+        self.assertEqual(manual["verification_status"], "manual-review")
+        self.assertTrue(manual["manual_review_required"])
+
     def test_findings_include_confidence(self) -> None:
         contract = resolve_contract({"target": "https://example.com"})
         axe_data = {

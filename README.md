@@ -54,7 +54,7 @@ sh ./scripts/install-agent.sh all
 Use `--dest <path>` to override, and `--force` to replace an existing installation.
 When `--agent all` is combined with `--dest`, the installer creates `codex/`, `claude/`, `gemini/`, and `copilot/` subdirectories under that base path.
 
-After installation, check `install-manifest.json` inside the installed folder. It points to the correct adapter prompt for the selected agent and includes a usage example.
+After installation, check `install-manifest.json` inside the installed folder. It points to the correct adapter prompt for the selected agent and includes `usage_example`, `failure_guide`, and `e2e_example` paths.
 
 ### Verify installation
 
@@ -85,10 +85,10 @@ Adapters can translate the same core contract into each platform's prompt or too
 
 ### Agent-specific entrypoints
 
-- `codex`: `adapters/openai-codex/prompt-template.md` and `adapters/openai-codex/usage-example.md`
-- `claude`: `adapters/claude/prompt-template.md` and `adapters/claude/usage-example.md`
-- `gemini`: `adapters/gemini/prompt-template.md` and `adapters/gemini/usage-example.md`
-- `copilot`: `adapters/copilot/prompt-template.md` and `adapters/copilot/usage-example.md`
+- `codex`: `adapters/openai-codex/prompt-template.md`, `usage-example.md`, `failure-guide.md`, and `e2e-example.md`
+- `claude`: `adapters/claude/prompt-template.md`, `usage-example.md`, `failure-guide.md`, and `e2e-example.md`
+- `gemini`: `adapters/gemini/prompt-template.md`, `usage-example.md`, `failure-guide.md`, and `e2e-example.md`
+- `copilot`: `adapters/copilot/prompt-template.md`, `usage-example.md`, `failure-guide.md`, and `e2e-example.md`
 
 ### First-use guidance
 

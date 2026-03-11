@@ -60,6 +60,16 @@ JSON top-level keys:
 
 `run_meta`, `target`, `standard`, `findings[]`, `fixes[]`, `citations[]`, `summary`
 
+Key remediation fields to preserve:
+- `findings[].fixability`
+- `findings[].verification_status`
+- `findings[].manual_review_required`
+- `fixes[].fixability`
+- `fixes[].verification_status`
+- `summary.diff_summary[]`
+- `summary.remediation_lifecycle`
+- `run_meta.diff_artifacts[]`
+
 Report the chosen `execution_mode` in both JSON and Markdown summary text.
 For `apply-fixes`, the core scripts may modify supported local HTML targets, emit a diff artifact, and mark `files_modified=true`; unsupported cases still fall back to agent or adapter-driven remediation.
 
@@ -72,6 +82,8 @@ Use `scripts/normalize_report.py` to normalize mixed tool outputs into the contr
 - Use `adapters/gemini/prompt-template.md` for Gemini orchestration.
 - Use `adapters/copilot/prompt-template.md` for Copilot orchestration.
 - Use each adapter's `usage-example.md` for install and invocation examples.
+- Use each adapter's `failure-guide.md` for downgrade and recovery behavior.
+- Use each adapter's `e2e-example.md` for platform-specific end-to-end invocation patterns.
 - Never add adapter-specific business logic that alters core output semantics.
 
 ## References
@@ -87,4 +99,6 @@ Use `scripts/normalize_report.py` to normalize mixed tool outputs into the contr
 
 Use `scripts/remediation_library.py` as the shared strategy library for common fixes. It provides remediation summary text, priority, confidence, auto-fix support flags, and framework hints for the most common accessibility rules.
 
-Use `scripts/auto_fix.py` for safe first-pass local HTML rewrites. It currently supports a focused set of rules such as missing `lang`, missing `alt`, missing button names, and missing simple form control labels, and emits a unified diff for verification.
+Use `scripts/auto_fix.py` for safe first-pass local HTML rewrites. It currently supports a focused set of rules such as missing `lang`, missing `alt`, missing button names, missing link names, missing simple form control labels, and unsafe viewport settings, and emits a unified diff for verification.
+
+Use `scripts/rewrite_helpers.py` for reusable HTML/CSS/JS text rewrite helpers and keep those helpers covered by unit tests when extending auto-fix behavior.

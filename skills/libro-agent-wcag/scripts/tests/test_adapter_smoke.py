@@ -19,7 +19,7 @@ class AdapterSmokeTests(unittest.TestCase):
     def _read(self, *parts: str) -> str:
         return (self.skill_root.joinpath(*parts)).read_text(encoding='utf-8')
 
-    def test_all_adapters_ship_usage_examples(self) -> None:
+    def test_all_adapters_ship_usage_failure_and_e2e_examples(self) -> None:
         adapter_expectations = {
             'openai-codex': '$libro-agent-wcag',
             'claude': 'project or system prompt',
@@ -28,12 +28,16 @@ class AdapterSmokeTests(unittest.TestCase):
         }
         for adapter, token in adapter_expectations.items():
             with self.subTest(adapter=adapter):
-                content = self._read('adapters', adapter, 'usage-example.md')
-                self.assertIn('## Install', content)
-                self.assertIn('## Smoke Check', content)
-                self.assertIn(token, content)
+                usage = self._read('adapters', adapter, 'usage-example.md')
+                failure = self._read('adapters', adapter, 'failure-guide.md')
+                e2e = self._read('adapters', adapter, 'e2e-example.md')
+                self.assertIn('## Install', usage)
+                self.assertIn('## Smoke Check', usage)
+                self.assertIn(token, usage)
+                self.assertIn('Recovery Steps', failure)
+                self.assertIn('Expected Result', e2e)
 
-    def test_installed_manifest_points_to_adapter_usage_example_neighbor(self) -> None:
+    def test_installed_manifest_points_to_adapter_neighbor_docs(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             destination = Path(tmp) / 'codex-skill'
             completed = subprocess.run(
@@ -52,11 +56,12 @@ class AdapterSmokeTests(unittest.TestCase):
             )
             self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
             manifest = json.loads((destination / 'install-manifest.json').read_text(encoding='utf-8'))
-            usage_example = destination / 'adapters' / 'openai-codex' / 'usage-example.md'
-            self.assertTrue(usage_example.exists())
+            self.assertTrue((destination / manifest['usage_example']).exists())
+            self.assertTrue((destination / manifest['failure_guide']).exists())
+            self.assertTrue((destination / manifest['e2e_example']).exists())
             self.assertEqual(manifest['adapter_prompt'], 'adapters/openai-codex/prompt-template.md')
 
-    def test_adapter_usage_examples_align_with_prompt_templates(self) -> None:
+    def test_adapter_docs_align_with_prompt_templates(self) -> None:
         pairs = [
             ('openai-codex', 'Use $libro-agent-wcag'),
             ('claude', 'Invoke libro-agent-wcag core contract'),
@@ -66,10 +71,14 @@ class AdapterSmokeTests(unittest.TestCase):
         for adapter, prompt_token in pairs:
             with self.subTest(adapter=adapter):
                 prompt = self._read('adapters', adapter, 'prompt-template.md')
-                example = self._read('adapters', adapter, 'usage-example.md')
+                usage = self._read('adapters', adapter, 'usage-example.md')
+                failure = self._read('adapters', adapter, 'failure-guide.md')
+                e2e = self._read('adapters', adapter, 'e2e-example.md')
                 self.assertIn(prompt_token, prompt)
-                self.assertIn('task_mode', example)
-                self.assertIn('execution_mode', example)
+                self.assertIn('task_mode', usage)
+                self.assertIn('execution_mode', usage)
+                self.assertIn('apply-fixes', failure)
+                self.assertIn('canonical', e2e.lower())
 
 
 if __name__ == '__main__':

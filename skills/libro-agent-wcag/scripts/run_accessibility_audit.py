@@ -161,6 +161,7 @@ def main() -> int:
         if diff_text:
             diff_path = output_dir / 'wcag-fixes.diff'
             write_diff(diff_text, diff_path)
+            report['run_meta'].setdefault('diff_artifacts', []).append({'path': str(diff_path), 'type': 'unified-diff'})
             report['run_meta']['notes'].append(f'Saved auto-fix diff: {diff_path}')
             snapshot_path = output_dir / 'wcag-fixed-report.snapshot.json'
             write_snapshot(report, snapshot_path)

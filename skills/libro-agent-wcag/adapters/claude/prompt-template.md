@@ -24,7 +24,7 @@ Execution requirements:
 - Respect execution_mode:
   - audit-only: return findings only
   - suggest-only: return findings plus remediation suggestions without editing
-  - apply-fixes: let the agent perform the actual file modification when safe and requested
+  - apply-fixes: allow the core workflow to apply safe first-pass local HTML fixes, then let the agent handle unsupported or higher-risk changes
 - Deduplicate overlapping axe/Lighthouse findings that refer to the same rule and target.
 - Map each finding/fix to WCAG SC + official W3C citation.
 - Return both:
