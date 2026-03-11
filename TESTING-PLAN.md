@@ -149,7 +149,7 @@ Coverage target in this repo:
 
 ## Already Implemented
 
-- Automated tests for workflow logic, rule mapping, severity bands, citations, remediation strategy defaults, edge cases, CLI flows, install flows, repo contracts, and matrix-completion scenarios.
+- Automated tests for workflow logic, rule mapping, severity bands, citations, remediation strategy defaults, edge cases, CLI flows, install flows, scanner command/error paths, repo contracts, and matrix-completion scenarios.
 - Static contract checks for all non-test repo files.
 - Scripted manual assets for inherently human-evaluated categories and for mixed-mode categories that still benefit from review checklists.
 - Root-level smoke coverage through repo discovery and validator execution.
@@ -157,7 +157,7 @@ Coverage target in this repo:
 
 ## Still Worth Adding
 
-- Real scanner-backed integration tests that invoke `npx @axe-core/cli` and `lighthouse` in CI when the environment allows it.
+- Broader real scanner-backed integration coverage in CI (additional fixtures and failure-mode assertions when `npx @axe-core/cli` and `lighthouse` are available).
 - Snapshot fixtures for larger JSON/Markdown outputs.
 - Optional dependency vulnerability tooling once dependencies grow beyond the current minimal set.
 
@@ -169,3 +169,4 @@ Run the current automated suite:
 python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"
 python scripts/validate_skill.py skills/libro-agent-wcag
 ```
+
