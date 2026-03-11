@@ -40,7 +40,9 @@
       "status": "open",
       "fixability": "auto-fix",
       "verification_status": "not-run",
-      "manual_review_required": false
+      "manual_review_required": false,
+      "risk_level": "high",
+      "downgrade_reason": null
     }
   ],
   "fixes": [
@@ -56,6 +58,9 @@
       "fixability": "auto-fix",
       "verification_status": "not-run",
       "manual_review_required": false,
+      "risk_level": "high",
+      "downgrade_reason": null,
+      "fix_blockers": [],
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
         "react": "Prefer semantic JSX and explicit aria/label props.",
@@ -90,6 +95,7 @@
       "implemented": 0,
       "verified": 0,
       "manual_review_required": 0
-    }
+    },
+    "fix_blockers": []
   }
 }

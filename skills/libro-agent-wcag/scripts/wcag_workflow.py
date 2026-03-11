@@ -246,6 +246,35 @@ class Contract:
     output_language: str
 
 
+def _risk_level_from_severity(severity: str) -> str:
+    if severity in {"critical", "serious"}:
+        return "high"
+    if severity == "moderate":
+        return "medium"
+    return "low"
+
+
+def _derive_downgrade_reason(
+    execution_mode: str, auto_fix_supported: bool, manual_review_required: bool
+) -> str | None:
+    if manual_review_required:
+        return "manual-review-required"
+    if execution_mode == "apply-fixes" and not auto_fix_supported:
+        return "auto-fix-not-supported"
+    return None
+
+
+def _derive_fix_blockers(
+    execution_mode: str, auto_fix_supported: bool, manual_review_required: bool
+) -> list[str]:
+    blockers: list[str] = []
+    if execution_mode == "apply-fixes" and not auto_fix_supported:
+        blockers.append("no-safe-auto-fix")
+    if manual_review_required:
+        blockers.append("manual-verification-required")
+    return blockers
+
+
 def build_citation_url(wcag_version: str, sc: str) -> str:
     slug = WCAG_UNDERSTANDING_PATHS.get(sc)
     if not slug:
@@ -481,6 +510,7 @@ def normalize_report(
     fixes: list[dict[str, Any]] = []
     citations: list[dict[str, Any]] = []
     change_summary: list[dict[str, Any]] = []
+    fix_blockers_summary: list[dict[str, Any]] = []
 
     for index, raw in enumerate(deduped_findings, start=1):
         issue_id = f"ISSUE-{index:03d}"
@@ -498,6 +528,13 @@ def normalize_report(
             else ("manual-review" if raw["status"] == "needs-review" else "not-run")
         )
         manual_review_required = raw["status"] == "needs-review"
+        risk_level = _risk_level_from_severity(raw["severity"])
+        downgrade_reason = _derive_downgrade_reason(
+            contract.execution_mode, strategy["auto_fix_supported"], manual_review_required
+        )
+        fix_blockers = _derive_fix_blockers(
+            contract.execution_mode, strategy["auto_fix_supported"], manual_review_required
+        )
         normalized_findings.append(
             {
                 "id": issue_id,
@@ -513,6 +550,8 @@ def normalize_report(
                 "fixability": fixability,
                 "verification_status": verification_status,
                 "manual_review_required": manual_review_required,
+                "risk_level": risk_level,
+                "downgrade_reason": downgrade_reason,
             }
         )
         fixes.append(
@@ -528,9 +567,20 @@ def normalize_report(
                 "fixability": fixability,
                 "verification_status": verification_status,
                 "manual_review_required": manual_review_required,
+                "risk_level": risk_level,
+                "downgrade_reason": downgrade_reason,
+                "fix_blockers": fix_blockers,
                 "framework_hints": strategy["framework_hints"],
             }
         )
+        if fix_blockers:
+            fix_blockers_summary.append(
+                {
+                    "finding_id": issue_id,
+                    "rule_id": raw["rule_id"],
+                    "blockers": fix_blockers,
+                }
+            )
         change_summary.append(
             {
                 "finding_id": issue_id,
@@ -559,6 +609,7 @@ def normalize_report(
             "verified": sum(1 for item in fixes if item["status"] == "verified"),
             "manual_review_required": sum(1 for item in fixes if item["manual_review_required"]),
         },
+        "fix_blockers": fix_blockers_summary,
     }
 
     return {
