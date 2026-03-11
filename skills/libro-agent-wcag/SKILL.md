@@ -99,6 +99,6 @@ Use `scripts/normalize_report.py` to normalize mixed tool outputs into the contr
 
 Use `scripts/remediation_library.py` as the shared strategy library for common fixes. It provides remediation summary text, priority, confidence, auto-fix support flags, and framework hints for the most common accessibility rules.
 
-Use `scripts/auto_fix.py` for safe first-pass local HTML rewrites. It currently supports a focused set of rules such as missing `lang`, missing `alt`, missing button names, missing link names, missing simple form control labels, and unsafe viewport settings, and emits a unified diff for verification.
+Use `scripts/auto_fix.py` for safe first-pass local HTML rewrites. It currently supports a focused set of rules such as missing `lang`, `xml:lang` mismatches, invalid language-of-parts values, missing `alt` text on images, image inputs, and image map areas, missing button names, missing link names, simple form control labels, automatic meta refresh removal, and unsafe viewport settings, and emits a unified diff for verification.
 
 Use `scripts/rewrite_helpers.py` for reusable HTML/CSS/JS text rewrite helpers and keep those helpers covered by unit tests when extending auto-fix behavior.
