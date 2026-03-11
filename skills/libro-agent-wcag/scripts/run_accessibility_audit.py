@@ -7,10 +7,11 @@ import argparse
 import json
 import subprocess
 from pathlib import Path
-from urllib.request import url2pathname
-from urllib.parse import urlparse
 from typing import Any
+from urllib.parse import urlparse
+from urllib.request import url2pathname
 
+from auto_fix import apply_report_fixes, target_to_local_path, write_diff, write_snapshot
 from wcag_workflow import normalize_report, resolve_contract, write_report_files
 
 DEFAULT_TIMEOUT_SECONDS = 120
@@ -128,6 +129,7 @@ def main() -> int:
             "output_language": args.output_language,
         }
     )
+    local_target = target_to_local_path(contract.target)
     scanner_target = _resolve_target_for_scanners(contract.target)
 
     axe_data = None
@@ -153,6 +155,15 @@ def main() -> int:
         axe_skipped=args.skip_axe,
         lighthouse_skipped=args.skip_lighthouse,
     )
+
+    if contract.execution_mode == 'apply-fixes' and local_target is not None:
+        report, diff_text = apply_report_fixes(local_target, report)
+        if diff_text:
+            diff_path = output_dir / 'wcag-fixes.diff'
+            write_diff(diff_text, diff_path)
+            report['run_meta']['notes'].append(f'Saved auto-fix diff: {diff_path}')
+            snapshot_path = output_dir / 'wcag-fixed-report.snapshot.json'
+            write_snapshot(report, snapshot_path)
 
     output_json = output_dir / "wcag-report.json"
     output_md = output_dir / "wcag-report.md"

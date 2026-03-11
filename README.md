@@ -85,10 +85,10 @@ Adapters can translate the same core contract into each platform's prompt or too
 
 ### Agent-specific entrypoints
 
-- `codex`: `adapters/openai-codex/prompt-template.md`
-- `claude`: `adapters/claude/prompt-template.md`
-- `gemini`: `adapters/gemini/prompt-template.md`
-- `copilot`: `adapters/copilot/prompt-template.md`
+- `codex`: `adapters/openai-codex/prompt-template.md` and `adapters/openai-codex/usage-example.md`
+- `claude`: `adapters/claude/prompt-template.md` and `adapters/claude/usage-example.md`
+- `gemini`: `adapters/gemini/prompt-template.md` and `adapters/gemini/usage-example.md`
+- `copilot`: `adapters/copilot/prompt-template.md` and `adapters/copilot/usage-example.md`
 
 ### First-use guidance
 
@@ -117,8 +117,8 @@ The shared contract also distinguishes task intent:
 Current implementation note:
 
 - `apply-fixes` is an execution intent exposed through the contract and report output.
-- The actual file modification step is performed by the calling agent or adapter, not by the core Python workflow.
-- The core workflow reports `files_modified=false`, but now includes a reusable remediation strategy library with priority, confidence, auto-fix support flags, and framework hints.
+- For supported local HTML targets, the core Python workflow can now apply a safe first-pass remediation pass and emit a diff artifact. Remaining or unsupported changes still belong to the calling agent or adapter.
+- The core workflow still reports canonical fix metadata, and now includes a reusable remediation strategy library plus safe local HTML rewrite helpers for supported rules.
 
 Current adapter coverage:
 
