@@ -222,6 +222,70 @@ def _fix_document_title(html: str, finding: dict[str, Any]) -> tuple[str, dict[s
     }
 
 
+
+def _fix_list(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    pattern = re.compile(r'<(ul|ol)\b([^>]*)>(.*?)</\1>', flags=re.IGNORECASE | re.DOTALL)
+    for match in pattern.finditer(html):
+        inner_html = match.group(3)
+        if re.search(r'<li\b', inner_html, flags=re.IGNORECASE):
+            continue
+        stripped = inner_html.strip()
+        if not stripped:
+            continue
+        replacement = f'<{match.group(1)}{match.group(2)}><li>{stripped}</li></{match.group(1)}>'
+        updated = html[: match.start()] + replacement + html[match.end() :]
+        return updated, {
+            'rule_id': finding['rule_id'],
+            'changed_target': finding['changed_target'],
+            'description': 'Wrapped list content with a list item element.',
+        }
+    return html, None
+
+
+def _fix_listitem(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    pattern = re.compile(r'<li\b[^>]*>.*?</li>', flags=re.IGNORECASE | re.DOTALL)
+    for match in pattern.finditer(html):
+        prefix = html[: match.start()]
+        open_count = len(re.findall(r'<(?:ul|ol)\b[^>]*>', prefix, flags=re.IGNORECASE))
+        close_count = len(re.findall(r'</(?:ul|ol)>', prefix, flags=re.IGNORECASE))
+        if open_count > close_count:
+            continue
+        replacement = f'<ul>{match.group(0)}</ul>'
+        updated = html[: match.start()] + replacement + html[match.end() :]
+        return updated, {
+            'rule_id': finding['rule_id'],
+            'changed_target': finding['changed_target'],
+            'description': 'Wrapped an orphan list item with a parent unordered list.',
+        }
+    return html, None
+
+
+def _fix_table_fake_caption(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    pattern = re.compile(r'<table\b([^>]*)>(.*?)</table>', flags=re.IGNORECASE | re.DOTALL)
+    for match in pattern.finditer(html):
+        table_inner = match.group(2)
+        if re.search(r'<caption\b', table_inner, flags=re.IGNORECASE):
+            continue
+        row_match = re.match(
+            r'\s*<tr\b[^>]*>\s*<th\b[^>]*>(.*?)</th>\s*</tr>\s*',
+            table_inner,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+        if not row_match:
+            continue
+        caption_text = re.sub(r'<[^>]+>', '', row_match.group(1)).strip()
+        if not caption_text:
+            continue
+        remaining_rows = table_inner[row_match.end() :].lstrip()
+        replacement = f'<table{match.group(1)}><caption>{caption_text}</caption>{remaining_rows}</table>'
+        updated = html[: match.start()] + replacement + html[match.end() :]
+        return updated, {
+            'rule_id': finding['rule_id'],
+            'changed_target': finding['changed_target'],
+            'description': f'Converted the first table header row into a caption: "{caption_text}".',
+        }
+    return html, None
+
 def _fix_label(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
     pattern = re.compile(r'<(input|select|textarea)\b(?![^>]*\b(?:aria-label|aria-labelledby)\s*=)([^>]*)>', flags=re.IGNORECASE)
     for match in pattern.finditer(html):
@@ -358,6 +422,9 @@ FIXERS: dict[str, Callable[[str, dict[str, Any]], tuple[str, dict[str, Any] | No
     'html-xml-lang-mismatch': _fix_html_xml_lang_mismatch,
     'valid-lang': _fix_valid_lang,
     'document-title': _fix_document_title,
+    'list': _fix_list,
+    'listitem': _fix_listitem,
+    'table-fake-caption': _fix_table_fake_caption,
 }
 
 
@@ -447,4 +514,6 @@ def write_diff(diff_text: str, diff_path: Path) -> None:
 def write_snapshot(report: dict[str, Any], snapshot_path: Path) -> None:
     snapshot_path.parent.mkdir(parents=True, exist_ok=True)
     snapshot_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
+
+
 
