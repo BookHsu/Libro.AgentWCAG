@@ -132,6 +132,30 @@ class AutoFixTests(unittest.TestCase):
             self.assertIn('<title>Dashboard</title>', diff_text)
             self.assertGreaterEqual(updated_report['summary']['remediation_lifecycle']['implemented'], 5)
 
+
+    def test_apply_report_fixes_supports_list_and_table_caption_rules(self) -> None:
+        fixture = Path(__file__).parent / 'fixtures' / 'list-table-fixes.html'
+        with tempfile.TemporaryDirectory() as tmp:
+            working = Path(tmp) / fixture.name
+            working.write_text(fixture.read_text(encoding='utf-8'), encoding='utf-8')
+            contract = resolve_contract({'target': str(working), 'execution_mode': 'apply-fixes'})
+            axe_data = {
+                'violations': [
+                    {'id': 'list', 'impact': 'moderate', 'description': 'Lists must contain li elements', 'nodes': [{'target': ['ul.plain']}]},
+                    {'id': 'listitem', 'impact': 'moderate', 'description': 'Listitem must be in list container', 'nodes': [{'target': ['li.orphan']}]},
+                    {'id': 'table-fake-caption', 'impact': 'moderate', 'description': 'Caption-like header should use caption', 'nodes': [{'target': ['table.pricing']}]},
+                ]
+            }
+            report = normalize_report(contract, axe_data, {'audits': {}}, None, None)
+            updated_report, diff_text = apply_report_fixes(working, report)
+            updated_html = working.read_text(encoding='utf-8')
+            self.assertIn('<ul class="plain"><li>First item</li></ul>', updated_html)
+            self.assertIn('<ul><li class="orphan">Standalone entry</li></ul>', updated_html)
+            self.assertIn('<caption>Plan Comparison</caption>', updated_html)
+            self.assertNotIn('<th colspan="2">Plan Comparison</th>', updated_html)
+            self.assertIn('<caption>Plan Comparison</caption>', diff_text)
+            self.assertGreaterEqual(updated_report['summary']['remediation_lifecycle']['implemented'], 3)
+
     def test_apply_report_fixes_is_idempotent(self) -> None:
         fixture = Path(__file__).parent / 'fixtures' / 'empty-link-viewport.html'
         with tempfile.TemporaryDirectory() as tmp:
@@ -171,3 +195,4 @@ class AutoFixTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
