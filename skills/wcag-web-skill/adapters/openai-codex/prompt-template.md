@@ -15,15 +15,19 @@ Use $wcag-web-skill with the following contract:
 
 Requirements:
 1) Resolve defaults (suggest-only + 2.1 + AA + zh-TW) if missing.
-2) Run axe + Lighthouse checks.
+2) Respect task_mode:
+   - create: work from a draft or generated target; if there is no existing target to scan, provide guidance and manual-review items instead of claiming a scan ran
+   - modify: audit the existing target before proposing or applying changes
+3) Run axe + Lighthouse checks when a concrete target exists.
 3) Map each finding to WCAG SC and W3C citation.
 4) Respect execution_mode:
    - audit-only: report findings only
    - suggest-only: report findings and remediation suggestions without editing
-   - apply-fixes: apply remediations when safe and requested
-4) Provide both outputs:
+   - apply-fixes: let the agent perform the actual file modification when safe and requested
+5) Deduplicate overlapping axe/Lighthouse findings that refer to the same rule and target.
+6) Provide both outputs:
    - Markdown table with fixed columns
    - JSON with canonical keys
-5) Include execution_mode in JSON and Markdown summary text.
-6) Keep finding IDs aligned across Markdown and JSON.
+7) Include execution_mode in JSON and Markdown summary text.
+8) Keep finding IDs aligned across Markdown and JSON.
 ```

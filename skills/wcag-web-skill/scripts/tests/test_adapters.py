@@ -66,6 +66,29 @@ class AdapterContractTests(unittest.TestCase):
             self.assertIn("apply-fixes", template)
             self.assertIn("audit-only", template)
 
+    def test_all_adapters_define_task_mode_semantics(self) -> None:
+        templates = [
+            self._read("adapters", "openai-codex", "prompt-template.md"),
+            self._read("adapters", "claude", "prompt-template.md"),
+            self._read("adapters", "gemini", "prompt-template.md"),
+            self._read("adapters", "copilot", "prompt-template.md"),
+        ]
+        for template in templates:
+            self.assertIn("create", template)
+            self.assertIn("modify", template)
+            self.assertIn("existing target", template)
+
+    def test_all_adapters_clarify_apply_fixes_boundary(self) -> None:
+        templates = [
+            self._read("adapters", "openai-codex", "prompt-template.md"),
+            self._read("adapters", "claude", "prompt-template.md"),
+            self._read("adapters", "gemini", "prompt-template.md"),
+            self._read("adapters", "copilot", "prompt-template.md"),
+        ]
+        for template in templates:
+            self.assertIn("agent", template.lower())
+            self.assertIn("apply-fixes", template)
+
 
 if __name__ == "__main__":
     unittest.main()

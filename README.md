@@ -27,6 +27,9 @@ The platform-neutral contract lives here:
 - `skills/wcag-web-skill/SKILL.md`
 - `skills/wcag-web-skill/references/core-spec.md`
 - `skills/wcag-web-skill/references/adapter-mapping.md`
+- `skills/wcag-web-skill/references/framework-patterns-react.md`
+- `skills/wcag-web-skill/references/framework-patterns-vue.md`
+- `skills/wcag-web-skill/references/framework-patterns-nextjs.md`
 
 Adapters can translate the same core contract into each platform's prompt or tool syntax.
 
@@ -35,6 +38,23 @@ The shared contract supports three execution modes:
 - `audit-only`: find issues only
 - `suggest-only`: find issues and propose fixes
 - `apply-fixes`: apply fixes when the user explicitly requests modification
+
+Language support:
+
+- Markdown summary text and table headers follow `output_language`
+- JSON field names remain canonical English keys
+- Unsupported languages currently fall back to English
+
+The shared contract also distinguishes task intent:
+
+- `create`: review a draft, generated page, or template before release
+- `modify`: audit an existing target first, then propose or apply changes
+
+Current implementation note:
+
+- `apply-fixes` is an execution intent exposed through the contract and report output.
+- The actual file modification step is performed by the calling agent or adapter, not by the core Python workflow.
+- The core workflow reports `files_modified=false`, but now includes a reusable remediation strategy library with priority, confidence, auto-fix support flags, and framework hints.
 
 Current adapter coverage:
 
@@ -56,3 +76,8 @@ python scripts/validate_skill.py skills/wcag-web-skill
 - Node.js and `npx`
 - `@axe-core/cli` and `lighthouse` available through `npx`
 - `PyYAML` for skill validation
+
+## Future directions
+
+- Actual file-rewriting auto-remediation engine for `apply-fixes`
+- Release packaging extras such as demos, templates, and issue forms
