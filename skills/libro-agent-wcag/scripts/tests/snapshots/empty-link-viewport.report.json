@@ -1,0 +1,158 @@
+{
+  "run_meta": {
+    "generated_at": "<generated>",
+    "workflow_version": "1.0.0",
+    "execution_mode": "suggest-only",
+    "output_language": "en",
+    "files_modified": false,
+    "modification_owner": "agent-or-adapter",
+    "diff_artifacts": [],
+    "tools": {
+      "axe": "ok",
+      "lighthouse": "ok"
+    },
+    "notes": []
+  },
+  "target": {
+    "value": "fixtures/empty-link-viewport.html",
+    "task_mode": "modify"
+  },
+  "standard": {
+    "wcag_version": "2.1",
+    "conformance_level": "AA"
+  },
+  "findings": [
+    {
+      "id": "ISSUE-001",
+      "source": "axe+lighthouse",
+      "sources": [
+        "axe",
+        "lighthouse"
+      ],
+      "rule_id": "link-name",
+      "severity": "critical",
+      "confidence": "high",
+      "sc": [
+        "2.4.4",
+        "4.1.2"
+      ],
+      "current": "Links must have discernible text",
+      "changed_target": "a.cta",
+      "status": "open",
+      "fixability": "auto-fix",
+      "verification_status": "not-run",
+      "manual_review_required": false
+    },
+    {
+      "id": "ISSUE-002",
+      "source": "axe+lighthouse",
+      "sources": [
+        "axe",
+        "lighthouse"
+      ],
+      "rule_id": "meta-viewport",
+      "severity": "critical",
+      "confidence": "medium",
+      "sc": [
+        "1.4.10",
+        "1.4.4"
+      ],
+      "current": "Viewport must not disable zoom",
+      "changed_target": "meta[name=\"viewport\"]",
+      "status": "open",
+      "fixability": "auto-fix",
+      "verification_status": "not-run",
+      "manual_review_required": false
+    }
+  ],
+  "fixes": [
+    {
+      "id": "FIX-001",
+      "finding_id": "ISSUE-001",
+      "description": "Ensure each link has meaningful, discernible text.",
+      "changed_target": "a.cta",
+      "status": "planned",
+      "remediation_priority": "high",
+      "confidence": "high",
+      "auto_fix_supported": true,
+      "fixability": "auto-fix",
+      "verification_status": "not-run",
+      "manual_review_required": false,
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-002",
+      "finding_id": "ISSUE-002",
+      "description": "Allow zoom and avoid viewport settings that block reflow or text resize.",
+      "changed_target": "meta[name=\"viewport\"]",
+      "status": "planned",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": true,
+      "fixability": "auto-fix",
+      "verification_status": "not-run",
+      "manual_review_required": false,
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    }
+  ],
+  "citations": [
+    {
+      "finding_id": "ISSUE-001",
+      "sc": "2.4.4",
+      "url": "https://www.w3.org/WAI/WCAG21/Understanding/link-purpose-in-context"
+    },
+    {
+      "finding_id": "ISSUE-001",
+      "sc": "4.1.2",
+      "url": "https://www.w3.org/WAI/WCAG21/Understanding/name-role-value"
+    },
+    {
+      "finding_id": "ISSUE-002",
+      "sc": "1.4.10",
+      "url": "https://www.w3.org/WAI/WCAG21/Understanding/reflow"
+    },
+    {
+      "finding_id": "ISSUE-002",
+      "sc": "1.4.4",
+      "url": "https://www.w3.org/WAI/WCAG21/Understanding/resize-text"
+    }
+  ],
+  "summary": {
+    "total_findings": 2,
+    "fixed_findings": 0,
+    "needs_manual_review": 0,
+    "change_summary": [
+      {
+        "finding_id": "ISSUE-001",
+        "rule_id": "link-name",
+        "changed_target": "a.cta",
+        "recommended_action": "Ensure each link has meaningful, discernible text.",
+        "remediation_priority": "high"
+      },
+      {
+        "finding_id": "ISSUE-002",
+        "rule_id": "meta-viewport",
+        "changed_target": "meta[name=\"viewport\"]",
+        "recommended_action": "Allow zoom and avoid viewport settings that block reflow or text resize.",
+        "remediation_priority": "medium"
+      }
+    ],
+    "diff_summary": [],
+    "remediation_lifecycle": {
+      "planned": 2,
+      "implemented": 0,
+      "verified": 0,
+      "manual_review_required": 0
+    }
+  }
+}

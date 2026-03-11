@@ -56,6 +56,7 @@ Interpret `task_mode` as follows:
       "axe": "ok | skipped | error",
       "lighthouse": "ok | skipped | error"
     },
+    "diff_artifacts": [],
     "notes": []
   },
   "target": {
@@ -77,7 +78,10 @@ Interpret `task_mode` as follows:
       "sc": ["1.1.1"],
       "current": "string",
       "changed_target": "string",
-      "status": "open | fixed | partial | needs-review"
+      "status": "open | fixed | partial | needs-review",
+      "fixability": "auto-fix | assisted | manual",
+      "verification_status": "not-run | diff-generated | verified | manual-review",
+      "manual_review_required": "boolean"
     }
   ],
   "fixes": [
@@ -90,6 +94,9 @@ Interpret `task_mode` as follows:
       "remediation_priority": "high | medium | low",
       "confidence": "high | medium | low",
       "auto_fix_supported": "boolean",
+      "fixability": "auto-fix | assisted | manual",
+      "verification_status": "not-run | diff-generated | verified | manual-review",
+      "manual_review_required": "boolean",
       "framework_hints": {}
     }
   ],
@@ -104,7 +111,14 @@ Interpret `task_mode` as follows:
     "total_findings": 0,
     "fixed_findings": 0,
     "needs_manual_review": 0,
-    "change_summary": []
+    "change_summary": [],
+    "diff_summary": [],
+    "remediation_lifecycle": {
+      "planned": 0,
+      "implemented": 0,
+      "verified": 0,
+      "manual_review_required": 0
+    }
   }
 }
 ```
@@ -118,6 +132,7 @@ Use exactly these columns and order:
 Prefix the table with a short summary line that states the execution mode and whether files were modified.
 Support localized summary lines and column headers while keeping JSON keys canonical.
 For `apply-fixes`, `files_modified` may become `true` and `modification_owner` may become `core-workflow` when the target is a supported local HTML file and safe rewrite helpers succeed. Otherwise the workflow should keep `files_modified=false` and leave ownership with `agent-or-adapter`.
+Diff artifacts must be recorded in `run_meta.diff_artifacts[]`, and fix verification should move from `not-run` to `diff-generated` when the core workflow rewrites a supported local target.
 
 Status vocabulary:
 - Findings: `open`, `fixed`, `partial`, `needs-review`

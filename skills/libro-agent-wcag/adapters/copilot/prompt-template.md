@@ -25,7 +25,7 @@ Required behavior:
 5. Respect execution_mode:
    - audit-only: report findings only
    - suggest-only: report findings and remediation suggestions without editing
-   - apply-fixes: let the agent perform the actual file modification when safe and requested
+   - apply-fixes: allow the core workflow to apply safe first-pass local HTML fixes, then let the agent handle unsupported or higher-risk changes
 6. Deduplicate overlapping axe/Lighthouse findings that refer to the same rule and target.
 7. Preserve the canonical JSON keys:
    run_meta, target, standard, findings, fixes, citations, summary.

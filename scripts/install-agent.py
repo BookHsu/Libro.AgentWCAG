@@ -58,6 +58,8 @@ def write_manifest(destination: Path, agent: str) -> None:
         "skill_entrypoint": "SKILL.md",
         "adapter_prompt": f"adapters/{adapter_name(agent)}/prompt-template.md",
         "usage_example": f"adapters/{adapter_name(agent)}/usage-example.md",
+        "failure_guide": f"adapters/{adapter_name(agent)}/failure-guide.md",
+        "e2e_example": f"adapters/{adapter_name(agent)}/e2e-example.md",
         "notes": "For non-Codex agents, wire the adapter prompt into your agent's prompt or skill system.",
         "invoke_example": invoke_example(agent),
         "doctor_command": f"python scripts/doctor-agent.py --agent {agent}",
