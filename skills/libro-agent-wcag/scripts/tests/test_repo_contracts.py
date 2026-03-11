@@ -33,6 +33,17 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('Installation Test', content)
         self.assertIn('Not Applicable', content)
 
+    def test_manual_testing_assets_exist_for_non_automated_matrix_types(self) -> None:
+        manual = self._read(self.repo_root / 'docs' / 'testing' / 'manual-checklists.md')
+        scenarios = self._read(self.repo_root / 'docs' / 'testing' / 'scenario-assets.md')
+        nonfunctional = self._read(self.repo_root / 'docs' / 'testing' / 'nonfunctional-checks.md')
+        self.assertIn('Acceptance Test / UAT', manual)
+        self.assertIn('Beta Test', manual)
+        self.assertIn('Decision Table', scenarios)
+        self.assertIn('End-to-End Test', scenarios)
+        self.assertIn('Performance Test', nonfunctional)
+        self.assertIn('Concurrency Test', nonfunctional)
+
     def test_pyproject_declares_repo_metadata_and_test_path(self) -> None:
         content = self._read(self.repo_root / 'pyproject.toml')
         self.assertIn('name = "Libro.AgentWCAG"', content)
@@ -104,6 +115,9 @@ class RepoContractTests(unittest.TestCase):
             'LICENSE',
             'README.md',
             'TESTING-PLAN.md',
+            'docs/testing/manual-checklists.md',
+            'docs/testing/nonfunctional-checks.md',
+            'docs/testing/scenario-assets.md',
             'pyproject.toml',
             'scripts/doctor-agent.py',
             'scripts/install-agent.ps1',
