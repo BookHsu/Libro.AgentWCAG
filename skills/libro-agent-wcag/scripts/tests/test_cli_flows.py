@@ -837,6 +837,8 @@ class CliFlowTests(unittest.TestCase):
                 '--fail-on-new-only',
                 '--baseline-report',
                 str(baseline_json),
+                '--baseline-selector-canonicalization',
+                'basic',
                 '--policy-preset',
                 'legacy',
                 '--mock-axe-json',
@@ -857,41 +859,48 @@ class CliFlowTests(unittest.TestCase):
         self.assertEqual(compact['baseline_diff']['introduced_count'], 1)
         self.assertEqual(compact['scanner_capabilities']['available_scanners'], ['axe'])
         self.assertEqual(compact['scanner_capabilities']['available_rule_count'], 2)
+        self.assertTrue((output_dir / 'schemas' / 'wcag-report-1.0.0.schema.json').exists())
         self.assertTrue((output_dir / 'wcag-report.sarif').exists())
         sarif = json.loads((output_dir / 'wcag-report.sarif').read_text(encoding='utf-8'))
         self.assertEqual(len(sarif['runs'][0]['results']), 1)
         self.assertEqual(sarif['runs'][0]['results'][0]['ruleId'], 'button-name')
 
     def test_run_accessibility_audit_summary_only_prints_compact_json(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            html_path = Path(tmp) / 'sample.html'
-            output_dir = Path(tmp) / 'out'
-            html_path.write_text('<!doctype html><html><title>Fixture</title><body></body></html>', encoding='utf-8')
-            completed = subprocess.run(
-                [
-                    sys.executable,
-                    'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
-                    '--target',
-                    str(html_path),
-                    '--output-dir',
-                    str(output_dir),
-                    '--skip-axe',
-                    '--skip-lighthouse',
-                    '--summary-only',
-                ],
-                cwd=self.repo_root,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
-            compact = json.loads(completed.stdout.strip())
-            self.assertEqual(compact['status'], 'ok')
-            self.assertTrue((output_dir / 'wcag-report.json').exists())
-            self.assertTrue((output_dir / 'wcag-report.md').exists())
-            self.assertIn('machine_output', compact)
+        test_dir = self.repo_root / 'automation-work' / 'm23-summary-only-test'
+        if test_dir.exists():
+            shutil.rmtree(test_dir, ignore_errors=True)
+        test_dir.mkdir(parents=True, exist_ok=True)
+
+        html_path = test_dir / 'sample.html'
+        output_dir = test_dir / 'out'
+        html_path.write_text('<!doctype html><html><title>Fixture</title><body></body></html>', encoding='utf-8')
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(output_dir),
+                '--skip-axe',
+                '--skip-lighthouse',
+                '--summary-only',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        compact = json.loads(completed.stdout.strip())
+        self.assertEqual(compact['status'], 'ok')
+        self.assertTrue((output_dir / 'wcag-report.json').exists())
+        self.assertTrue((output_dir / 'wcag-report.md').exists())
+        payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
+        self.assertEqual(payload['report_schema']['version'], '1.0.0')
+        self.assertEqual(payload['run_meta']['report_schema_version'], '1.0.0')
+        self.assertTrue((output_dir / 'schemas' / 'wcag-report-1.0.0.schema.json').exists())
+        self.assertIn('machine_output', compact)
+
 if __name__ == '__main__':
     unittest.main()
-
-
-
