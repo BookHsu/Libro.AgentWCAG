@@ -90,6 +90,28 @@ class FixtureAndSnapshotTests(unittest.TestCase):
         self.assertEqual(to_markdown_table(report), expected_md)
 
 
+class FixtureCorpusCoverageTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.fixture_root = Path(__file__).parent / 'fixtures'
+
+    def _read_fixture(self, name: str) -> str:
+        return (self.fixture_root / name).read_text(encoding='utf-8')
+
+    def test_m8_fixture_families_are_present_with_expected_signals(self) -> None:
+        expectations = {
+            'aria-family.html': ['aria-expanded="maybe"', 'role="slider"', 'aria-labelledby="missing-label-id"'],
+            'form-errors.html': ['aria-invalid="invalid"', '<button type="submit"></button>', '<input id="coupon" type="text">'],
+            'heading-hierarchy.html': ['<h1>Accessibility report</h1>', '<h3>Skipped level heading</h3>', '<h2></h2>'],
+            'landmark-region.html': ['<div class="shell">', '<section>', '<aside>'],
+            'table-semantics.html': ['<table>', '<td>Order ID</td>', '<td>Status</td>'],
+        }
+        for fixture_name, required_tokens in expectations.items():
+            with self.subTest(fixture=fixture_name):
+                body = self._read_fixture(fixture_name)
+                for token in required_tokens:
+                    self.assertIn(token, body)
+
 @unittest.skipUnless(os.environ.get('LIBRO_RUN_REAL_SCANNERS') == '1' and shutil.which('npx'), 'real scanner integration disabled')
 class RealScannerIntegrationTests(unittest.TestCase):
     @classmethod
@@ -130,3 +152,4 @@ class RealScannerIntegrationTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
