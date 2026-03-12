@@ -155,7 +155,7 @@ python scripts/validate_skill.py skills/libro-agent-wcag
 - `docs/release/demo-package-walkthrough.md`:  minimal package-style validation walkthrough outside test suite
 - `docs/release/prompt-invocation-templates.md`:  reusable contract and adapter invocation templates
 - `docs/release/troubleshooting-intake.md`:  triage intake checklist for install and remediation problems
-- `docs/release/resilient-run-patterns.md`:  resilient scanner retry/backoff, policy gates, and baseline-diff CLI patterns for CI and local automation
+- `docs/release/resilient-run-patterns.md`:  resilient scanner retry/backoff, policy gates, baseline-diff CLI patterns, and triage workflow checklists for CI handoff
 - `docs/release/github-actions-wcag-ci-sample.yml`:  GitHub Actions sample with artifact retention and SARIF PR annotation
 - `docs/release/release-packaging-extras-placement.md`:  decision record for extras placement
 - `.github/ISSUE_TEMPLATE/installation-failure.yml`:  installation failure intake form
@@ -172,6 +172,5 @@ python scripts/validate_skill.py skills/libro-agent-wcag
 
 - Use `docs/automations/test-plan-automation.md` as the execution spec for scheduled Codex test-development automation. This lane focuses only on test development, testing-plan updates, commits, and pushes.
 - Use `docs/automations/test-plan-review-policy.md` as the review policy before accepting automation-generated changes.
-
 
 

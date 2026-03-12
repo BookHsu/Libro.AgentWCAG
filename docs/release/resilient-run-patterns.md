@@ -133,3 +133,27 @@ Key integration points:
 - Set `retention-days` for report retention policy.
 - Use SARIF upload to annotate pull requests in GitHub code scanning UI.
 
+
+## Triage workflow (`new`, `persistent`, `resolved`)
+
+Use `run_meta.baseline_diff` and the latest report findings to classify each unresolved issue:
+
+- `new`: signature appears in `introduced_signatures`.
+- `persistent`: signature appears in `persistent_signatures`.
+- `resolved`: signature appears in `resolved_signatures`.
+
+### Sample review checklist
+
+- Verify scope and ownership: confirm file path, feature area, and assignee.
+- Validate severity and impact: check `rule_id`, WCAG citation, and scanner evidence.
+- Confirm fix strategy: `apply-fixes`, assisted remediation, or manual-only follow-up.
+- Capture verification evidence: include rerun result or before/after artifact path.
+- Record decision status: `new`, `persistent`, or `resolved` in PR or issue tracker.
+
+### Ownership handoff checklist
+
+- Triage owner prepares handoff note with `rule_id`, target selector, severity, and status.
+- Receiving owner acknowledges ETA and risk level (`critical`, `serious`, `moderate`, `minor`).
+- Add acceptance criteria for closure (expected scanner result and artifact paths).
+- After implementation, rerun audit and update baseline snapshot if debt was intentionally accepted.
+- Close handoff only when report status and issue tracker state are aligned.
