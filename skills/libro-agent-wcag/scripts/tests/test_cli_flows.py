@@ -153,6 +153,95 @@ class CliFlowTests(unittest.TestCase):
             self.assertEqual(payload['run_meta']['tools']['axe'], 'error')
             self.assertTrue(any(item['status'] == 'needs-review' for item in payload['findings']))
 
+    def test_run_accessibility_audit_with_mock_scanners_generates_apply_fixes_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            html_path = Path(tmp) / 'sample.html'
+            output_dir = Path(tmp) / 'out'
+            axe_json = Path(tmp) / 'axe.json'
+            lighthouse_json = Path(tmp) / 'lighthouse.json'
+            html_path.write_text(
+                '<!doctype html><html><head><title></title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"></head><body><img class="hero" src="hero.png"><button class="icon-only"></button></body></html>',
+                encoding='utf-8',
+            )
+            axe_json.write_text(
+                json.dumps(
+                    {
+                        'violations': [
+                            {'id': 'image-alt', 'impact': 'serious', 'description': 'Images must have alternate text', 'nodes': [{'target': ['img.hero']}]},
+                            {'id': 'button-name', 'impact': 'serious', 'description': 'Buttons need names', 'nodes': [{'target': ['button.icon-only']}]},
+                        ]
+                    }
+                ),
+                encoding='utf-8',
+            )
+            lighthouse_json.write_text(
+                json.dumps(
+                    {
+                        'audits': {
+                            'meta-viewport': {
+                                'score': 0,
+                                'scoreDisplayMode': 'binary',
+                                'title': 'User-scalable is not disabled',
+                                'details': {'items': [{'node': {'selector': 'meta[name="viewport"]'}}]},
+                            }
+                        }
+                    }
+                ),
+                encoding='utf-8',
+            )
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                    '--target',
+                    str(html_path),
+                    '--output-dir',
+                    str(output_dir),
+                    '--execution-mode',
+                    'apply-fixes',
+                    '--output-language',
+                    'en',
+                    '--mock-axe-json',
+                    str(axe_json),
+                    '--mock-lighthouse-json',
+                    str(lighthouse_json),
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+            payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
+            self.assertTrue(payload['run_meta']['files_modified'])
+            self.assertTrue((output_dir / 'wcag-fixes.diff').exists())
+            self.assertTrue((output_dir / 'wcag-fixed-report.snapshot.json').exists())
+
+    def test_run_accessibility_audit_rejects_conflicting_mock_and_skip_flags(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            html_path = Path(tmp) / 'sample.html'
+            axe_json = Path(tmp) / 'axe.json'
+            html_path.write_text('<!doctype html><html lang="en"><title>x</title></html>', encoding='utf-8')
+            axe_json.write_text(json.dumps({'violations': []}), encoding='utf-8')
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                    '--target',
+                    str(html_path),
+                    '--output-dir',
+                    str(Path(tmp) / 'out'),
+                    '--skip-axe',
+                    '--mock-axe-json',
+                    str(axe_json),
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn('--skip-axe cannot be combined with --mock-axe-json', completed.stderr + completed.stdout)
     def test_doctor_reports_broken_install_when_adapter_prompt_is_missing(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             destination = Path(tmp) / 'claude-skill'
@@ -194,3 +283,4 @@ class CliFlowTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

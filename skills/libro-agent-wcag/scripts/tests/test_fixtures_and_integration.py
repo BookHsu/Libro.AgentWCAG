@@ -146,6 +146,7 @@ class FixtureCorpusCoverageTests(unittest.TestCase):
             'react-specific.html': ['data-reactroot', 'data-testid="react-state"', 'aria-label={ctaLabel}'],
             'vue-specific.html': ['data-v-app', 'v-bind:aria-label="submitLabel"', '@click="submitForm"'],
             'nextjs-specific.html': ['data-nextjs-root', 'data-next-layout="app-router"', 'export const metadata'],
+            'realistic-mixed-findings.html': ['class="hero"', 'class="icon-only"', 'class="plain"'],
         }
         for fixture_name, required_tokens in expectations.items():
             with self.subTest(fixture=fixture_name):
@@ -160,6 +161,13 @@ class RealScannerSnapshotContractTests(unittest.TestCase):
         cls.fixture_root = Path(__file__).parent / 'fixtures'
         cls.regression_path = Path(__file__).parent / 'snapshots' / 'real-scanner-regression.snapshot.json'
         cls.baselines_path = Path(__file__).parent / 'snapshots' / 'real-scanner-baselines.json'
+        cls.repo_root = Path(__file__).resolve().parents[4]
+
+    def _resolve_fixture(self, fixture_name: str) -> Path:
+        direct = self.repo_root / fixture_name
+        if direct.exists():
+            return direct
+        return self.fixture_root / fixture_name
 
     def test_real_scanner_regression_snapshot_is_present_and_references_existing_fixtures(self) -> None:
         snapshot = json.loads(self.regression_path.read_text(encoding='utf-8'))
@@ -170,17 +178,17 @@ class RealScannerSnapshotContractTests(unittest.TestCase):
         matrix = snapshot['integration_matrix']
         self.assertGreaterEqual(len(matrix), 4)
         for entry in matrix:
-            self.assertTrue((self.fixture_root / entry['fixture']).exists())
+            self.assertTrue(self._resolve_fixture(entry['fixture']).exists())
             self.assertIsInstance(entry['expected_rules'], list)
             self.assertTrue(entry['expected_rules'])
 
         version_baseline = snapshot['wcag_version_baseline']
-        self.assertTrue((self.fixture_root / version_baseline['fixture']).exists())
+        self.assertTrue(self._resolve_fixture(version_baseline['fixture']).exists())
         self.assertIn(version_baseline['rule_id'], {'image-alt', 'label', 'link-name'})
         self.assertEqual(version_baseline['versions'], ['2.0', '2.1', '2.2'])
 
         apply_fixes = snapshot['apply_fixes_regression']
-        self.assertTrue((self.fixture_root / apply_fixes['fixture']).exists())
+        self.assertTrue(self._resolve_fixture(apply_fixes['fixture']).exists())
         self.assertIsInstance(apply_fixes['fixable_rules'], list)
         self.assertGreaterEqual(len(apply_fixes['fixable_rules']), 3)
 
@@ -191,16 +199,16 @@ class RealScannerSnapshotContractTests(unittest.TestCase):
         self.assertIn('regression_snapshot', baseline)
 
         for entry in baseline['fixture_matrix']:
-            self.assertTrue((self.fixture_root / entry['fixture']).exists())
+            self.assertTrue(self._resolve_fixture(entry['fixture']).exists())
             self.assertGreaterEqual(entry['minimum_findings'], 1)
 
         version_baseline = baseline['version_baseline']
-        self.assertTrue((self.fixture_root / version_baseline['fixture']).exists())
+        self.assertTrue(self._resolve_fixture(version_baseline['fixture']).exists())
         self.assertEqual(version_baseline['versions'], ['2.0', '2.1', '2.2'])
         self.assertGreaterEqual(version_baseline['wcag22_manual_minimum'], 1)
 
         for entry in baseline['regression_snapshot']:
-            self.assertTrue((self.fixture_root / entry['fixture']).exists())
+            self.assertTrue(self._resolve_fixture(entry['fixture']).exists())
             self.assertGreaterEqual(entry['minimum_findings'], 1)
 
 
@@ -320,6 +328,17 @@ class RealScannerIntegrationTests(unittest.TestCase):
                 else:
                     self.assertEqual(manual_rules, [])
 
+    def test_realistic_sample_real_scanner_assertions(self) -> None:
+        fixture_name = 'realistic-mixed-findings.html'
+        expected_rules = {'image-alt', 'button-name', 'list', 'link-name'}
+        with tempfile.TemporaryDirectory() as tmp:
+            report, _ = self._run_audit(fixture_name, tmp, wcag_version='2.2', execution_mode='apply-fixes')
+            rules = {entry['rule_id'] for entry in report['findings']}
+            self.assertTrue(expected_rules & rules)
+            self.assertTrue(report['run_meta']['files_modified'])
+            self.assertGreaterEqual(report['summary']['manual_required_count'], 1)
+            self.assertTrue((Path(tmp) / 'wcag-fixes.diff').exists())
+            self.assertTrue((Path(tmp) / 'wcag-fixed-report.snapshot.json').exists())
     def test_apply_fixes_before_after_real_scanner_comparison_reduces_fixable_rule_coverage(self) -> None:
         baseline = self.regression_snapshot['apply_fixes_regression']
         fixture_name = baseline['fixture']
@@ -357,3 +376,6 @@ class RealScannerIntegrationTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+

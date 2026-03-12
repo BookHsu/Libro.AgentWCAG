@@ -133,6 +133,12 @@ class RepoScriptTests(unittest.TestCase):
             self.assertFalse(extra_file.exists())
             self.assertTrue((destination / 'install-manifest.json').exists())
 
+    def test_realistic_validation_smoke_script_exists_and_references_mock_flow(self) -> None:
+        script = (self.repo_root / 'scripts' / 'run-realistic-validation-smoke.py').read_text(encoding='utf-8')
+        self.assertIn('run_accessibility_audit.py', script)
+        self.assertIn('--mock-axe-json', script)
+        self.assertIn('--mock-lighthouse-json', script)
+        self.assertIn('wcag-fixes.sample.diff', script)
     def test_install_agent_ps1_wrapper_invokes_python_installer(self) -> None:
         wrapper = (self.repo_root / 'scripts' / 'install-agent.ps1').read_text(encoding='utf-8')
         self.assertIn('install-agent.py', wrapper)
@@ -148,3 +154,4 @@ class RepoScriptTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

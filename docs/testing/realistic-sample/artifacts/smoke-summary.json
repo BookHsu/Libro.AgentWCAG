@@ -1,0 +1,62 @@
+{
+  "sample_target": "C:\\Source\\Libro.AgentWCAG\\docs\\testing\\realistic-sample\\mixed-findings.html",
+  "steps": [
+    {
+      "name": "install",
+      "command": [
+        "C:\\Users\\book.hsu\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "scripts/install-agent.py",
+        "--agent",
+        "codex",
+        "--dest",
+        "C:\\Source\\Libro.AgentWCAG\\.tmp-realistic-smoke\\installed",
+        "--force"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "doctor",
+      "command": [
+        "C:\\Users\\book.hsu\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "scripts/doctor-agent.py",
+        "--agent",
+        "codex",
+        "--dest",
+        "C:\\Source\\Libro.AgentWCAG\\.tmp-realistic-smoke\\installed"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "audit",
+      "command": [
+        "C:\\Users\\book.hsu\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "skills/libro-agent-wcag/scripts/run_accessibility_audit.py",
+        "--target",
+        "C:\\Source\\Libro.AgentWCAG\\.tmp-realistic-smoke\\run\\mixed-findings.html",
+        "--output-dir",
+        "C:\\Source\\Libro.AgentWCAG\\.tmp-realistic-smoke\\run\\audit-output",
+        "--execution-mode",
+        "apply-fixes",
+        "--wcag-version",
+        "2.2",
+        "--output-language",
+        "en",
+        "--mock-axe-json",
+        "C:\\Source\\Libro.AgentWCAG\\docs\\testing\\realistic-sample\\scanner-fixtures\\axe.mock.json",
+        "--mock-lighthouse-json",
+        "C:\\Source\\Libro.AgentWCAG\\docs\\testing\\realistic-sample\\scanner-fixtures\\lighthouse.mock.json"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "artifacts": [
+    "C:\\Source\\Libro.AgentWCAG\\docs\\testing\\realistic-sample\\artifacts\\wcag-report.sample.json",
+    "C:\\Source\\Libro.AgentWCAG\\docs\\testing\\realistic-sample\\artifacts\\wcag-report.sample.md",
+    "C:\\Source\\Libro.AgentWCAG\\docs\\testing\\realistic-sample\\artifacts\\wcag-fixes.sample.diff",
+    "C:\\Source\\Libro.AgentWCAG\\docs\\testing\\realistic-sample\\artifacts\\wcag-fixed-report.sample.snapshot.json"
+  ],
+  "fixed_findings": 5,
+  "manual_required_count": 9,
+  "auto_fixed_count": 5,
+  "files_modified": true
+}
