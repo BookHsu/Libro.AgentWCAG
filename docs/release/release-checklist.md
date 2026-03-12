@@ -15,6 +15,8 @@ Use this checklist before publishing a new version of `libro-agent-wcag`.
   - `python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"`
 - [ ] Run skill structural validation:
   - `python scripts/validate_skill.py skills/libro-agent-wcag`
+- [ ] Run dependency-audit lane (`pip-audit --strict` and `npm audit --audit-level=high`) with archived logs.
+- [ ] Capture and archive `--preflight-only` output (including `version_provenance`) for release traceability.
 - [ ] Run first-run smoke sequence from `docs/release/first-run-smoke.md`.
 - [ ] Verify release notes and changelog entries match the tested behavior.
 
@@ -24,3 +26,4 @@ Use this checklist before publishing a new version of `libro-agent-wcag`.
 - [ ] Ensure `CHANGELOG.md` has a dated version section with highlights and known limits.
 - [ ] Confirm all blocking defects are closed or explicitly listed as known limitations.
 - [ ] Push `master` and create release artifacts/tags per project policy.
+
