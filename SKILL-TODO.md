@@ -4,9 +4,15 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## Current Execution Order
 
-1. Complete `M20 CI Reporting And Policy Control` to make scanner results first-class in PR and CI workflows.
+1. [x] Complete `M20 CI Reporting And Policy Control` to make scanner results first-class in PR and CI workflows.
 2. [x] Backfill release notes and docs examples based on M20 outputs.
-3. Re-run real-scanner validation lanes and verify no regression in `apply-fixes` safety semantics.
+3. [x] Re-run real-scanner validation lanes and verify no regression in `apply-fixes` safety semantics (see `docs/testing/m20-validation-rerun-20260312.md`).
+
+## M21 Post-M20 Validation Closure
+
+- [x] Add Windows scanner command fallback so subprocess calls resolve `npx.cmd` when plain `npx` is not executable.
+- [x] Harden scanner subprocess decoding and stderr/stdout handling to avoid runtime crashes on non-UTF-8 tool output.
+- [x] Capture rerun evidence for deterministic smoke and real-scanner lanes, including environment blockers and outcomes.
 
 ## M5 Safe Auto-Fix Expansion
 
