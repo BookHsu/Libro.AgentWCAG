@@ -108,6 +108,21 @@ def _extract_version_line(output: str) -> str | None:
     return None
 
 
+def _build_version_provenance(
+    *,
+    source: str,
+    command: str,
+    resolved_command: str,
+    version: str,
+) -> dict[str, str]:
+    return {
+        "source": source,
+        "command": command,
+        "resolved_command": resolved_command,
+        "version": version,
+    }
+
+
 def _run_command(command: list[str], timeout_seconds: int) -> tuple[bool, str]:
     try:
         completed = subprocess.run(
@@ -258,14 +273,20 @@ def _tool_available(tool: str) -> bool:
 
 
 def run_preflight_checks(timeout_seconds: int) -> dict[str, Any]:
-    results: list[dict[str, str]] = []
-    tools: dict[str, dict[str, str]] = {}
+    results: list[dict[str, Any]] = []
+    tools: dict[str, dict[str, Any]] = {}
     ok = True
     for name, command in PREFLIGHT_TOOL_CHECKS:
         command_text = " ".join(command)
         resolved_command = shutil.which(command[0]) or ""
         if not _tool_available(command[0]):
             message = f'{command[0]} is not available in PATH'
+            version_provenance = _build_version_provenance(
+                source="binary-missing",
+                command=command_text,
+                resolved_command=resolved_command,
+                version="",
+            )
             entry = {
                 "tool": name,
                 "status": "error",
@@ -273,6 +294,7 @@ def run_preflight_checks(timeout_seconds: int) -> dict[str, Any]:
                 "command": command_text,
                 "resolved_command": resolved_command,
                 "version": "",
+                "version_provenance": version_provenance,
             }
             results.append(entry)
             tools[name] = {
@@ -281,6 +303,7 @@ def run_preflight_checks(timeout_seconds: int) -> dict[str, Any]:
                 "resolved_command": resolved_command,
                 "version": "",
                 "message": message,
+                "version_provenance": version_provenance,
             }
             ok = False
             continue
@@ -288,6 +311,12 @@ def run_preflight_checks(timeout_seconds: int) -> dict[str, Any]:
         status = "ok" if command_ok else "error"
         message = (output or "").strip() or ("available" if command_ok else "check failed")
         version = _extract_version_line(output) if command_ok else ""
+        version_provenance = _build_version_provenance(
+            source="command-output-first-line" if command_ok else "command-error",
+            command=command_text,
+            resolved_command=resolved_command,
+            version=version or "",
+        )
         entry = {
             "tool": name,
             "status": status,
@@ -295,6 +324,7 @@ def run_preflight_checks(timeout_seconds: int) -> dict[str, Any]:
             "command": command_text,
             "resolved_command": resolved_command,
             "version": version or "",
+            "version_provenance": version_provenance,
         }
         results.append(entry)
         tools[name] = {
@@ -303,6 +333,7 @@ def run_preflight_checks(timeout_seconds: int) -> dict[str, Any]:
             "resolved_command": resolved_command,
             "version": version or "",
             "message": message,
+            "version_provenance": version_provenance,
         }
         ok = ok and command_ok
     return {"ok": ok, "checks": results, "tools": tools}
@@ -1213,6 +1244,12 @@ def main() -> int:
                     "command": "",
                     "resolved_command": "",
                     "version": "",
+                    "version_provenance": {
+                        "source": "skipped",
+                        "command": "",
+                        "resolved_command": "",
+                        "version": "",
+                    },
                 }
             ],
             "tools": {
@@ -1222,6 +1259,12 @@ def main() -> int:
                     "resolved_command": "",
                     "version": "",
                     "message": "scanner tooling preflight skipped due to mock or skip flags",
+                    "version_provenance": {
+                        "source": "skipped",
+                        "command": "",
+                        "resolved_command": "",
+                        "version": "",
+                    },
                 }
             },
         }
@@ -1488,3 +1531,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
