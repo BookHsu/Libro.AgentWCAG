@@ -20,6 +20,7 @@ from run_accessibility_audit import (
     _try_run_axe,
     _try_run_lighthouse,
     parse_args,
+    run_preflight_checks,
 )
 
 
@@ -77,6 +78,24 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(args.mock_axe_json, "axe.json")
         self.assertEqual(args.mock_lighthouse_json, "lighthouse.json")
 
+    def test_cli_accepts_dry_run_and_preflight_flags(self) -> None:
+        original = sys.argv
+        sys.argv = [
+            "run_accessibility_audit.py",
+            "--target",
+            "https://example.com",
+            "--execution-mode",
+            "apply-fixes",
+            "--dry-run",
+            "--preflight-only",
+        ]
+        try:
+            args = parse_args()
+        finally:
+            sys.argv = original
+        self.assertTrue(args.dry_run)
+        self.assertTrue(args.preflight_only)
+
     @patch("run_accessibility_audit.subprocess.run")
     def test_run_command_returns_stdout_on_success(self, mock_run) -> None:
         mock_run.return_value = type("Result", (), {"returncode": 0, "stdout": "ok", "stderr": ""})()
@@ -112,6 +131,24 @@ class RunnerTests(unittest.TestCase):
         self.assertIsNone(payload)
         self.assertEqual(err, "lighthouse did not generate output json")
 
+    @patch("run_accessibility_audit._tool_available", return_value=True)
+    @patch("run_accessibility_audit._run_command")
+    def test_preflight_returns_ok_when_all_checks_pass(self, mock_run_command, _mock_tool_available) -> None:
+        mock_run_command.return_value = (True, "v")
+        result = run_preflight_checks(timeout_seconds=5)
+        self.assertTrue(result["ok"])
+        self.assertTrue(all(item["status"] == "ok" for item in result["checks"]))
+
+    @patch("run_accessibility_audit._tool_available")
+    def test_preflight_reports_missing_binary(self, mock_tool_available) -> None:
+        mock_tool_available.side_effect = [False, True, True]
+        with patch("run_accessibility_audit._run_command", return_value=(True, "v")):
+            result = run_preflight_checks(timeout_seconds=5)
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["checks"][0]["status"], "error")
+        self.assertIn("PATH", result["checks"][0]["message"])
+
 
 if __name__ == "__main__":
     unittest.main()
+

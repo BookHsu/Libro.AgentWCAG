@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -22,6 +23,11 @@ from wcag_workflow import normalize_report, resolve_contract, write_report_files
 
 DEFAULT_TIMEOUT_SECONDS = 120
 ALLOWED_URL_SCHEMES = {"http", "https", "file"}
+PREFLIGHT_TOOL_CHECKS = (
+    ("npx", ["npx", "--version"]),
+    ("@axe-core/cli", ["npx", "--no-install", "@axe-core/cli", "--version"]),
+    ("lighthouse", ["npx", "--no-install", "lighthouse", "--version"]),
+)
 
 
 def _run_command(command: list[str], timeout_seconds: int) -> tuple[bool, str]:
@@ -35,6 +41,8 @@ def _run_command(command: list[str], timeout_seconds: int) -> tuple[bool, str]:
         )
     except subprocess.TimeoutExpired:
         return False, f"command timed out after {timeout_seconds} seconds"
+    except FileNotFoundError as err:
+        return False, f"command not found: {err.filename or command[0]}"
     if completed.returncode == 0:
         return True, completed.stdout
     error = completed.stderr.strip() or completed.stdout.strip() or "unknown error"
@@ -101,10 +109,31 @@ def _resolve_target_for_scanners(target: str) -> str:
     raise ValueError(f"Target must be an existing local file or a valid URL: {target}")
 
 
+def _tool_available(tool: str) -> bool:
+    return shutil.which(tool) is not None
+
+
+def run_preflight_checks(timeout_seconds: int) -> dict[str, Any]:
+    results: list[dict[str, str]] = []
+    ok = True
+    for name, command in PREFLIGHT_TOOL_CHECKS:
+        if not _tool_available(command[0]):
+            message = f'{command[0]} is not available in PATH'
+            results.append({"tool": name, "status": "error", "message": message})
+            ok = False
+            continue
+        command_ok, output = _run_command(command, timeout_seconds)
+        status = "ok" if command_ok else "error"
+        message = (output or "").strip() or ("available" if command_ok else "check failed")
+        results.append({"tool": name, "status": status, "message": message})
+        ok = ok and command_ok
+    return {"ok": ok, "checks": results}
+
 
 def _remove_if_exists(path: Path) -> None:
     if path.exists():
         path.unlink()
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run WCAG audit with axe+Lighthouse.")
@@ -124,6 +153,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--skip-lighthouse", action="store_true")
     parser.add_argument("--mock-axe-json")
     parser.add_argument("--mock-lighthouse-json")
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--preflight-only",
+        action="store_true",
+        help="Check runtime tooling availability (npx, axe, lighthouse) and exit.",
+    )
     return parser.parse_args()
 
 
@@ -133,6 +168,13 @@ def main() -> int:
         raise ValueError('--skip-axe cannot be combined with --mock-axe-json')
     if args.skip_lighthouse and args.mock_lighthouse_json:
         raise ValueError('--skip-lighthouse cannot be combined with --mock-lighthouse-json')
+    if args.dry_run and args.execution_mode != 'apply-fixes':
+        raise ValueError('--dry-run is only supported when --execution-mode is apply-fixes')
+
+    if args.preflight_only:
+        preflight = run_preflight_checks(args.timeout)
+        print(json.dumps(preflight, ensure_ascii=False, indent=2))
+        return 0 if preflight["ok"] else 1
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -149,6 +191,23 @@ def main() -> int:
     )
     local_target = target_to_local_path(contract.target)
     scanner_target = _resolve_target_for_scanners(contract.target)
+
+    preflight_required = not (
+        (args.skip_axe or args.mock_axe_json) and (args.skip_lighthouse or args.mock_lighthouse_json)
+    )
+    if preflight_required:
+        preflight = run_preflight_checks(args.timeout)
+    else:
+        preflight = {
+            "ok": True,
+            "checks": [
+                {
+                    "tool": "runtime",
+                    "status": "skipped",
+                    "message": "scanner tooling preflight skipped due to mock or skip flags",
+                }
+            ],
+        }
 
     axe_data = None
     axe_error = None
@@ -177,10 +236,19 @@ def main() -> int:
         axe_skipped=args.skip_axe,
         lighthouse_skipped=args.skip_lighthouse,
     )
+    report['run_meta']['preflight'] = preflight
+    if not preflight['ok']:
+        report['run_meta']['notes'].append(
+            'Preflight checks detected tooling issues; scanner results may be incomplete.'
+        )
 
     if contract.execution_mode == 'apply-fixes':
-        diff_path = output_dir / 'wcag-fixes.diff'
-        snapshot_path = output_dir / 'wcag-fixed-report.snapshot.json'
+        if args.dry_run:
+            diff_path = output_dir / 'wcag-fixes.dry-run.diff'
+            snapshot_path = output_dir / 'wcag-fixed-report.dry-run.snapshot.json'
+        else:
+            diff_path = output_dir / 'wcag-fixes.diff'
+            snapshot_path = output_dir / 'wcag-fixed-report.snapshot.json'
 
         if local_target is None:
             report['run_meta']['notes'].append('apply-fixes skipped: target is not a local file path.')
@@ -193,11 +261,19 @@ def main() -> int:
             _remove_if_exists(diff_path)
             _remove_if_exists(snapshot_path)
         else:
-            report, diff_text = apply_report_fixes(local_target, report)
+            report, diff_text = apply_report_fixes(local_target, report, dry_run=args.dry_run)
             if diff_text:
                 write_diff(diff_text, diff_path)
-                report['run_meta'].setdefault('diff_artifacts', []).append({'path': str(diff_path), 'type': 'unified-diff'})
-                report['run_meta']['notes'].append(f'Saved auto-fix diff: {diff_path}')
+                diff_type = 'projected-unified-diff' if args.dry_run else 'unified-diff'
+                report['run_meta'].setdefault('diff_artifacts', []).append(
+                    {'path': str(diff_path), 'type': diff_type}
+                )
+                if args.dry_run:
+                    report['run_meta']['notes'].append(
+                        f'Saved projected auto-fix diff (--dry-run): {diff_path}'
+                    )
+                else:
+                    report['run_meta']['notes'].append(f'Saved auto-fix diff: {diff_path}')
                 write_snapshot(report, snapshot_path)
             else:
                 _remove_if_exists(diff_path)

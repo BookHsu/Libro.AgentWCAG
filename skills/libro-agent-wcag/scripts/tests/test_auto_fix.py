@@ -507,6 +507,43 @@ class AutoFixTests(unittest.TestCase):
             self.assertGreaterEqual(updated_report['summary']['remediation_lifecycle']['implemented'], 2)
 
 
+    def test_apply_report_fixes_dry_run_generates_diff_without_mutating_file(self) -> None:
+        fixture = Path(__file__).parent / 'fixtures' / 'missing-alt.html'
+        with tempfile.TemporaryDirectory() as tmp:
+            working = Path(tmp) / fixture.name
+            original = fixture.read_text(encoding='utf-8')
+            working.write_text(original, encoding='utf-8')
+            contract = resolve_contract({'target': str(working), 'execution_mode': 'apply-fixes'})
+            axe_data = {
+                'violations': [
+                    {'id': 'image-alt', 'impact': 'serious', 'description': 'Images need alt', 'nodes': [{'target': ['img.hero']}]},
+                ]
+            }
+            report = normalize_report(contract, axe_data, {'audits': {}}, None, None)
+            updated_report, diff_text = apply_report_fixes(working, report, dry_run=True)
+
+            self.assertTrue(diff_text)
+            self.assertEqual(working.read_text(encoding='utf-8'), original)
+            self.assertIn('projected_mutation_telemetry', updated_report['run_meta'])
+            self.assertEqual(updated_report['run_meta']['projected_mutation_telemetry'][0]['rule_id'], 'image-alt')
+
+    def test_apply_report_fixes_raises_without_partial_write_on_atomic_failure(self) -> None:
+        fixture = Path(__file__).parent / 'fixtures' / 'missing-alt.html'
+        with tempfile.TemporaryDirectory() as tmp:
+            working = Path(tmp) / fixture.name
+            original = fixture.read_text(encoding='utf-8')
+            working.write_text(original, encoding='utf-8')
+            contract = resolve_contract({'target': str(working), 'execution_mode': 'apply-fixes'})
+            axe_data = {
+                'violations': [
+                    {'id': 'image-alt', 'impact': 'serious', 'description': 'Images need alt', 'nodes': [{'target': ['img.hero']}]},
+                ]
+            }
+            report = normalize_report(contract, axe_data, {'audits': {}}, None, None)
+            with unittest.mock.patch('auto_fix._write_text_atomic', side_effect=OSError('disk full')):
+                with self.assertRaises(OSError):
+                    apply_report_fixes(working, report)
+            self.assertEqual(working.read_text(encoding='utf-8'), original)
 class FrameworkSnapshotBaselineTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
