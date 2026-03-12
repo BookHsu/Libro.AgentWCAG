@@ -9,10 +9,12 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 ### Added
 
 - Release-readiness docs for checklist, environment matrix, and first-run smoke guidance.
+- Baseline diff policy gate (`--baseline-report`, `--fail-on-new-only`) in `run_accessibility_audit.py`.
+- GitHub Actions WCAG CI sample with SARIF PR annotation and artifact retention guidance.
 
 ### Changed
 
-- README now links release-readiness references.
+- README now links release-readiness references and M20 CI policy/baseline examples.
 
 ## [0.1.0] - 2026-03-12
 
@@ -21,3 +23,4 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - Initial cross-agent WCAG skill contract and adapters for Codex, Claude, Gemini, and Copilot.
 - Installer, doctor, and uninstall scripts with manifest-oriented install validation.
 - Core workflow reporting, remediation strategy library, and framework-aware coverage baselines.
+
