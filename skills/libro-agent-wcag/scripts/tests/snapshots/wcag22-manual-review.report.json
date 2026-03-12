@@ -251,6 +251,15 @@
       "fix_blockers": [
         "manual-verification-required"
       ],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
       "verification_evidence": [
         {
           "type": "scanner-detection",
@@ -285,6 +294,15 @@
       "before_after_targets": [],
       "fix_blockers": [
         "manual-verification-required"
+      ],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
       ],
       "verification_evidence": [
         {
@@ -321,6 +339,15 @@
       "fix_blockers": [
         "manual-verification-required"
       ],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
       "verification_evidence": [
         {
           "type": "scanner-detection",
@@ -355,6 +382,15 @@
       "before_after_targets": [],
       "fix_blockers": [
         "manual-verification-required"
+      ],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
       ],
       "verification_evidence": [
         {
@@ -391,6 +427,15 @@
       "fix_blockers": [
         "manual-verification-required"
       ],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
       "verification_evidence": [
         {
           "type": "scanner-detection",
@@ -425,6 +470,15 @@
       "before_after_targets": [],
       "fix_blockers": [
         "manual-verification-required"
+      ],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
       ],
       "verification_evidence": [
         {
@@ -461,6 +515,15 @@
       "fix_blockers": [
         "manual-verification-required"
       ],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
       "verification_evidence": [
         {
           "type": "scanner-detection",
@@ -496,6 +559,15 @@
       "fix_blockers": [
         "manual-verification-required"
       ],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
       "verification_evidence": [
         {
           "type": "scanner-detection",
@@ -530,6 +602,15 @@
       "before_after_targets": [],
       "fix_blockers": [
         "manual-verification-required"
+      ],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
       ],
       "verification_evidence": [
         {
