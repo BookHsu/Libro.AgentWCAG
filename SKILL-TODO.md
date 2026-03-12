@@ -155,9 +155,9 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M20 CI Reporting And Policy Control
 
-- [ ] Add a structured machine-readable export (`--report-format sarif|json`) so CI can annotate pull requests with precise finding locations
-- [ ] Add severity threshold gates (`--fail-on critical|serious|moderate`) that map normalized findings to deterministic process exit codes
-- [ ] Add rule include/ignore controls (`--include-rule`, `--ignore-rule`, optional config file) for project-level policy tuning without code changes
+- [x] Add a structured machine-readable export (`--report-format sarif|json`) so CI can annotate pull requests with precise finding locations
+- [x] Add severity threshold gates (`--fail-on critical|serious|moderate`) that map normalized findings to deterministic process exit codes
+- [x] Add rule include/ignore controls (`--include-rule`, `--ignore-rule`, optional config file) for project-level policy tuning without code changes
 - [ ] Add baseline diff mode to compare against a committed prior report and fail only on newly introduced accessibility debt
 - [ ] Add CI integration docs and sample workflows for GitHub Actions, including artifact retention and PR annotation examples
 ## Notes
