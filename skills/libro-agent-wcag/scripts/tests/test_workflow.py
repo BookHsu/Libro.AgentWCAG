@@ -465,6 +465,28 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("no-safe-auto-fix", fix["fix_blockers"])
         self.assertEqual(report["summary"]["fix_blockers"][0]["rule_id"], "heading-order")
 
+    def test_assisted_fix_includes_steps_and_verification_rules(self) -> None:
+        contract = resolve_contract(
+            {
+                "target": "https://example.com",
+                "execution_mode": "suggest-only",
+            }
+        )
+        axe_data = {
+            "violations": [
+                {
+                    "id": "duplicate-id-aria",
+                    "impact": "serious",
+                    "description": "IDs used in ARIA and labels must be unique",
+                    "nodes": [{"target": ["[id='search-label']"]}],
+                }
+            ]
+        }
+        report = normalize_report(contract, axe_data, {"audits": {}}, None, None)
+        fix = report["fixes"][0]
+        self.assertEqual(fix["fixability"], "assisted")
+        self.assertGreater(len(fix["assisted_steps"]), 0)
+        self.assertGreater(len(fix["verification_rules"]), 0)
     def test_normalize_report_cli_generates_outputs(self) -> None:
         repo_root = Path(__file__).resolve().parents[4]
         with tempfile.TemporaryDirectory() as tmp:

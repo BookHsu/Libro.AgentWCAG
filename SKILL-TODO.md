@@ -19,14 +19,14 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M6 Assisted Remediation
 
-- [ ] Add assisted remediation flow for `duplicate-id-aria`
-- [ ] Add assisted remediation flow for `heading-order`
+- [x] Add assisted remediation flow for `duplicate-id-aria`
+- [x] Add assisted remediation flow for `heading-order`
 - [x] Add assisted remediation flow for `region`
 - [x] Add assisted remediation flow for `skip-link`
 - [x] Add assisted remediation flow for `tabindex`
-- [ ] Add assisted remediation flow for `presentation-role-conflict`
+- [x] Add assisted remediation flow for `presentation-role-conflict`
 - [ ] Add assisted remediation flow for `nested-interactive`
-- [ ] Add verification rules for assisted remediation changes
+- [x] Add verification rules for assisted remediation changes
 - [ ] Add downgrade semantics when assisted remediation cannot be safely applied
 
 ## M7 Report And Verification Model
