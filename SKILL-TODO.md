@@ -182,8 +182,14 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [x] Add scanner capability negotiation output (which scanners/rules were available) and surface it in summary metadata
 - [x] Add baseline signature customization hooks (target normalization and selector canonicalization) to reduce noisy churn across environments
 - [x] Add regression tests that freeze CLI contract behavior for mixed options (`--summary-only`, `--report-format sarif`, baseline gating, and findings cap)
+## M24 Policy Discoverability And Explainability
+
+- [x] Add CLI preset discovery output (`--list-policy-presets`) so automation can inspect available policy profiles without requiring `--target`.
+- [x] Add effective-policy explain mode (`--explain-policy`) that emits merged policy controls into `run_meta` and compact summary output.
+- [x] Add regression coverage for preset discovery and explain-policy output contracts, plus README usage notes.
 ## Notes
 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
+

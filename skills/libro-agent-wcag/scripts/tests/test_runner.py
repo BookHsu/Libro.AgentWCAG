@@ -166,10 +166,49 @@ class RunnerTests(unittest.TestCase):
             sys.argv = original
         self.assertEqual(args.policy_preset, "legacy")
 
+    def test_cli_accepts_policy_discovery_flags(self) -> None:
+        original = sys.argv
+        sys.argv = [
+            "run_accessibility_audit.py",
+            "--list-policy-presets",
+            "--explain-policy",
+        ]
+        try:
+            args = parse_args()
+        finally:
+            sys.argv = original
+        self.assertTrue(args.list_policy_presets)
+        self.assertTrue(args.explain_policy)
+
     def test_resolve_policy_preset_returns_expected_fail_on_and_ignore_rules(self) -> None:
         preset = runner._resolve_policy_preset('legacy')
         self.assertEqual(preset['fail_on'], 'serious')
         self.assertIn('meta-viewport', preset['ignore_rules'])
+
+    def test_policy_presets_payload_contains_balanced_profile(self) -> None:
+        payload = runner._policy_presets_payload()
+        names = [item['name'] for item in payload['presets']]
+        self.assertIn('balanced', names)
+
+    def test_build_effective_policy_includes_baseline_signature_controls(self) -> None:
+        policy = runner._build_effective_policy(
+            report_format='json',
+            fail_on='serious',
+            include_rules=['image-alt'],
+            ignore_rules=['meta-viewport'],
+            policy_preset={'name': 'legacy'},
+            policy_config_path='policy.json',
+            fail_on_new_only=True,
+            baseline_report_path='baseline.json',
+            baseline_signature_config={
+                'include_target_in_signature': True,
+                'target_normalization': 'host-path',
+                'selector_canonicalization': 'basic',
+            },
+        )
+        self.assertEqual(policy['preset'], 'legacy')
+        self.assertTrue(policy['fail_on_new_only'])
+        self.assertEqual(policy['baseline_signature']['selector_canonicalization'], 'basic')
 
     def test_build_scanner_capabilities_reports_mocked_rule_catalog(self) -> None:
         preflight = {
@@ -517,3 +556,4 @@ class RunnerPolicyTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
