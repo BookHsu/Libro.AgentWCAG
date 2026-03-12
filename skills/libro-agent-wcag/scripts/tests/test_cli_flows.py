@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -783,6 +784,84 @@ class CliFlowTests(unittest.TestCase):
             self.assertEqual(payload['findings'][0]['rule_id'], 'button-name')
             self.assertEqual(payload['run_meta']['findings_cap']['truncated'], 1)
 
+
+    def test_run_accessibility_audit_cli_contract_for_summary_sarif_baseline_and_cap(self) -> None:
+        test_dir = self.repo_root / 'automation-work' / 'm23-cli-contract-test'
+        if test_dir.exists():
+            shutil.rmtree(test_dir, ignore_errors=True)
+        test_dir.mkdir(parents=True, exist_ok=True)
+
+        html_path = test_dir / 'sample.html'
+        output_dir = test_dir / 'out'
+        axe_json = test_dir / 'axe.json'
+        baseline_json = test_dir / 'baseline.json'
+        html_path.write_text('<!doctype html><html><body><img class="hero" src="hero.png"><button class="icon"></button></body></html>', encoding='utf-8')
+        axe_json.write_text(
+            json.dumps(
+                {
+                    'violations': [
+                        {'id': 'image-alt', 'impact': 'serious', 'description': 'Image alt missing', 'nodes': [{'target': ['img.hero']}]},
+                        {'id': 'button-name', 'impact': 'moderate', 'description': 'Button name missing', 'nodes': [{'target': ['button.icon']}]},
+                    ]
+                }
+            ),
+            encoding='utf-8',
+        )
+        baseline_json.write_text(
+            json.dumps(
+                {
+                    'findings': [
+                        {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'status': 'open'}
+                    ]
+                }
+            ),
+            encoding='utf-8',
+        )
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(output_dir),
+                '--report-format',
+                'sarif',
+                '--summary-only',
+                '--sort-findings',
+                'rule',
+                '--max-findings',
+                '1',
+                '--fail-on',
+                'moderate',
+                '--fail-on-new-only',
+                '--baseline-report',
+                str(baseline_json),
+                '--policy-preset',
+                'legacy',
+                '--mock-axe-json',
+                str(axe_json),
+                '--skip-lighthouse',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 44, completed.stdout + completed.stderr)
+        compact = json.loads(completed.stdout.strip())
+        self.assertEqual(compact['status'], 'failed')
+        self.assertEqual(compact['policy_gate']['scope'], 'introduced-only')
+        self.assertEqual(compact['policy_gate']['exit_code'], 44)
+        self.assertEqual(compact['findings_cap']['truncated'], 1)
+        self.assertEqual(compact['baseline_diff']['introduced_count'], 1)
+        self.assertEqual(compact['scanner_capabilities']['available_scanners'], ['axe'])
+        self.assertEqual(compact['scanner_capabilities']['available_rule_count'], 2)
+        self.assertTrue((output_dir / 'wcag-report.sarif').exists())
+        sarif = json.loads((output_dir / 'wcag-report.sarif').read_text(encoding='utf-8'))
+        self.assertEqual(len(sarif['runs'][0]['results']), 1)
+        self.assertEqual(sarif['runs'][0]['results'][0]['ruleId'], 'button-name')
+
     def test_run_accessibility_audit_summary_only_prints_compact_json(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             html_path = Path(tmp) / 'sample.html'
@@ -813,5 +892,6 @@ class CliFlowTests(unittest.TestCase):
             self.assertIn('machine_output', compact)
 if __name__ == '__main__':
     unittest.main()
+
 
 

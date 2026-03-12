@@ -142,6 +142,55 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(args.sort_findings, "rule")
         self.assertTrue(args.summary_only)
 
+
+    def test_cli_accepts_policy_preset_flag(self) -> None:
+        original = sys.argv
+        sys.argv = [
+            "run_accessibility_audit.py",
+            "--target",
+            "https://example.com",
+            "--policy-preset",
+            "legacy",
+        ]
+        try:
+            args = parse_args()
+        finally:
+            sys.argv = original
+        self.assertEqual(args.policy_preset, "legacy")
+
+    def test_resolve_policy_preset_returns_expected_fail_on_and_ignore_rules(self) -> None:
+        preset = runner._resolve_policy_preset('legacy')
+        self.assertEqual(preset['fail_on'], 'serious')
+        self.assertIn('meta-viewport', preset['ignore_rules'])
+
+    def test_build_scanner_capabilities_reports_mocked_rule_catalog(self) -> None:
+        preflight = {
+            'tools': {
+                '@axe-core/cli': {'status': 'error'},
+                'lighthouse': {'status': 'error'},
+            }
+        }
+        report = {'run_meta': {'tools': {'axe': 'ok', 'lighthouse': 'skipped'}}}
+        args = type(
+            'Args',
+            (),
+            {
+                'skip_axe': False,
+                'skip_lighthouse': True,
+                'mock_axe_json': 'axe.json',
+                'mock_lighthouse_json': None,
+            },
+        )()
+        axe_data = {'violations': [{'id': 'image-alt'}, {'id': 'button-name'}]}
+        lighthouse_data = None
+
+        capabilities = runner._build_scanner_capabilities(preflight, report, args, axe_data, lighthouse_data)
+        self.assertTrue(capabilities['scanners']['axe']['available'])
+        self.assertEqual(capabilities['scanners']['axe']['input_mode'], 'mock')
+        self.assertFalse(capabilities['scanners']['lighthouse']['available'])
+        self.assertEqual(capabilities['available_rule_count'], 2)
+        self.assertEqual(capabilities['available_rules'], ['button-name', 'image-alt'])
+
     @patch("run_accessibility_audit.subprocess.run")
     def test_run_command_returns_stdout_on_success(self, mock_run) -> None:
         mock_run.return_value = type("Result", (), {"returncode": 0, "stdout": "ok", "stderr": ""})()
@@ -415,8 +464,4 @@ class RunnerPolicyTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-
-
-
 

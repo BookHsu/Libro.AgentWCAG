@@ -48,6 +48,26 @@ PREFLIGHT_TOOL_CHECKS = (
 SEVERITY_RANK = {"critical": 4, "serious": 3, "moderate": 2, "minor": 1, "info": 0}
 FAIL_ON_EXIT_CODES = {"critical": 42, "serious": 43, "moderate": 44}
 FINDING_SORT_MODES = {"severity", "rule", "target"}
+POLICY_PRESETS: dict[str, dict[str, Any]] = {
+    "strict": {
+        "fail_on": "moderate",
+        "include_rules": [],
+        "ignore_rules": [],
+        "description": "Fail on moderate+ unresolved findings with full rule coverage.",
+    },
+    "balanced": {
+        "fail_on": "serious",
+        "include_rules": [],
+        "ignore_rules": [],
+        "description": "Default CI balance for most repositories.",
+    },
+    "legacy": {
+        "fail_on": "serious",
+        "include_rules": [],
+        "ignore_rules": ["meta-viewport"],
+        "description": "Back-compat profile that ignores noisy viewport policy findings.",
+    },
+}
 
 
 def _extract_version_line(output: str) -> str | None:
@@ -299,6 +319,98 @@ def _normalize_rule_list(value: Any, name: str) -> list[str]:
     return [item.strip() for item in value if item.strip()]
 
 
+
+def _resolve_policy_preset(name: str | None) -> dict[str, Any]:
+    if not name:
+        return {}
+    preset = POLICY_PRESETS.get(name)
+    if not preset:
+        raise ValueError(f"unknown policy preset: {name}")
+    return {
+        "name": name,
+        "fail_on": preset["fail_on"],
+        "include_rules": list(preset["include_rules"]),
+        "ignore_rules": list(preset["ignore_rules"]),
+        "description": preset["description"],
+    }
+
+
+def _merge_rule_list(*groups: list[str]) -> list[str]:
+    ordered: list[str] = []
+    for group in groups:
+        for item in group:
+            value = item.strip()
+            if value and value not in ordered:
+                ordered.append(value)
+    return ordered
+
+
+def _collect_scanner_rule_ids(axe_data: dict[str, Any] | None, lighthouse_data: dict[str, Any] | None) -> list[str]:
+    rule_ids: set[str] = set()
+    if isinstance(axe_data, dict):
+        for violation in axe_data.get("violations", []):
+            if not isinstance(violation, dict):
+                continue
+            rule_id = str(violation.get("id", "")).strip()
+            if rule_id:
+                rule_ids.add(rule_id)
+    if isinstance(lighthouse_data, dict):
+        audits = lighthouse_data.get("audits", {})
+        if isinstance(audits, dict):
+            for audit_id in audits:
+                if isinstance(audit_id, str):
+                    value = audit_id.strip()
+                    if value:
+                        rule_ids.add(value)
+    return sorted(rule_ids)
+
+
+def _build_scanner_capabilities(
+    preflight: dict[str, Any],
+    report: dict[str, Any],
+    args: argparse.Namespace,
+    axe_data: dict[str, Any] | None,
+    lighthouse_data: dict[str, Any] | None,
+) -> dict[str, Any]:
+    tools = preflight.get("tools", {})
+    run_tools = report.get("run_meta", {}).get("tools", {})
+    available_rules = _collect_scanner_rule_ids(axe_data, lighthouse_data)
+    scanner_map = {
+        "axe": {
+            "requested": not args.skip_axe,
+            "mocked": bool(args.mock_axe_json),
+            "preflight_tool": "@axe-core/cli",
+        },
+        "lighthouse": {
+            "requested": not args.skip_lighthouse,
+            "mocked": bool(args.mock_lighthouse_json),
+            "preflight_tool": "lighthouse",
+        },
+    }
+    scanners: dict[str, Any] = {}
+    for scanner, config in scanner_map.items():
+        preflight_tool = config["preflight_tool"]
+        preflight_entry = tools.get(preflight_tool, {})
+        preflight_status = str(preflight_entry.get("status", "unknown"))
+        input_mode = "skipped"
+        if config["mocked"]:
+            input_mode = "mock"
+        elif config["requested"]:
+            input_mode = "live"
+        scanners[scanner] = {
+            "requested": config["requested"],
+            "input_mode": input_mode,
+            "preflight_status": preflight_status,
+            "run_status": run_tools.get(scanner, "unknown"),
+            "available": bool(config["mocked"] or preflight_status == "ok"),
+        }
+
+    return {
+        "scanners": scanners,
+        "available_rules": available_rules,
+        "available_rule_count": len(available_rules),
+    }
+
 def _rebuild_summary(report: dict[str, Any]) -> None:
     findings = report.get('findings', [])
     fixes = report.get('fixes', [])
@@ -423,6 +535,9 @@ def _build_compact_summary(
     findings_cap = report.get('run_meta', {}).get('findings_cap')
     if findings_cap:
         compact['findings_cap'] = findings_cap
+    scanner_capabilities = summary.get('scanner_capabilities')
+    if scanner_capabilities:
+        compact['scanner_capabilities'] = scanner_capabilities
     return compact
 
 def _apply_rule_policy(
@@ -623,6 +738,12 @@ def parse_args() -> argparse.Namespace:
         help="Optional JSON file with report_format/fail_on/include_rules/ignore_rules.",
     )
     parser.add_argument(
+        "--policy-preset",
+        choices=sorted(POLICY_PRESETS),
+        default=None,
+        help="Optional policy preset (strict|balanced|legacy) for deterministic fail-on and rule filters.",
+    )
+    parser.add_argument(
         "--baseline-report",
         help="Optional prior JSON report to compare unresolved debt and detect newly introduced findings.",
     )
@@ -677,6 +798,7 @@ def main() -> int:
     args = parse_args()
     policy_config = _load_policy_config(args.policy_config)
     baseline_report = _load_baseline_report(args.baseline_report)
+    policy_preset = _resolve_policy_preset(args.policy_preset)
     config_report_format = policy_config.get('report_format')
     config_fail_on = policy_config.get('fail_on')
     config_include = _normalize_rule_list(policy_config.get('include_rules'), 'include_rules')
@@ -687,10 +809,22 @@ def main() -> int:
     if config_fail_on and config_fail_on not in {'critical', 'serious', 'moderate'}:
         raise ValueError('policy-config fail_on must be one of: critical, serious, moderate')
 
+    preset_fail_on = policy_preset.get('fail_on')
+    preset_include = _normalize_rule_list(policy_preset.get('include_rules'), 'preset.include_rules')
+    preset_ignore = _normalize_rule_list(policy_preset.get('ignore_rules'), 'preset.ignore_rules')
+
     report_format = args.report_format or config_report_format or 'json'
-    fail_on = args.fail_on or config_fail_on
-    include_rules = config_include + [item.strip() for item in args.include_rule if item.strip()]
-    ignore_rules = config_ignore + [item.strip() for item in args.ignore_rule if item.strip()]
+    fail_on = args.fail_on or config_fail_on or preset_fail_on
+    include_rules = _merge_rule_list(
+        preset_include,
+        config_include,
+        [item.strip() for item in args.include_rule if item.strip()],
+    )
+    ignore_rules = _merge_rule_list(
+        preset_ignore,
+        config_ignore,
+        [item.strip() for item in args.ignore_rule if item.strip()],
+    )
 
     if args.skip_axe and args.mock_axe_json:
         raise ValueError('--skip-axe cannot be combined with --mock-axe-json')
@@ -805,6 +939,8 @@ def main() -> int:
         'initial_backoff_seconds': args.scanner_retry_backoff_seconds,
         'max_backoff_seconds': MAX_SCANNER_RETRY_BACKOFF_SECONDS,
     }
+    if policy_preset:
+        report['run_meta']['policy_preset'] = policy_preset
     if scanner_retry_runs:
         report['run_meta']['scanner_retries'] = scanner_retry_runs
         retried_tools = [item['tool'] for item in scanner_retry_runs if item.get('retry_count', 0) > 0]
@@ -820,6 +956,7 @@ def main() -> int:
     before_policy_count, after_policy_count = _apply_rule_policy(report, include_rules, ignore_rules)
     if include_rules or ignore_rules:
         report['run_meta']['policy'] = {
+            'preset': policy_preset.get('name'),
             'include_rules': include_rules,
             'ignore_rules': ignore_rules,
             'before_filter_count': before_policy_count,
@@ -900,7 +1037,17 @@ def main() -> int:
             report['run_meta']['notes'].append(
                 f"Applied --max-findings={args.max_findings}: truncated {findings_cap['truncated']} findings."
             )
-
+    scanner_capabilities = _build_scanner_capabilities(preflight, report, args, axe_data, lighthouse_data)
+    report['run_meta']['scanner_capabilities'] = scanner_capabilities
+    report.setdefault('summary', {})['scanner_capabilities'] = {
+        'available_scanners': sorted(
+            [name for name, details in scanner_capabilities['scanners'].items() if details.get('available')]
+        ),
+        'unavailable_scanners': sorted(
+            [name for name, details in scanner_capabilities['scanners'].items() if not details.get('available')]
+        ),
+        'available_rule_count': scanner_capabilities['available_rule_count'],
+    }
     output_json = output_dir / 'wcag-report.json'
     output_md = output_dir / 'wcag-report.md'
     if report_format == 'json':
@@ -974,12 +1121,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-
-
-
-
-
-
 
