@@ -76,6 +76,28 @@ POLICY_PRESETS: dict[str, dict[str, Any]] = {
     },
 }
 ALLOWED_POLICY_CONFIG_KEYS = {"report_format", "fail_on", "include_rules", "ignore_rules"}
+POLICY_CONFIG_KEY_SPECS: dict[str, dict[str, Any]] = {
+    "report_format": {
+        "type": "string",
+        "allowed_values": ["json", "sarif"],
+        "description": "Primary machine-readable output format.",
+    },
+    "fail_on": {
+        "type": "string",
+        "allowed_values": ["critical", "serious", "moderate"],
+        "description": "Policy gate threshold for unresolved findings.",
+    },
+    "include_rules": {
+        "type": "list[string]",
+        "allowed_values": "normalized rule ids",
+        "description": "Allow-list for findings by normalized rule id.",
+    },
+    "ignore_rules": {
+        "type": "list[string]",
+        "allowed_values": "normalized rule ids",
+        "description": "Ignore-list for findings by normalized rule id.",
+    },
+}
 
 
 def _extract_version_line(output: str) -> str | None:
@@ -365,6 +387,21 @@ def _policy_presets_payload() -> dict[str, Any]:
     return {"presets": presets}
 
 
+def _policy_config_keys_payload() -> dict[str, Any]:
+    keys: list[dict[str, Any]] = []
+    for name in sorted(ALLOWED_POLICY_CONFIG_KEYS):
+        details = POLICY_CONFIG_KEY_SPECS.get(name, {})
+        keys.append(
+            {
+                "name": name,
+                "type": details.get("type", "unknown"),
+                "allowed_values": details.get("allowed_values", []),
+                "description": details.get("description", ""),
+            }
+        )
+    return {"keys": keys}
+
+
 def _build_effective_policy(
     *,
     report_format: str,
@@ -377,6 +414,7 @@ def _build_effective_policy(
     fail_on_new_only: bool,
     baseline_report_path: str | None,
     baseline_signature_config: dict[str, Any],
+    overlapping_rules: list[str],
 ) -> dict[str, Any]:
     return {
         "report_format": report_format,
@@ -389,6 +427,8 @@ def _build_effective_policy(
         "fail_on_new_only": fail_on_new_only,
         "baseline_report_path": baseline_report_path,
         "baseline_signature": baseline_signature_config,
+        "overlapping_rules": overlapping_rules,
+        "rule_overlap_resolution": "ignore-rules-win",
     }
 
 
@@ -426,6 +466,12 @@ def _resolve_effective_policy_path(path_value: str | None, output_dir: Path) -> 
     if path_value == "AUTO":
         return output_dir / "wcag-effective-policy.json"
     return Path(path_value)
+
+
+def _find_rule_policy_overlaps(include_rules: list[str], ignore_rules: list[str]) -> list[str]:
+    include_set = {item for item in include_rules if item}
+    ignore_set = {item for item in ignore_rules if item}
+    return sorted(include_set & ignore_set)
 
 
 def _merge_rule_list(*groups: list[str]) -> list[str]:
@@ -634,6 +680,9 @@ def _build_compact_summary(
     effective_policy = report.get('run_meta', {}).get('policy_effective')
     if effective_policy:
         compact['policy_effective'] = effective_policy
+    policy_rule_overlap = report.get('run_meta', {}).get('policy_rule_overlap')
+    if policy_rule_overlap:
+        compact['policy_rule_overlap'] = policy_rule_overlap
     return compact
 
 def _apply_rule_policy(
@@ -949,9 +998,19 @@ def parse_args() -> argparse.Namespace:
         help="Print available policy presets and exit.",
     )
     parser.add_argument(
+        "--list-policy-config-keys",
+        action="store_true",
+        help="Print supported --policy-config keys and exit.",
+    )
+    parser.add_argument(
         "--explain-policy",
         action="store_true",
         help="Include effective merged policy settings in run metadata and summary output.",
+    )
+    parser.add_argument(
+        "--strict-rule-overlap",
+        action="store_true",
+        help="Fail when any rule id appears in both include and ignore policy lists.",
     )
     parser.add_argument(
         "--write-effective-policy",
@@ -1033,8 +1092,11 @@ def main() -> int:
     if args.list_policy_presets:
         print(json.dumps(_policy_presets_payload(), ensure_ascii=False, indent=2))
         return 0
+    if args.list_policy_config_keys:
+        print(json.dumps(_policy_config_keys_payload(), ensure_ascii=False, indent=2))
+        return 0
     if not args.target and not args.preflight_only:
-        raise ValueError('--target is required unless --list-policy-presets is used')
+        raise ValueError('--target is required unless --list-policy-presets or --list-policy-config-keys is used')
 
     policy_config = _load_policy_config(args.policy_config)
     baseline_report = _load_baseline_report(args.baseline_report)
@@ -1068,6 +1130,12 @@ def main() -> int:
         config_ignore,
         cli_ignore_rules,
     )
+    overlapping_rules = _find_rule_policy_overlaps(include_rules, ignore_rules)
+    if overlapping_rules and args.strict_rule_overlap:
+        raise ValueError(
+            '--strict-rule-overlap detected rule ids present in both include and ignore lists: '
+            + ", ".join(overlapping_rules)
+        )
     policy_sources = {
         'report_format': _policy_value_source(args.report_format, config_report_format, None, 'default'),
         'fail_on': _policy_value_source(args.fail_on, config_fail_on, preset_fail_on, 'unset'),
@@ -1113,6 +1181,7 @@ def main() -> int:
         fail_on_new_only=bool(args.fail_on_new_only),
         baseline_report_path=args.baseline_report,
         baseline_signature_config=baseline_signature_config,
+        overlapping_rules=overlapping_rules,
     )
 
     contract = resolve_contract(
@@ -1216,6 +1285,7 @@ def main() -> int:
             'preset': effective_policy['preset'],
             'include_rule_count': len(effective_policy['include_rules']),
             'ignore_rule_count': len(effective_policy['ignore_rules']),
+            'overlapping_rule_count': len(effective_policy.get('overlapping_rules', [])),
         }
     if effective_policy_output is not None:
         effective_policy_output.parent.mkdir(parents=True, exist_ok=True)
@@ -1242,11 +1312,21 @@ def main() -> int:
             'preset': policy_preset.get('name'),
             'include_rules': include_rules,
             'ignore_rules': ignore_rules,
+            'overlapping_rules': overlapping_rules,
+            'rule_overlap_resolution': 'ignore-rules-win',
             'before_filter_count': before_policy_count,
             'after_filter_count': after_policy_count,
         }
         report['run_meta']['notes'].append(
             f'Rule policy filter applied: {before_policy_count} -> {after_policy_count} findings.'
+        )
+    if overlapping_rules:
+        report['run_meta']['policy_rule_overlap'] = {
+            'overlapping_rules': overlapping_rules,
+            'resolution': 'ignore-rules-win',
+        }
+        report['run_meta']['notes'].append(
+            'Rule policy overlap detected (ignore-rules-win): ' + ", ".join(overlapping_rules)
         )
 
     if contract.execution_mode == 'apply-fixes':

@@ -66,6 +66,67 @@ class CliFlowTests(unittest.TestCase):
         self.assertNotEqual(completed.returncode, 0)
         self.assertIn('Unsupported target scheme', completed.stderr + completed.stdout)
 
+    def test_run_accessibility_audit_lists_policy_config_keys_without_target(self) -> None:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--list-policy-config-keys',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        payload = json.loads(completed.stdout)
+        key_names = [item['name'] for item in payload['keys']]
+        self.assertIn('report_format', key_names)
+        self.assertIn('ignore_rules', key_names)
+
+    def test_run_accessibility_audit_strict_rule_overlap_fails_fast(self) -> None:
+        workspace = self.repo_root / 'automation-work' / 'm26-cli-overlap-test'
+        if workspace.exists():
+            shutil.rmtree(workspace, ignore_errors=True)
+        workspace.mkdir(parents=True, exist_ok=True)
+        html_path = workspace / 'sample.html'
+        output_dir = workspace / 'out'
+        axe_json = workspace / 'axe.json'
+        html_path.write_text('<!doctype html><html><body><img class="hero" src="hero.png"></body></html>', encoding='utf-8')
+        axe_json.write_text(
+            json.dumps(
+                {
+                    'violations': [
+                        {'id': 'image-alt', 'impact': 'serious', 'description': 'Image alt missing', 'nodes': [{'target': ['img.hero']}]},
+                    ]
+                }
+            ),
+            encoding='utf-8',
+        )
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(output_dir),
+                '--include-rule',
+                'image-alt',
+                '--ignore-rule',
+                'image-alt',
+                '--strict-rule-overlap',
+                '--mock-axe-json',
+                str(axe_json),
+                '--skip-lighthouse',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn('--strict-rule-overlap detected rule ids', completed.stdout + completed.stderr)
     def test_normalize_report_cli_with_both_tool_inputs_dedupes_findings(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             axe_json = Path(tmp) / 'axe.json'
@@ -1058,3 +1119,4 @@ class CliFlowTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
