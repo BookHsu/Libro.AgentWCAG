@@ -75,10 +75,10 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 ## M11 Adapter Maturity
 
 - [x] Add adapter-specific failure recovery transcripts
-- [ ] Add adapter-specific first-run output examples
-- [ ] Add adapter-specific end-to-end output snapshots
-- [ ] Add adapter-specific downgrade and escalation examples
-- [ ] Add adapter-specific smoke coverage for new remediation lifecycle fields
+- [x] Add adapter-specific first-run output examples
+- [x] Add adapter-specific end-to-end output snapshots
+- [x] Add adapter-specific downgrade and escalation examples
+- [x] Add adapter-specific smoke coverage for new remediation lifecycle fields
 
 ## M12 Quality Gates
 
@@ -93,3 +93,4 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
+

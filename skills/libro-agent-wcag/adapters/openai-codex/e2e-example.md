@@ -23,3 +23,23 @@ Use $libro-agent-wcag with:
 - Core workflow may emit `wcag-fixes.diff`.
 - JSON includes canonical `fixability`, `verification_status`, and `diff_summary` fields.
 - Any unsupported fixes remain planned for the agent to handle explicitly.
+
+## Output Snapshot
+
+```json
+{
+  "run_meta": {
+    "task_mode": "modify",
+    "execution_mode": "apply-fixes"
+  },
+  "summary": {
+    "auto_fixed_count": 3,
+    "manual_required_count": 1,
+    "remediation_lifecycle": {
+      "implemented": 3,
+      "planned": 1,
+      "manual_review_required": 1
+    }
+  }
+}
+```

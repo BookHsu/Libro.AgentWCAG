@@ -23,3 +23,23 @@ Invoke libro-agent-wcag core contract with:
 - One deduplicated finding per rule/target pair.
 - Matching issue IDs across Markdown and JSON.
 - Suggested fixes remain `planned` when no safe auto-fix runs.
+
+## Output Snapshot
+
+```json
+{
+  "run_meta": {
+    "task_mode": "modify",
+    "execution_mode": "suggest-only"
+  },
+  "summary": {
+    "auto_fixed_count": 0,
+    "manual_required_count": 1,
+    "remediation_lifecycle": {
+      "implemented": 0,
+      "planned": 2,
+      "manual_review_required": 1
+    }
+  }
+}
+```
