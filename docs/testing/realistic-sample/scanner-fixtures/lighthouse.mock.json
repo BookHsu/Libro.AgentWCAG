@@ -1,0 +1,24 @@
+{
+  "audits": {
+    "meta-viewport": {
+      "score": 0,
+      "scoreDisplayMode": "binary",
+      "title": "User-scalable is not disabled",
+      "details": {
+        "items": [
+          {"node": {"selector": "meta[name=\"viewport\"]"}}
+        ]
+      }
+    },
+    "link-name": {
+      "score": 0,
+      "scoreDisplayMode": "binary",
+      "title": "Links have discernible text",
+      "details": {
+        "items": [
+          {"node": {"selector": "a.jump-link"}}
+        ]
+      }
+    }
+  }
+}
