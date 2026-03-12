@@ -113,6 +113,11 @@ class RunnerTests(unittest.TestCase):
             "serious",
             "--baseline-report",
             "baseline.json",
+            "--baseline-include-target",
+            "--baseline-target-normalization",
+            "host-path",
+            "--baseline-selector-canonicalization",
+            "basic",
             "--fail-on-new-only",
         ]
         try:
@@ -120,6 +125,9 @@ class RunnerTests(unittest.TestCase):
         finally:
             sys.argv = original
         self.assertEqual(args.baseline_report, "baseline.json")
+        self.assertTrue(args.baseline_include_target)
+        self.assertEqual(args.baseline_target_normalization, "host-path")
+        self.assertEqual(args.baseline_selector_canonicalization, "basic")
         self.assertTrue(args.fail_on_new_only)
 
     def test_cli_accepts_findings_controls_flags(self) -> None:
@@ -462,6 +470,50 @@ class RunnerPolicyTests(unittest.TestCase):
         self.assertEqual(diff['persistent_count'], 1)
         self.assertEqual(diff['introduced_signatures'], ['button-name|button.icon'])
 
+
+    def test_build_baseline_diff_selector_canonicalization_reduces_noise(self) -> None:
+        signature_config = {
+            'include_target_in_signature': False,
+            'target_normalization': 'none',
+            'selector_canonicalization': 'basic',
+        }
+        current = {
+            'findings': [
+                {'rule_id': 'image-alt', 'changed_target': 'div.main > img.hero', 'status': 'open'},
+            ]
+        }
+        baseline = {
+            'findings': [
+                {'rule_id': 'image-alt', 'changed_target': 'div.main>img.hero', 'status': 'open'},
+            ]
+        }
+
+        diff = runner._build_baseline_diff(current, baseline, signature_config)
+        self.assertEqual(diff['introduced_count'], 0)
+        self.assertEqual(diff['persistent_count'], 1)
+
+    def test_build_baseline_diff_target_normalization_matches_file_and_uri(self) -> None:
+        signature_config = {
+            'include_target_in_signature': True,
+            'target_normalization': 'path-only',
+            'selector_canonicalization': 'none',
+        }
+        current = {
+            'target': {'value': 'file:///C:/repo/app/index.html'},
+            'findings': [
+                {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'status': 'open'},
+            ],
+        }
+        baseline = {
+            'target': {'value': 'C:\\repo\\app\\index.html'},
+            'findings': [
+                {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'status': 'open'},
+            ],
+        }
+
+        diff = runner._build_baseline_diff(current, baseline, signature_config)
+        self.assertEqual(diff['introduced_count'], 0)
+        self.assertEqual(diff['persistent_count'], 1)
+
 if __name__ == "__main__":
     unittest.main()
-

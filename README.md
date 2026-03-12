@@ -121,7 +121,7 @@ Current implementation note:
 - Non-local targets, unsupported local file types, and higher-risk remediation classes remain `suggest-only` or assisted/manual by design. See `docs/release/apply-fixes-scope.md` for the explicit scope matrix and boundaries.
 - Scanner runtime resilience is configurable via `--scanner-retry-attempts` and `--scanner-retry-backoff-seconds`. See `docs/release/resilient-run-patterns.md` for recommended CI patterns.
 - CI policy controls are available via `--report-format (json|sarif)`, `--fail-on`, `--include-rule`, `--ignore-rule`, `--policy-config`, and `--policy-preset (strict|balanced|legacy)` for deterministic gating and per-project rule policy. `--sort-findings` and `--max-findings` keep output ordering deterministic and report volume manageable for CI triage.
-- Baseline diff gating is available via `--baseline-report` and `--fail-on-new-only` to fail only on newly introduced unresolved debt. `--summary-only` prints a compact JSON gate summary while still writing full artifacts to disk, including scanner capability negotiation metadata (`available_scanners`, `unavailable_scanners`, `available_rule_count`).
+- Baseline diff gating is available via `--baseline-report` and `--fail-on-new-only` to fail only on newly introduced unresolved debt. Signature churn can be tuned with `--baseline-include-target`, `--baseline-target-normalization`, and `--baseline-selector-canonicalization`. `--summary-only` prints a compact JSON gate summary while still writing full artifacts to disk, including scanner capability negotiation metadata (`available_scanners`, `unavailable_scanners`, `available_rule_count`). JSON reports now include `report_schema.version` (`1.0.0`) and stage schema artifacts under `out/schemas/wcag-report-1.0.0.schema.json` for CI compatibility checks before parsing.
 
 Current adapter coverage:
 
@@ -172,4 +172,3 @@ python scripts/validate_skill.py skills/libro-agent-wcag
 
 - Use `docs/automations/test-plan-automation.md` as the execution spec for scheduled Codex test-development automation. This lane focuses only on test development, testing-plan updates, commits, and pushes.
 - Use `docs/automations/test-plan-review-policy.md` as the review policy before accepting automation-generated changes.
-
