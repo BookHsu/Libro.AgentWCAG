@@ -412,7 +412,62 @@ class AutoFixTests(unittest.TestCase):
             self.assertEqual(diffs[2], '')
             self.assertEqual(fixed_counts, [2, 0, 0])
 
+    def test_apply_report_fixes_supports_react_jsx_image_alt(self) -> None:
+        fixture = Path(__file__).parent / 'fixtures' / 'react-specific.jsx'
+        with tempfile.TemporaryDirectory() as tmp:
+            working = Path(tmp) / fixture.name
+            working.write_text(fixture.read_text(encoding='utf-8'), encoding='utf-8')
+            contract = resolve_contract({'target': str(working), 'execution_mode': 'apply-fixes'})
+            axe_data = {
+                'violations': [
+                    {'id': 'image-alt', 'impact': 'serious', 'description': 'Images need alt', 'nodes': [{'target': ['img.hero']}]},
+                    {'id': 'button-name', 'impact': 'serious', 'description': 'Buttons need names', 'nodes': [{'target': ['button.icon-only']}]},
+                ]
+            }
+            report = normalize_report(contract, axe_data, {'audits': {}}, None, None)
+            updated_report, diff_text = apply_report_fixes(working, report)
+            updated_text = working.read_text(encoding='utf-8')
+            self.assertIn('alt=""', updated_text)
+            self.assertIn('aria-label="Button"', updated_text)
+            self.assertTrue(any('framework-aware alt remediation for react' in item['description'] for item in updated_report['summary']['diff_summary']))
+            self.assertGreaterEqual(updated_report['summary']['remediation_lifecycle']['implemented'], 2)
+
+    def test_apply_report_fixes_supports_vue_template_image_alt(self) -> None:
+        fixture = Path(__file__).parent / 'fixtures' / 'vue-specific.vue'
+        with tempfile.TemporaryDirectory() as tmp:
+            working = Path(tmp) / fixture.name
+            working.write_text(fixture.read_text(encoding='utf-8'), encoding='utf-8')
+            contract = resolve_contract({'target': str(working), 'execution_mode': 'apply-fixes'})
+            axe_data = {
+                'violations': [
+                    {'id': 'image-alt', 'impact': 'serious', 'description': 'Images need alt', 'nodes': [{'target': ['img.hero']}]},
+                ]
+            }
+            report = normalize_report(contract, axe_data, {'audits': {}}, None, None)
+            updated_report, diff_text = apply_report_fixes(working, report)
+            updated_text = working.read_text(encoding='utf-8')
+            self.assertIn('alt=""', updated_text)
+            self.assertTrue(any('framework-aware alt remediation for vue' in item['description'] for item in updated_report['summary']['diff_summary']))
+
+    def test_apply_report_fixes_supports_nextjs_layout_lang_and_image_alt(self) -> None:
+        fixture = Path(__file__).parent / 'fixtures' / 'nextjs-layout.tsx'
+        with tempfile.TemporaryDirectory() as tmp:
+            working = Path(tmp) / fixture.name
+            working.write_text(fixture.read_text(encoding='utf-8'), encoding='utf-8')
+            contract = resolve_contract({'target': str(working), 'execution_mode': 'apply-fixes'})
+            axe_data = {
+                'violations': [
+                    {'id': 'html-has-lang', 'impact': 'moderate', 'description': 'Document should define language', 'nodes': [{'target': ['Html']}]},
+                    {'id': 'image-alt', 'impact': 'serious', 'description': 'Images need alt', 'nodes': [{'target': ['Image']}]},
+                ]
+            }
+            report = normalize_report(contract, axe_data, {'audits': {}}, None, None)
+            updated_report, diff_text = apply_report_fixes(working, report)
+            updated_text = working.read_text(encoding='utf-8')
+            self.assertIn('<Html lang="en">', updated_text)
+            self.assertIn('alt=""', updated_text)
+            self.assertTrue(any('Next.js Html/html layout root' in item['description'] for item in updated_report['summary']['diff_summary']))
+            self.assertGreaterEqual(updated_report['summary']['remediation_lifecycle']['implemented'], 2)
+
 if __name__ == '__main__':
     unittest.main()
-
-

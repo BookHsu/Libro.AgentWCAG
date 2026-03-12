@@ -65,11 +65,11 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M10 Framework-Aware Remediation
 
-- [ ] Add React JSX rewrite helpers
-- [ ] Add Vue template rewrite helpers
-- [ ] Add Next.js layout and language rewrite helpers
-- [ ] Upgrade framework hints into framework-aware remediation strategies
-- [ ] Add framework-specific auto-fix tests
+- [x] Add React JSX rewrite helpers
+- [x] Add Vue template rewrite helpers
+- [x] Add Next.js layout and language rewrite helpers
+- [x] Upgrade framework hints into framework-aware remediation strategies
+- [x] Add framework-specific auto-fix tests
 - [ ] Add framework-specific snapshot baselines
 
 ## M11 Adapter Maturity
