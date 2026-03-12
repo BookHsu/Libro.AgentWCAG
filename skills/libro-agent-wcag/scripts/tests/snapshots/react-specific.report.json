@@ -87,9 +87,9 @@
       ],
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
-        "react": "Prefer semantic JSX and explicit aria/label props.",
-        "vue": "Bind semantic attributes explicitly in templates.",
-        "nextjs": "Preserve semantic output after server/client rendering."
+        "react": "In JSX, ensure every <img> has an explicit alt prop; keep icon-only media as alt=\"\".",
+        "vue": "In Vue templates, provide alt or :alt bindings for each img element.",
+        "nextjs": "For next/image, require alt on every <Image> usage and keep decorative media alt=\"\"."
       }
     }
   ],
