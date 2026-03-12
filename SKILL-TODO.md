@@ -91,9 +91,15 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [x] Add negative tests to ensure unsupported rules do not mutate files
 - [x] Add stability tests for repeated normalize plus apply-fixes runs
 
+## M13 Framework Hint Snapshot Consistency
+
+- [x] Align image-alt framework hints in fixture snapshots with framework-aware remediation wording
+- [x] Refresh fixture report snapshots for missing-alt, React, Vue, and Next.js framework fixtures
+- [x] Verify fixture integration and remediation strategy tests pass after snapshot updates
 ## Notes
 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
+
 
