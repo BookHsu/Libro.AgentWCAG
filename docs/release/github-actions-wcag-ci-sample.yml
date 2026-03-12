@@ -1,0 +1,58 @@
+name: WCAG CI Sample
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  wcag-audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install runtime deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml
+
+      - name: Run WCAG audit (SARIF + baseline gate)
+        run: |
+          python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
+            --target docs/testing/realistic-sample/mixed-findings.html \
+            --execution-mode suggest-only \
+            --output-language en \
+            --output-dir out/ci \
+            --report-format sarif \
+            --fail-on serious \
+            --baseline-report .ci/wcag-baseline.json \
+            --fail-on-new-only
+
+      - name: Upload WCAG reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: wcag-reports
+          path: |
+            out/ci/wcag-report.json
+            out/ci/wcag-report.md
+            out/ci/wcag-report.sarif
+          retention-days: 14
+
+      - name: Upload SARIF for PR annotation
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: out/ci/wcag-report.sarif
+
