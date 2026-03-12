@@ -10,7 +10,7 @@ SCRIPT_ROOT = Path(__file__).resolve().parents[1]
 if str(SCRIPT_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPT_ROOT))
 
-from remediation_library import get_strategy
+from remediation_library import get_framework_strategy, get_strategy
 
 
 class RemediationLibraryTests(unittest.TestCase):
@@ -40,6 +40,14 @@ class RemediationLibraryTests(unittest.TestCase):
                 self.assertGreaterEqual(len(strategy["assisted_steps"]), 2)
                 self.assertGreaterEqual(len(strategy["verification_rules"]), 2)
 
+    def test_framework_strategies_return_rule_specific_guidance(self) -> None:
+        self.assertIn('JSX rewrite helper', get_framework_strategy('image-alt', 'react'))
+        self.assertIn('layout.tsx', get_framework_strategy('html-has-lang', 'nextjs'))
+
+    def test_framework_strategy_falls_back_to_hints(self) -> None:
+        fallback = get_framework_strategy('unknown-rule', 'vue')
+        self.assertIn('templates', fallback)
+
+
 if __name__ == "__main__":
     unittest.main()
-
