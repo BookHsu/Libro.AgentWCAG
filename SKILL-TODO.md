@@ -134,10 +134,17 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [ ] Add reusable templates for common audit prompts or adapter invocation flows
 - [ ] Add issue templates or troubleshooting intake docs for installation failures and remediation mismatches
 - [ ] Decide whether release packaging extras belong inside this repo or in a companion examples repo
+
+## M18 Apply-Fixes Safety And Operability
+
+- [ ] Add a preflight scanner/tooling check command that validates `npx`, `@axe-core/cli`, and `lighthouse` availability before runtime
+- [ ] Add a `--dry-run` mode to `run_accessibility_audit.py` for `apply-fixes` that emits projected diff metadata without mutating files
+- [ ] Add atomic write plus rollback safeguards for `apply_report_fixes` to prevent partial writes on interruption or I/O failure
+- [ ] Add rule-level mutation telemetry in `run_meta` (changed file path, rule id, and mutation count) for every successful auto-fix
+- [ ] Add regression fixtures for malformed HTML and edge encodings to verify regex-based rewrites do not corrupt source structure
+
 ## Notes
 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
-
-
