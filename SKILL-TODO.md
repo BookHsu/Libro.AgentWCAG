@@ -169,9 +169,9 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M22 Developer Experience And Triage Precision
 
-- [ ] Add source line/column enrichment in normalized findings (best-effort mapping from scanner nodes) to improve PR annotation accuracy
-- [ ] Add `--max-findings` and deterministic sorting controls to keep large reports actionable in CI logs
-- [ ] Add compact summary mode (`--summary-only`) for quick gate checks while preserving full artifacts
+- [x] Add source line/column enrichment in normalized findings (best-effort mapping from scanner nodes) to improve PR annotation accuracy
+- [x] Add `--max-findings` and deterministic sorting controls to keep large reports actionable in CI logs
+- [x] Add compact summary mode (`--summary-only`) for quick gate checks while preserving full artifacts
 - [ ] Add regression coverage for policy gate behavior across mixed severity and baseline-diff combinations
 - [ ] Add docs for triage workflow (`new`, `persistent`, `resolved`) with sample review checklists and ownership handoff
 
@@ -180,4 +180,5 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
+
 

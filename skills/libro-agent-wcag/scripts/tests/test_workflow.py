@@ -455,6 +455,21 @@ class WorkflowTests(unittest.TestCase):
         report = normalize_report(contract, axe_data, {"audits": {}}, None, None)
         self.assertEqual(report["findings"][0]["changed_target"], "unknown")
 
+    def test_finding_includes_best_effort_source_location(self) -> None:
+        contract = resolve_contract({"target": "https://example.com"})
+        axe_data = {
+            "violations": [
+                {
+                    "id": "image-alt",
+                    "impact": "serious",
+                    "description": "Images must have alternate text",
+                    "nodes": [{"target": ["img.hero"], "line": 12, "column": 4}],
+                }
+            ]
+        }
+        report = normalize_report(contract, axe_data, {"audits": {}}, None, None)
+        self.assertEqual(report["findings"][0]["source_line"], 12)
+        self.assertEqual(report["findings"][0]["source_column"], 4)
     def test_output_language_english_changes_markdown_labels(self) -> None:
         contract = resolve_contract({"target": "https://example.com", "output_language": "en-US"})
         report = normalize_report(contract, {"violations": []}, {"audits": {}}, None, None)
@@ -585,4 +600,5 @@ class WorkflowTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
 

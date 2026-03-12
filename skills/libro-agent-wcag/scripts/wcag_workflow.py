@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -346,6 +347,99 @@ def load_json_file(path: str | None) -> dict[str, Any] | None:
     with payload.open("r", encoding="utf-8") as handle:
         return json.load(handle)
 
+def _coerce_positive_int(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if value > 0 else None
+    if isinstance(value, float) and value.is_integer():
+        return int(value) if value > 0 else None
+    if isinstance(value, str):
+        text = value.strip()
+        if text.isdigit():
+            parsed = int(text)
+            return parsed if parsed > 0 else None
+    return None
+
+
+def _extract_location_from_text(value: str) -> dict[str, int] | None:
+    match = re.search(r"line\s*[:=]?\s*(\d+)(?:\D+column\s*[:=]?\s*(\d+))?", value, re.IGNORECASE)
+    if not match:
+        return None
+    line = _coerce_positive_int(match.group(1))
+    column = _coerce_positive_int(match.group(2)) if match.group(2) else None
+    if line is None:
+        return None
+    location: dict[str, int] = {"line": line}
+    if column is not None:
+        location["column"] = column
+    return location
+
+
+def _extract_source_location(payload: Any) -> dict[str, int] | None:
+    if not isinstance(payload, dict):
+        return None
+
+    line_keys = (
+        "line",
+        "lineNumber",
+        "line_number",
+        "sourceLine",
+        "source_line",
+        "startLine",
+        "start_line",
+    )
+    column_keys = (
+        "column",
+        "columnNumber",
+        "column_number",
+        "sourceColumn",
+        "source_column",
+        "startColumn",
+        "start_column",
+    )
+
+    line = next((_coerce_positive_int(payload.get(key)) for key in line_keys if key in payload), None)
+    column = next((_coerce_positive_int(payload.get(key)) for key in column_keys if key in payload), None)
+
+    if line is not None:
+        location: dict[str, int] = {"line": line}
+        if column is not None:
+            location["column"] = column
+        return location
+
+    for nested_key in ("position", "source", "location", "loc", "node"):
+        nested = payload.get(nested_key)
+        nested_location = _extract_source_location(nested)
+        if nested_location:
+            return nested_location
+
+    for text_key in ("message", "failureSummary", "snippet", "description", "help"):
+        text_value = payload.get(text_key)
+        if isinstance(text_value, str):
+            parsed = _extract_location_from_text(text_value)
+            if parsed:
+                return parsed
+
+    return None
+
+
+def _prefer_source_location(
+    existing: dict[str, int] | None,
+    candidate: dict[str, int] | None,
+) -> dict[str, int] | None:
+    if not existing:
+        return candidate
+    if not candidate:
+        return existing
+    existing_has_column = "column" in existing
+    candidate_has_column = "column" in candidate
+    if candidate_has_column and not existing_has_column:
+        return candidate
+    if candidate_has_column == existing_has_column and candidate["line"] < existing["line"]:
+        return candidate
+    return existing
+
 
 def _map_axe_to_findings(axe_data: dict[str, Any] | None) -> list[dict[str, Any]]:
     if not axe_data:
@@ -356,6 +450,9 @@ def _map_axe_to_findings(axe_data: dict[str, Any] | None) -> list[dict[str, Any]
         rule_id = violation.get("id", "axe-unknown")
         nodes = violation.get("nodes", [])
         current = violation.get("description") or violation.get("help") or rule_id
+        source_location: dict[str, int] | None = None
+        for node in nodes:
+            source_location = _prefer_source_location(source_location, _extract_source_location(node))
         changed_target = ", ".join(
             "/".join(node.get("target", []))
             for node in nodes
@@ -373,6 +470,7 @@ def _map_axe_to_findings(axe_data: dict[str, Any] | None) -> list[dict[str, Any]
                 "current": current,
                 "changed_target": changed_target,
                 "status": "open",
+                "source_location": source_location,
             }
         )
     return findings
@@ -408,10 +506,13 @@ def _map_lighthouse_to_findings(
         changed_target = "unknown"
         details = audit.get("details", {})
         items = details.get("items", []) if isinstance(details, dict) else []
+        source_location: dict[str, int] | None = None
         if items and isinstance(items[0], dict):
+            source_location = _prefer_source_location(source_location, _extract_source_location(items[0]))
             node = items[0].get("node", {})
             if isinstance(node, dict):
                 changed_target = node.get("selector", "unknown")
+                source_location = _prefer_source_location(source_location, _extract_source_location(node))
         findings.append(
             {
                 "source": "lighthouse",
@@ -422,6 +523,7 @@ def _map_lighthouse_to_findings(
                 "current": audit.get("title", audit_key),
                 "changed_target": changed_target,
                 "status": "open",
+                "source_location": source_location,
             }
         )
     return findings
@@ -470,6 +572,10 @@ def _dedupe_findings(findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
             existing["current"] = finding["current"]
         if existing["status"] != "needs-review" and finding.get("status") == "needs-review":
             existing["status"] = "needs-review"
+        existing["source_location"] = _prefer_source_location(
+            existing.get("source_location"),
+            finding.get("source_location"),
+        )
     return list(deduped.values())
 
 
@@ -612,6 +718,8 @@ def normalize_report(
                 "sc": sc_values,
                 "current": raw["current"],
                 "changed_target": raw["changed_target"],
+                "source_line": (raw.get("source_location") or {}).get("line"),
+                "source_column": (raw.get("source_location") or {}).get("column"),
                 "status": raw["status"],
                 "fixability": fixability,
                 "verification_status": verification_status,
@@ -783,4 +891,10 @@ def write_report_files(report: dict[str, Any], json_path: str, markdown_path: st
     markdown_target.parent.mkdir(parents=True, exist_ok=True)
     json_target.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     markdown_target.write_text(to_markdown_table(report), encoding="utf-8")
+
+
+
+
+
+
 

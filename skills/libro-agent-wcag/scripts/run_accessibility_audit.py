@@ -47,6 +47,7 @@ PREFLIGHT_TOOL_CHECKS = (
 )
 SEVERITY_RANK = {"critical": 4, "serious": 3, "moderate": 2, "minor": 1, "info": 0}
 FAIL_ON_EXIT_CODES = {"critical": 42, "serious": 43, "moderate": 44}
+FINDING_SORT_MODES = {"severity", "rule", "target"}
 
 
 def _extract_version_line(output: str) -> str | None:
@@ -319,6 +320,111 @@ def _rebuild_summary(report: dict[str, Any]) -> None:
     }
 
 
+
+def _coerce_positive_int(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if value > 0 else None
+    if isinstance(value, float) and value.is_integer():
+        return int(value) if value > 0 else None
+    if isinstance(value, str):
+        text = value.strip()
+        if text.isdigit():
+            parsed = int(text)
+            return parsed if parsed > 0 else None
+    return None
+
+
+def _finding_sort_key(finding: dict[str, Any], sort_mode: str) -> tuple[Any, ...]:
+    severity = str(finding.get('severity', 'info'))
+    severity_rank = SEVERITY_RANK.get(severity, 0)
+    rule_id = str(finding.get('rule_id', ''))
+    target = str(finding.get('changed_target', ''))
+    source = str(finding.get('source', ''))
+    issue_id = str(finding.get('id', ''))
+    source_line = _coerce_positive_int(finding.get('source_line')) or 10**9
+    source_column = _coerce_positive_int(finding.get('source_column')) or 10**9
+
+    if sort_mode == 'rule':
+        return (rule_id, target, -severity_rank, source_line, source_column, source, issue_id)
+    if sort_mode == 'target':
+        return (target, rule_id, -severity_rank, source_line, source_column, source, issue_id)
+    return (-severity_rank, rule_id, target, source_line, source_column, source, issue_id)
+
+
+def _sort_report_findings(report: dict[str, Any], sort_mode: str) -> None:
+    findings = sorted(
+        report.get('findings', []),
+        key=lambda item: _finding_sort_key(item, sort_mode),
+    )
+    report['findings'] = findings
+
+
+def _cap_report_findings(report: dict[str, Any], max_findings: int) -> dict[str, int]:
+    if max_findings <= 0:
+        raise ValueError('--max-findings must be >= 1')
+
+    findings = report.get('findings', [])
+    before_count = len(findings)
+    if before_count <= max_findings:
+        return {'before': before_count, 'after': before_count, 'truncated': 0}
+
+    capped = findings[:max_findings]
+    kept_ids = {item.get('id') for item in capped}
+    report['findings'] = capped
+    report['fixes'] = [item for item in report.get('fixes', []) if item.get('finding_id') in kept_ids]
+    report['citations'] = [item for item in report.get('citations', []) if item.get('finding_id') in kept_ids]
+
+    summary = report.setdefault('summary', {})
+    summary['change_summary'] = [
+        item for item in summary.get('change_summary', []) if item.get('finding_id') in kept_ids
+    ]
+    summary['fix_blockers'] = [
+        item for item in summary.get('fix_blockers', []) if item.get('finding_id') in kept_ids
+    ]
+    _rebuild_summary(report)
+    return {'before': before_count, 'after': len(capped), 'truncated': before_count - len(capped)}
+
+
+def _build_compact_summary(
+    report: dict[str, Any],
+    report_format: str,
+    machine_output: Path,
+    output_md: Path,
+    should_fail: bool,
+    fail_on: str | None,
+    exit_code: int,
+) -> dict[str, Any]:
+    summary = report.get('summary', {})
+    compact: dict[str, Any] = {
+        'status': 'failed' if should_fail else 'ok',
+        'report_format': report_format,
+        'machine_output': str(machine_output),
+        'markdown_output': str(output_md),
+        'total_findings': summary.get('total_findings', 0),
+        'fixed_findings': summary.get('fixed_findings', 0),
+        'manual_required_count': summary.get('manual_required_count', 0),
+    }
+    if fail_on:
+        compact['policy_gate'] = {
+            'fail_on': fail_on,
+            'failed': should_fail,
+            'exit_code': exit_code if should_fail else 0,
+            'scope': report.get('run_meta', {}).get('policy_gate', {}).get('scope', 'all-unresolved'),
+        }
+    baseline_diff = report.get('run_meta', {}).get('baseline_diff')
+    if baseline_diff:
+        compact['baseline_diff'] = {
+            'introduced_count': baseline_diff.get('introduced_count', 0),
+            'resolved_count': baseline_diff.get('resolved_count', 0),
+            'persistent_count': baseline_diff.get('persistent_count', 0),
+        }
+    findings_cap = report.get('run_meta', {}).get('findings_cap')
+    if findings_cap:
+        compact['findings_cap'] = findings_cap
+    return compact
+
 def _apply_rule_policy(
     report: dict[str, Any],
     include_rules: list[str],
@@ -413,6 +519,19 @@ def _report_to_sarif(report: dict[str, Any], contract_target: str, local_target:
         if selector and selector != 'unknown':
             message_parts.append(f'selector: {selector}')
 
+        physical_location: dict[str, Any] = {
+            'artifactLocation': {
+                'uri': location_uri,
+            }
+        }
+        source_line = _coerce_positive_int(finding.get('source_line'))
+        source_column = _coerce_positive_int(finding.get('source_column'))
+        if source_line is not None:
+            region: dict[str, int] = {'startLine': source_line}
+            if source_column is not None:
+                region['startColumn'] = source_column
+            physical_location['region'] = region
+
         results.append(
             {
                 'ruleId': rule_id,
@@ -420,17 +539,15 @@ def _report_to_sarif(report: dict[str, Any], contract_target: str, local_target:
                 'message': {'text': ' | '.join(message_parts)},
                 'locations': [
                     {
-                        'physicalLocation': {
-                            'artifactLocation': {
-                                'uri': location_uri,
-                            }
-                        }
+                        'physicalLocation': physical_location,
                     }
                 ],
                 'properties': {
                     'finding_id': finding.get('id'),
                     'status': finding.get('status'),
                     'sc': finding.get('sc', []),
+                    'source_line': source_line,
+                    'source_column': source_column,
                 },
             }
         )
@@ -532,6 +649,23 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mock-lighthouse-json")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument(
+        "--max-findings",
+        type=int,
+        default=None,
+        help="Limit findings included in output artifacts after deterministic sorting.",
+    )
+    parser.add_argument(
+        "--sort-findings",
+        choices=sorted(FINDING_SORT_MODES),
+        default="severity",
+        help="Deterministic sort mode for report findings before optional truncation.",
+    )
+    parser.add_argument(
+        "--summary-only",
+        action="store_true",
+        help="Print compact JSON summary to stdout while still writing full report artifacts.",
+    )
+    parser.add_argument(
         "--preflight-only",
         action="store_true",
         help="Check runtime tooling availability (npx, axe, lighthouse) and exit.",
@@ -568,6 +702,8 @@ def main() -> int:
         raise ValueError('--scanner-retry-attempts must be >= 1')
     if args.scanner_retry_backoff_seconds < 0:
         raise ValueError('--scanner-retry-backoff-seconds must be >= 0')
+    if args.max_findings is not None and args.max_findings < 1:
+        raise ValueError('--max-findings must be >= 1')
     if args.fail_on_new_only and not args.fail_on:
         raise ValueError('--fail-on-new-only requires --fail-on')
     if args.fail_on_new_only and not args.baseline_report:
@@ -746,6 +882,25 @@ def main() -> int:
             )
         )
 
+    _sort_report_findings(report, args.sort_findings)
+    report['run_meta']['sorting'] = {
+        'mode': args.sort_findings,
+        'deterministic': True,
+        'finding_count': len(report.get('findings', [])),
+    }
+
+    gate_findings = list(report.get('findings', []))
+    if args.max_findings is not None:
+        findings_cap = _cap_report_findings(report, args.max_findings)
+        report['run_meta']['findings_cap'] = {
+            'max_findings': args.max_findings,
+            **findings_cap,
+        }
+        if findings_cap['truncated'] > 0:
+            report['run_meta']['notes'].append(
+                f"Applied --max-findings={args.max_findings}: truncated {findings_cap['truncated']} findings."
+            )
+
     output_json = output_dir / 'wcag-report.json'
     output_md = output_dir / 'wcag-report.md'
     if report_format == 'json':
@@ -762,14 +917,13 @@ def main() -> int:
         machine_output = output_sarif
 
     if fail_on:
-        gate_report = report
+        gate_report = {'findings': gate_findings}
         gate_scope = 'all-unresolved'
         if args.fail_on_new_only:
             introduced_signatures = set((baseline_diff or {}).get('introduced_signatures', []))
             gate_report = {
-                **report,
                 'findings': [
-                    item for item in report.get('findings', []) if _finding_signature(item) in introduced_signatures
+                    item for item in gate_findings if _finding_signature(item) in introduced_signatures
                 ],
             }
             gate_scope = 'introduced-only'
@@ -779,6 +933,7 @@ def main() -> int:
             'failed': should_fail,
             'exit_code': exit_code if should_fail else 0,
             'scope': gate_scope,
+            'evaluated_findings': len(gate_report.get('findings', [])),
         }
         if report_format == 'json':
             write_report_files(report, str(output_json), str(output_md))
@@ -792,18 +947,39 @@ def main() -> int:
     else:
         should_fail, exit_code = False, 0
 
-    print(f'Saved machine-readable report ({report_format}): {machine_output}')
-    print(f'Saved Markdown table: {output_md}')
-    if report['run_meta']['notes']:
-        print('Notes:')
-        for note in report['run_meta']['notes']:
-            print(f'- {note}')
+    if args.summary_only:
+        compact_summary = _build_compact_summary(
+            report=report,
+            report_format=report_format,
+            machine_output=machine_output,
+            output_md=output_md,
+            should_fail=should_fail,
+            fail_on=fail_on,
+            exit_code=exit_code,
+        )
+        print(json.dumps(compact_summary, ensure_ascii=False))
+    else:
+        print(f'Saved machine-readable report ({report_format}): {machine_output}')
+        print(f'Saved Markdown table: {output_md}')
+        if report['run_meta']['notes']:
+            print('Notes:')
+            for note in report['run_meta']['notes']:
+                print(f'- {note}')
+        if should_fail:
+            print(f'Policy gate failed: unresolved finding severity >= {fail_on}')
     if should_fail:
-        print(f'Policy gate failed: unresolved finding severity >= {fail_on}')
         return exit_code
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+
+
+
+
+
+
 
