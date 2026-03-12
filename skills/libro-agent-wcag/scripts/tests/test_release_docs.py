@@ -22,6 +22,7 @@ class ReleaseDocsTests(unittest.TestCase):
             self.repo_root / 'docs' / 'release' / 'demo-package-walkthrough.md',
             self.repo_root / 'docs' / 'release' / 'prompt-invocation-templates.md',
             self.repo_root / 'docs' / 'release' / 'troubleshooting-intake.md',
+            self.repo_root / 'docs' / 'release' / 'resilient-run-patterns.md',
             self.repo_root / 'docs' / 'release' / 'release-packaging-extras-placement.md',
             self.repo_root / '.github' / 'ISSUE_TEMPLATE' / 'installation-failure.yml',
             self.repo_root / '.github' / 'ISSUE_TEMPLATE' / 'remediation-mismatch.yml',
@@ -49,6 +50,7 @@ class ReleaseDocsTests(unittest.TestCase):
         self.assertIn('docs/release/demo-package-walkthrough.md', content)
         self.assertIn('docs/release/prompt-invocation-templates.md', content)
         self.assertIn('docs/release/troubleshooting-intake.md', content)
+        self.assertIn('docs/release/resilient-run-patterns.md', content)
 
 
 if __name__ == '__main__':
