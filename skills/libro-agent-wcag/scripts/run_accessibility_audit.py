@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import time
@@ -48,6 +49,12 @@ PREFLIGHT_TOOL_CHECKS = (
 SEVERITY_RANK = {"critical": 4, "serious": 3, "moderate": 2, "minor": 1, "info": 0}
 FAIL_ON_EXIT_CODES = {"critical": 42, "serious": 43, "moderate": 44}
 FINDING_SORT_MODES = {"severity", "rule", "target"}
+BASELINE_TARGET_NORMALIZATION_MODES = {"none", "host-path", "path-only"}
+BASELINE_SELECTOR_CANONICALIZATION_MODES = {"none", "basic"}
+REPORT_SCHEMA_NAME = "libro-agent-wcag-report"
+REPORT_SCHEMA_VERSION = "1.0.0"
+REPORT_SCHEMA_FILENAME = f"wcag-report-{REPORT_SCHEMA_VERSION}.schema.json"
+REPORT_SCHEMA_SOURCE_PATH = Path(__file__).resolve().parents[1] / "schemas" / REPORT_SCHEMA_FILENAME
 POLICY_PRESETS: dict[str, dict[str, Any]] = {
     "strict": {
         "fail_on": "moderate",
@@ -582,18 +589,105 @@ def _finding_signature(finding: dict[str, Any]) -> str:
     return f'{rule_id}|{changed_target}'
 
 
-def _unresolved_finding_signatures(report: dict[str, Any]) -> dict[str, dict[str, Any]]:
+def _normalize_signature_target(target: str, mode: str) -> str:
+    value = target.strip()
+    if not value:
+        return ''
+    if mode == 'none':
+        return value
+
+    if re.match(r'^[A-Za-z]:[\\/]', value):
+        host = ''
+        path = value.replace('\\', '/')
+    else:
+        parsed = urlparse(value)
+        if parsed.scheme:
+            host = (parsed.netloc or '').lower()
+            path = parsed.path or '/'
+        else:
+            host = ''
+            path = value.replace('\\', '/')
+
+    path = re.sub(r'/+', '/', path).rstrip('/') or '/'
+    if re.match(r'^/[A-Za-z]:/', path):
+        path = path[1:]
+    if mode == 'path-only':
+        return path
+    if mode == 'host-path':
+        return f'{host}{path}' if host else path
+    return value
+
+
+def _canonicalize_signature_selector(selector: str, mode: str) -> str:
+    value = selector.strip()
+    if mode == 'none' or not value:
+        return value
+    value = re.sub(r'\s+', ' ', value)
+    value = re.sub(r'\s*([>+~,])\s*', r'\1', value)
+    value = re.sub(r'\[\s*', '[', value)
+    value = re.sub(r'\s*\]', ']', value)
+    return value.strip()
+
+
+def _build_baseline_signature_config(args: argparse.Namespace) -> dict[str, Any]:
+    return {
+        'include_target_in_signature': bool(args.baseline_include_target),
+        'target_normalization': args.baseline_target_normalization,
+        'selector_canonicalization': args.baseline_selector_canonicalization,
+    }
+
+
+def _finding_signature_with_config(
+    finding: dict[str, Any],
+    signature_config: dict[str, Any],
+    report_target: str,
+) -> str:
+    rule_id = str(finding.get('rule_id', '')).strip()
+    selector = _canonicalize_signature_selector(
+        str(finding.get('changed_target', '')).strip(),
+        str(signature_config.get('selector_canonicalization', 'none')),
+    )
+    components = [rule_id]
+    if signature_config.get('include_target_in_signature'):
+        target = _normalize_signature_target(
+            report_target,
+            str(signature_config.get('target_normalization', 'none')),
+        )
+        components.append(target)
+    components.append(selector)
+    return '|'.join(components)
+
+
+def _unresolved_finding_signatures(
+    report: dict[str, Any],
+    signature_config: dict[str, Any] | None = None,
+) -> dict[str, dict[str, Any]]:
+    effective_signature_config = signature_config or {
+        'include_target_in_signature': False,
+        'target_normalization': 'none',
+        'selector_canonicalization': 'none',
+    }
+    report_target = str(report.get('target', {}).get('value', '')).strip()
     signatures: dict[str, dict[str, Any]] = {}
     for finding in report.get('findings', []):
         if finding.get('status') == 'fixed':
             continue
-        signatures[_finding_signature(finding)] = finding
+        signatures[_finding_signature_with_config(finding, effective_signature_config, report_target)] = finding
     return signatures
 
 
-def _build_baseline_diff(current_report: dict[str, Any], baseline_report: dict[str, Any]) -> dict[str, Any]:
-    current_findings = _unresolved_finding_signatures(current_report)
-    baseline_findings = _unresolved_finding_signatures(baseline_report)
+def _build_baseline_diff(
+    current_report: dict[str, Any],
+    baseline_report: dict[str, Any],
+    signature_config: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    effective_signature_config = signature_config or {
+        'include_target_in_signature': False,
+        'target_normalization': 'none',
+        'selector_canonicalization': 'none',
+    }
+    current_findings = _unresolved_finding_signatures(current_report, effective_signature_config)
+    baseline_findings = _unresolved_finding_signatures(baseline_report, effective_signature_config)
     current_keys = set(current_findings)
     baseline_keys = set(baseline_findings)
     introduced_keys = sorted(current_keys - baseline_keys)
@@ -610,7 +704,24 @@ def _build_baseline_diff(current_report: dict[str, Any], baseline_report: dict[s
         'resolved_signatures': resolved_keys,
         'persistent_signatures': persistent_keys,
         'introduced_findings': [current_findings[key] for key in introduced_keys],
+        'signature_config': effective_signature_config,
     }
+
+
+def _stage_report_schema_artifact(output_dir: Path) -> tuple[dict[str, Any], Path]:
+    if not REPORT_SCHEMA_SOURCE_PATH.exists():
+        raise FileNotFoundError(f'report schema file is missing: {REPORT_SCHEMA_SOURCE_PATH}')
+    schema_dir = output_dir / 'schemas'
+    schema_dir.mkdir(parents=True, exist_ok=True)
+    staged_path = schema_dir / REPORT_SCHEMA_FILENAME
+    staged_path.write_text(REPORT_SCHEMA_SOURCE_PATH.read_text(encoding='utf-8'), encoding='utf-8')
+    metadata = {
+        'name': REPORT_SCHEMA_NAME,
+        'version': REPORT_SCHEMA_VERSION,
+        'artifact': str(staged_path),
+        'compatibility': f"^{REPORT_SCHEMA_VERSION.split('.')[0]}.0.0",
+    }
+    return metadata, staged_path
 
 def _report_to_sarif(report: dict[str, Any], contract_target: str, local_target: Path | None) -> dict[str, Any]:
     rules: dict[str, dict[str, Any]] = {}
@@ -748,6 +859,23 @@ def parse_args() -> argparse.Namespace:
         help="Optional prior JSON report to compare unresolved debt and detect newly introduced findings.",
     )
     parser.add_argument(
+        "--baseline-include-target",
+        action="store_true",
+        help="Include normalized report target value in baseline signatures for stricter comparison.",
+    )
+    parser.add_argument(
+        "--baseline-target-normalization",
+        choices=sorted(BASELINE_TARGET_NORMALIZATION_MODES),
+        default="none",
+        help="Normalization mode for report target when --baseline-include-target is enabled.",
+    )
+    parser.add_argument(
+        "--baseline-selector-canonicalization",
+        choices=sorted(BASELINE_SELECTOR_CANONICALIZATION_MODES),
+        default="none",
+        help="Selector canonicalization mode used when building baseline signatures.",
+    )
+    parser.add_argument(
         "--fail-on-new-only",
         action="store_true",
         help="When used with --fail-on and --baseline-report, fail only on newly introduced debt.",
@@ -850,6 +978,8 @@ def main() -> int:
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    schema_metadata, staged_schema_path = _stage_report_schema_artifact(output_dir)
+    baseline_signature_config = _build_baseline_signature_config(args)
 
     contract = resolve_contract(
         {
@@ -934,6 +1064,9 @@ def main() -> int:
         lighthouse_skipped=args.skip_lighthouse,
     )
     report['run_meta']['preflight'] = preflight
+    report['report_schema'] = schema_metadata
+    report['run_meta']['report_schema_version'] = REPORT_SCHEMA_VERSION
+    report['run_meta']['report_schema_artifact'] = str(staged_schema_path)
     report['run_meta']['retry_policy'] = {
         'attempts': args.scanner_retry_attempts,
         'initial_backoff_seconds': args.scanner_retry_backoff_seconds,
@@ -1005,7 +1138,7 @@ def main() -> int:
 
     baseline_diff: dict[str, Any] | None = None
     if baseline_report:
-        baseline_diff = _build_baseline_diff(report, baseline_report)
+        baseline_diff = _build_baseline_diff(report, baseline_report, baseline_signature_config)
         report['run_meta']['baseline_diff'] = {
             **baseline_diff,
             'baseline_report_path': args.baseline_report,
@@ -1068,9 +1201,13 @@ def main() -> int:
         gate_scope = 'all-unresolved'
         if args.fail_on_new_only:
             introduced_signatures = set((baseline_diff or {}).get('introduced_signatures', []))
+            report_target = str(report.get('target', {}).get('value', '')).strip()
             gate_report = {
                 'findings': [
-                    item for item in gate_findings if _finding_signature(item) in introduced_signatures
+                    item
+                    for item in gate_findings
+                    if _finding_signature_with_config(item, baseline_signature_config, report_target)
+                    in introduced_signatures
                 ],
             }
             gate_scope = 'introduced-only'
@@ -1121,4 +1258,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

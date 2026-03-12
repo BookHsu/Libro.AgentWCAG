@@ -178,13 +178,12 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 ## M23 Policy Ergonomics And Contract Stability
 
 - [x] Add policy preset profiles (`strict`, `balanced`, `legacy`) that expand into deterministic `fail-on` and rule filter combinations
-- [ ] Add report schema versioning with JSON schema artifacts so CI consumers can validate compatibility before parsing
+- [x] Add report schema versioning with JSON schema artifacts so CI consumers can validate compatibility before parsing
 - [x] Add scanner capability negotiation output (which scanners/rules were available) and surface it in summary metadata
-- [ ] Add baseline signature customization hooks (target normalization and selector canonicalization) to reduce noisy churn across environments
+- [x] Add baseline signature customization hooks (target normalization and selector canonicalization) to reduce noisy churn across environments
 - [x] Add regression tests that freeze CLI contract behavior for mixed options (`--summary-only`, `--report-format sarif`, baseline gating, and findings cap)
 ## Notes
 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
-
