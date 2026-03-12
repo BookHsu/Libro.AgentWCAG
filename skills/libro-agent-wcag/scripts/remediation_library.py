@@ -33,6 +33,11 @@ RULE_STRATEGIES = {
         "priority": "high",
         "confidence": "high",
         "auto_fix_supported": True,
+        "framework_hints": {
+            "react": "In JSX, ensure every <img> has an explicit alt prop; keep icon-only media as alt=\"\".",
+            "vue": "In Vue templates, provide alt or :alt bindings for each img element.",
+            "nextjs": "For next/image, require alt on every <Image> usage and keep decorative media alt=\"\".",
+        },
     },
     "input-image-alt": {
         "summary": "Provide alternative text for image inputs via the alt attribute.",
@@ -87,6 +92,11 @@ RULE_STRATEGIES = {
         "priority": "high",
         "confidence": "high",
         "auto_fix_supported": True,
+        "framework_hints": {
+            "react": "Prefer aria-label props for icon-only JSX buttons and keep visible text when present.",
+            "vue": "Use aria-label or v-bind:aria-label on icon-only template buttons.",
+            "nextjs": "Apply the same button-name rule in app/layout and client components; avoid empty interactive controls.",
+        },
     },
     "aria-toggle-field-name": {
         "summary": "Ensure toggle widgets expose a discernible accessible name.",
@@ -135,6 +145,11 @@ RULE_STRATEGIES = {
         "priority": "medium",
         "confidence": "high",
         "auto_fix_supported": True,
+        "framework_hints": {
+            "react": "Set lang on the root html template emitted by your React app shell.",
+            "vue": "Set lang on the root html element in Vue entry templates or SSR shell.",
+            "nextjs": "Set lang on <Html> in _document or app router root layout html element.",
+        },
     },
     "html-lang-valid": {
         "summary": "Use a valid BCP-47 language code in the lang attribute.",
@@ -291,6 +306,31 @@ RULE_STRATEGIES = {
     },
 }
 
+FRAMEWORK_STRATEGIES = {
+    'image-alt': {
+        'react': 'Use JSX rewrite helper to append alt on bare <img> tags.',
+        'vue': 'Use template rewrite helper to append alt on <img> when missing alt/:alt.',
+        'nextjs': 'Use next/image rewrite helper to append alt on <Image> components.',
+    },
+    'html-has-lang': {
+        'nextjs': 'Prefer setting lang on <Html> or root <html> in layout.tsx/_document.tsx.',
+    },
+    'button-name': {
+        'react': 'Add aria-label for icon-only JSX buttons while preserving visible labels.',
+        'vue': 'Add aria-label (or :aria-label) for icon-only Vue template buttons.',
+        'nextjs': 'Apply button-name remediations consistently across server/client components.',
+    },
+}
+
+
+def get_framework_strategy(rule_id: str, framework: str) -> str:
+    normalized_framework = framework.lower()
+    rule_map = FRAMEWORK_STRATEGIES.get(rule_id, {})
+    if normalized_framework in rule_map:
+        return rule_map[normalized_framework]
+    strategy = get_strategy(rule_id)
+    return strategy['framework_hints'].get(normalized_framework, strategy['summary'])
+
 
 def get_strategy(rule_id: str) -> dict[str, Any]:
     strategy = DEFAULT_STRATEGY.copy()
@@ -301,4 +341,8 @@ def get_strategy(rule_id: str) -> dict[str, Any]:
         **specific.get("framework_hints", {}),
     }
     return merged
+
+
+
+
 

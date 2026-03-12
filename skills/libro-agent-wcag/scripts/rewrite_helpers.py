@@ -35,3 +35,66 @@ def ensure_js_guard(js: str, guard_name: str, guard_expression: str) -> tuple[st
         return js, False
     prefix = f'const {guard_name} = {guard_expression};\nif (!{guard_name}) {{\n  return;\n}}\n'
     return prefix + js, True
+
+
+def _inject_attr(tag: str, attr_name: str, attr_value: str) -> tuple[str, bool]:
+    if re.search(rf'\b{re.escape(attr_name)}\s*=', tag, flags=re.IGNORECASE):
+        return tag, False
+    if re.search(r'/\s*>$', tag):
+        updated = re.sub(r'/\s*>$', f' {attr_name}={attr_value} />', tag)
+        return updated, updated != tag
+    updated = re.sub(r'>$', f' {attr_name}={attr_value}>', tag)
+    return updated, updated != tag
+
+
+def ensure_react_img_alt(jsx: str, alt_value: str = '""') -> tuple[str, bool]:
+    pattern = re.compile(r'<img\b(?![^>]*\balt\s*=)[^>]*?/?>', flags=re.IGNORECASE)
+    for match in pattern.finditer(jsx):
+        tag = match.group(0)
+        updated_tag, changed = _inject_attr(tag, 'alt', alt_value)
+        if not changed:
+            continue
+        updated = jsx[: match.start()] + updated_tag + jsx[match.end() :]
+        return updated, True
+    return jsx, False
+
+
+def ensure_vue_img_alt(template: str, alt_value: str = '""') -> tuple[str, bool]:
+    pattern = re.compile(r'<img\b(?![^>]*\b(?:alt|:alt|v-bind:alt)\s*=)[^>]*?/?>', flags=re.IGNORECASE)
+    for match in pattern.finditer(template):
+        tag = match.group(0)
+        updated_tag, changed = _inject_attr(tag, 'alt', alt_value)
+        if not changed:
+            continue
+        updated = template[: match.start()] + updated_tag + template[match.end() :]
+        return updated, True
+    return template, False
+
+
+def ensure_nextjs_layout_lang(source: str, lang: str = 'en') -> tuple[str, bool]:
+    html_component_pattern = re.compile(r'<Html\b[^>]*>', flags=re.IGNORECASE)
+    html_tag_pattern = re.compile(r'<html\b[^>]*>', flags=re.IGNORECASE)
+
+    for pattern in (html_component_pattern, html_tag_pattern):
+        match = pattern.search(source)
+        if not match:
+            continue
+        tag = match.group(0)
+        updated_tag, changed = _inject_attr(tag, 'lang', f'"{lang}"')
+        if not changed:
+            return source, False
+        updated = source[: match.start()] + updated_tag + source[match.end() :]
+        return updated, True
+    return source, False
+
+
+def ensure_nextjs_image_alt(source: str, alt_value: str = '""') -> tuple[str, bool]:
+    pattern = re.compile(r'<Image\b(?![^>]*\balt\s*=)[^>]*?/?>', flags=re.IGNORECASE)
+    for match in pattern.finditer(source):
+        tag = match.group(0)
+        updated_tag, changed = _inject_attr(tag, 'alt', alt_value)
+        if not changed:
+            continue
+        updated = source[: match.start()] + updated_tag + source[match.end() :]
+        return updated, True
+    return source, False
