@@ -149,11 +149,15 @@ python scripts/validate_skill.py skills/libro-agent-wcag
 - `docs/release/supported-environments.md`:  supported runtime and toolchain matrix
 - `docs/release/first-run-smoke.md`:  install-plus-doctor first-run smoke guide
 - `docs/release/apply-fixes-scope.md`:  explicit apply-fixes scope, boundaries, and remediation classes
+- `docs/release/demo-package-walkthrough.md`:  minimal package-style validation walkthrough outside test suite
+- `docs/release/prompt-invocation-templates.md`:  reusable contract and adapter invocation templates
+- `docs/release/troubleshooting-intake.md`:  triage intake checklist for install and remediation problems
+- `docs/release/release-packaging-extras-placement.md`:  decision record for extras placement
+- `.github/ISSUE_TEMPLATE/installation-failure.yml`:  installation failure intake form
+- `.github/ISSUE_TEMPLATE/remediation-mismatch.yml`:  remediation mismatch intake form
 
 ## Future directions
 - Broader safe rewrite coverage after regression baselines prove stability for additional rule families
-- Release packaging extras such as demos, templates, and issue forms
-
 ## Testing Strategy
 
 - See `TESTING-PLAN.md` for the applicable test matrix, repo mapping, and current coverage status.
@@ -163,4 +167,3 @@ python scripts/validate_skill.py skills/libro-agent-wcag
 
 - Use `docs/automations/test-plan-automation.md` as the execution spec for scheduled Codex test-development automation. This lane focuses only on test development, testing-plan updates, commits, and pushes.
 - Use `docs/automations/test-plan-review-policy.md` as the review policy before accepting automation-generated changes.
-
