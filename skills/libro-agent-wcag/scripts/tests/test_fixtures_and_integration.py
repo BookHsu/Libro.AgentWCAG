@@ -89,6 +89,41 @@ class FixtureAndSnapshotTests(unittest.TestCase):
         self.assertEqual(report, expected_json)
         self.assertEqual(to_markdown_table(report), expected_md)
 
+    def test_snapshot_for_framework_fixtures_matches_expected_output(self) -> None:
+        matrix = [
+            ('react-specific', 'img.hero'),
+            ('vue-specific', 'img.hero'),
+            ('nextjs-specific', 'img.hero'),
+        ]
+        for fixture_name, selector in matrix:
+            with self.subTest(fixture=fixture_name):
+                expected_json, expected_md = self._load_snapshot(fixture_name)
+                contract = resolve_contract({'target': f'fixtures/{fixture_name}.html', 'output_language': 'en'})
+                axe_data = {
+                    'violations': [
+                        {
+                            'id': 'image-alt',
+                            'impact': 'serious',
+                            'description': 'Images must have alternate text',
+                            'nodes': [{'target': [selector]}],
+                        }
+                    ]
+                }
+                lighthouse_data = {
+                    'audits': {
+                        'image-alt': {
+                            'score': 0,
+                            'scoreDisplayMode': 'binary',
+                            'title': 'Image elements have [alt] attributes',
+                            'details': {'items': [{'node': {'selector': selector}}]},
+                        }
+                    }
+                }
+                report = normalize_report(contract, axe_data, lighthouse_data)
+                report['run_meta']['generated_at'] = '<generated>'
+                self.assertEqual(report, expected_json)
+                self.assertEqual(to_markdown_table(report), expected_md)
+
 
 class FixtureCorpusCoverageTests(unittest.TestCase):
     @classmethod
@@ -108,6 +143,9 @@ class FixtureCorpusCoverageTests(unittest.TestCase):
             'keyboard-tabindex.html': ['tabindex="3"', 'tabindex="5"', 'role="button" tabindex="5"'],
             'wcag22-focus.html': ['.nav-link:focus', 'outline: none;', 'sticky-banner'],
             'create-mode-draft.html': ['data-task-mode="create"', 'data-draft="true"', 'requires manual WCAG verification'],
+            'react-specific.html': ['data-reactroot', 'data-testid="react-state"', 'aria-label={ctaLabel}'],
+            'vue-specific.html': ['data-v-app', 'v-bind:aria-label="submitLabel"', '@click="submitForm"'],
+            'nextjs-specific.html': ['data-nextjs-root', 'data-next-layout="app-router"', 'export const metadata'],
         }
         for fixture_name, required_tokens in expectations.items():
             with self.subTest(fixture=fixture_name):
