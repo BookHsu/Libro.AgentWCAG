@@ -122,6 +122,26 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(args.baseline_report, "baseline.json")
         self.assertTrue(args.fail_on_new_only)
 
+    def test_cli_accepts_findings_controls_flags(self) -> None:
+        original = sys.argv
+        sys.argv = [
+            "run_accessibility_audit.py",
+            "--target",
+            "https://example.com",
+            "--max-findings",
+            "25",
+            "--sort-findings",
+            "rule",
+            "--summary-only",
+        ]
+        try:
+            args = parse_args()
+        finally:
+            sys.argv = original
+        self.assertEqual(args.max_findings, 25)
+        self.assertEqual(args.sort_findings, "rule")
+        self.assertTrue(args.summary_only)
+
     @patch("run_accessibility_audit.subprocess.run")
     def test_run_command_returns_stdout_on_success(self, mock_run) -> None:
         mock_run.return_value = type("Result", (), {"returncode": 0, "stdout": "ok", "stderr": ""})()
@@ -306,6 +326,39 @@ class RunnerPolicyTests(unittest.TestCase):
         self.assertEqual(report['findings'][0]['rule_id'], 'image-alt')
         self.assertEqual(report['summary']['total_findings'], 1)
 
+    def test_sort_and_cap_report_findings_are_deterministic(self) -> None:
+        report = {
+            'findings': [
+                {'id': 'ISSUE-003', 'rule_id': 'zeta-rule', 'changed_target': 'main', 'severity': 'serious'},
+                {'id': 'ISSUE-001', 'rule_id': 'alpha-rule', 'changed_target': 'main', 'severity': 'serious'},
+                {'id': 'ISSUE-002', 'rule_id': 'beta-rule', 'changed_target': 'main', 'severity': 'moderate'},
+            ],
+            'fixes': [
+                {'finding_id': 'ISSUE-003', 'status': 'planned', 'manual_review_required': False},
+                {'finding_id': 'ISSUE-001', 'status': 'planned', 'manual_review_required': False},
+                {'finding_id': 'ISSUE-002', 'status': 'planned', 'manual_review_required': False},
+            ],
+            'citations': [
+                {'finding_id': 'ISSUE-001'},
+                {'finding_id': 'ISSUE-002'},
+                {'finding_id': 'ISSUE-003'},
+            ],
+            'summary': {
+                'change_summary': [
+                    {'finding_id': 'ISSUE-001'},
+                    {'finding_id': 'ISSUE-002'},
+                    {'finding_id': 'ISSUE-003'},
+                ],
+                'fix_blockers': [],
+            },
+        }
+
+        runner._sort_report_findings(report, 'rule')
+        cap = runner._cap_report_findings(report, 2)
+
+        self.assertEqual([item['id'] for item in report['findings']], ['ISSUE-001', 'ISSUE-002'])
+        self.assertEqual(cap['truncated'], 1)
+        self.assertEqual(report['summary']['total_findings'], 2)
     def test_resolve_fail_threshold_returns_exit_code(self) -> None:
         report = {
             'findings': [
@@ -327,13 +380,18 @@ class RunnerPolicyTests(unittest.TestCase):
                     'changed_target': 'img.hero',
                     'status': 'open',
                     'sc': ['1.1.1'],
+                    'source_line': 17,
+                    'source_column': 5,
                 }
             ]
         }
 
         sarif = runner._report_to_sarif(report, 'https://example.com', None)
-        self.assertEqual(sarif['runs'][0]['results'][0]['ruleId'], 'image-alt')
-        self.assertIn('selector: img.hero', sarif['runs'][0]['results'][0]['message']['text'])
+        result = sarif['runs'][0]['results'][0]
+        self.assertEqual(result['ruleId'], 'image-alt')
+        self.assertIn('selector: img.hero', result['message']['text'])
+        self.assertEqual(result['locations'][0]['physicalLocation']['region']['startLine'], 17)
+        self.assertEqual(result['locations'][0]['physicalLocation']['region']['startColumn'], 5)
 
     def test_build_baseline_diff_returns_introduced_and_resolved(self) -> None:
         current = {
@@ -357,4 +415,8 @@ class RunnerPolicyTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+
+
 
