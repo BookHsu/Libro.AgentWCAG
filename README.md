@@ -120,6 +120,7 @@ Current implementation note:
 - For supported local targets (`.html`, `.htm`, `.xhtml`, `.jsx`, `.tsx`, `.vue`), the core Python workflow applies safe first-pass deterministic rewrites (language attributes, alt text, control naming, ARIA naming/validity, document/title/list/table semantics, and viewport/meta refresh handling), then emits diff artifacts when changes are made.
 - Non-local targets, unsupported local file types, and higher-risk remediation classes remain `suggest-only` or assisted/manual by design. See `docs/release/apply-fixes-scope.md` for the explicit scope matrix and boundaries.
 - Scanner runtime resilience is configurable via `--scanner-retry-attempts` and `--scanner-retry-backoff-seconds`. See `docs/release/resilient-run-patterns.md` for recommended CI patterns.
+- CI policy controls are available via `--report-format (json|sarif)`, `--fail-on`, `--include-rule`, `--ignore-rule`, and `--policy-config` for deterministic gating and per-project rule policy.
 
 Current adapter coverage:
 
@@ -169,3 +170,4 @@ python scripts/validate_skill.py skills/libro-agent-wcag
 
 - Use `docs/automations/test-plan-automation.md` as the execution spec for scheduled Codex test-development automation. This lane focuses only on test development, testing-plan updates, commits, and pushes.
 - Use `docs/automations/test-plan-review-policy.md` as the review policy before accepting automation-generated changes.
+

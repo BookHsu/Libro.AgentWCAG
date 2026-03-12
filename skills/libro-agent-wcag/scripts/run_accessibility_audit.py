@@ -20,7 +20,7 @@ from auto_fix import (
     write_diff,
     write_snapshot,
 )
-from wcag_workflow import normalize_report, resolve_contract, write_report_files
+from wcag_workflow import normalize_report, resolve_contract, to_markdown_table, write_report_files
 
 DEFAULT_TIMEOUT_SECONDS = 120
 DEFAULT_SCANNER_RETRY_ATTEMPTS = 1
@@ -32,6 +32,8 @@ PREFLIGHT_TOOL_CHECKS = (
     ("@axe-core/cli", ["npx", "--no-install", "@axe-core/cli", "--version"]),
     ("lighthouse", ["npx", "--no-install", "lighthouse", "--version"]),
 )
+SEVERITY_RANK = {"critical": 4, "serious": 3, "moderate": 2, "minor": 1, "info": 0}
+FAIL_ON_EXIT_CODES = {"critical": 42, "serious": 43, "moderate": 44}
 
 
 def _extract_version_line(output: str) -> str | None:
@@ -59,6 +61,7 @@ def _run_command(command: list[str], timeout_seconds: int) -> tuple[bool, str]:
         return True, completed.stdout
     error = completed.stderr.strip() or completed.stdout.strip() or "unknown error"
     return False, error
+
 
 def _is_transient_scanner_error(error_message: str | None) -> bool:
     text = (error_message or "").lower()
@@ -120,6 +123,7 @@ def _run_scanner_with_retry(
         "last_error": error or "unknown error",
         "transient_error": transient_error,
     }
+
 
 def _try_run_axe(
     target: str,
@@ -241,6 +245,155 @@ def _remove_if_exists(path: Path) -> None:
         path.unlink()
 
 
+def _load_policy_config(path: str | None) -> dict[str, Any]:
+    if not path:
+        return {}
+    config_path = Path(path)
+    if not config_path.exists():
+        raise ValueError(f'policy config file does not exist: {path}')
+    payload = json.loads(config_path.read_text(encoding='utf-8'))
+    if not isinstance(payload, dict):
+        raise ValueError('--policy-config must point to a JSON object')
+    return payload
+
+
+def _normalize_rule_list(value: Any, name: str) -> list[str]:
+    if value is None:
+        return []
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise ValueError(f'{name} must be a list of rule ids')
+    return [item.strip() for item in value if item.strip()]
+
+
+def _rebuild_summary(report: dict[str, Any]) -> None:
+    findings = report.get('findings', [])
+    fixes = report.get('fixes', [])
+    summary = report.setdefault('summary', {})
+    summary['total_findings'] = len(findings)
+    summary['fixed_findings'] = sum(1 for item in findings if item.get('status') == 'fixed')
+    summary['auto_fixed_count'] = summary['fixed_findings']
+    summary['needs_manual_review'] = sum(1 for item in findings if item.get('status') == 'needs-review')
+    summary['manual_required_count'] = sum(1 for item in findings if item.get('manual_review_required'))
+    summary.setdefault('diff_summary', [])
+    summary.setdefault('before_after_targets', [])
+    summary.setdefault('change_summary', [])
+    summary.setdefault('fix_blockers', [])
+    summary['remediation_lifecycle'] = {
+        'planned': sum(1 for item in fixes if item.get('status') == 'planned'),
+        'implemented': sum(1 for item in fixes if item.get('status') == 'implemented'),
+        'verified': sum(1 for item in fixes if item.get('status') == 'verified'),
+        'manual_review_required': sum(1 for item in fixes if item.get('manual_review_required')),
+    }
+
+
+def _apply_rule_policy(
+    report: dict[str, Any],
+    include_rules: list[str],
+    ignore_rules: list[str],
+) -> tuple[int, int]:
+    include_set = {item for item in include_rules if item}
+    ignore_set = {item for item in ignore_rules if item}
+    finding_ids = {
+        finding['id']
+        for finding in report.get('findings', [])
+        if (not include_set or finding.get('rule_id') in include_set)
+        and finding.get('rule_id') not in ignore_set
+    }
+    before_count = len(report.get('findings', []))
+    report['findings'] = [item for item in report.get('findings', []) if item.get('id') in finding_ids]
+    report['fixes'] = [item for item in report.get('fixes', []) if item.get('finding_id') in finding_ids]
+    report['citations'] = [item for item in report.get('citations', []) if item.get('finding_id') in finding_ids]
+
+    summary = report.setdefault('summary', {})
+    summary['change_summary'] = [
+        item for item in summary.get('change_summary', []) if item.get('finding_id') in finding_ids
+    ]
+    summary['fix_blockers'] = [
+        item for item in summary.get('fix_blockers', []) if item.get('finding_id') in finding_ids
+    ]
+    _rebuild_summary(report)
+    return before_count, len(report.get('findings', []))
+
+
+def _sarif_level_from_severity(severity: str) -> str:
+    if severity in {'critical', 'serious'}:
+        return 'error'
+    if severity == 'moderate':
+        return 'warning'
+    return 'note'
+
+def _report_to_sarif(report: dict[str, Any], contract_target: str, local_target: Path | None) -> dict[str, Any]:
+    rules: dict[str, dict[str, Any]] = {}
+    results: list[dict[str, Any]] = []
+    location_uri = local_target.as_posix() if local_target else contract_target
+
+    for finding in report.get('findings', []):
+        rule_id = str(finding.get('rule_id', 'unknown'))
+        if rule_id not in rules:
+            rules[rule_id] = {
+                'id': rule_id,
+                'name': rule_id,
+                'shortDescription': {'text': rule_id},
+                'properties': {
+                    'severity': finding.get('severity', 'info'),
+                    'wcag': finding.get('sc', []),
+                },
+            }
+        message_parts = [str(finding.get('current', rule_id))]
+        selector = str(finding.get('changed_target', '')).strip()
+        if selector and selector != 'unknown':
+            message_parts.append(f'selector: {selector}')
+
+        results.append(
+            {
+                'ruleId': rule_id,
+                'level': _sarif_level_from_severity(str(finding.get('severity', 'info'))),
+                'message': {'text': ' | '.join(message_parts)},
+                'locations': [
+                    {
+                        'physicalLocation': {
+                            'artifactLocation': {
+                                'uri': location_uri,
+                            }
+                        }
+                    }
+                ],
+                'properties': {
+                    'finding_id': finding.get('id'),
+                    'status': finding.get('status'),
+                    'sc': finding.get('sc', []),
+                },
+            }
+        )
+
+    return {
+        '$schema': 'https://json.schemastore.org/sarif-2.1.0.json',
+        'version': '2.1.0',
+        'runs': [
+            {
+                'tool': {
+                    'driver': {
+                        'name': 'libro-agent-wcag',
+                        'rules': list(rules.values()),
+                    }
+                },
+                'results': results,
+            }
+        ],
+    }
+
+
+def _resolve_fail_threshold(report: dict[str, Any], fail_on: str) -> tuple[bool, int]:
+    threshold_rank = SEVERITY_RANK[fail_on]
+    for finding in report.get('findings', []):
+        if finding.get('status') == 'fixed':
+            continue
+        severity = str(finding.get('severity', 'info'))
+        if SEVERITY_RANK.get(severity, 0) >= threshold_rank:
+            return True, FAIL_ON_EXIT_CODES[fail_on]
+    return False, 0
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run WCAG audit with axe+Lighthouse.")
     parser.add_argument("--task-mode", default="modify", choices=["create", "modify"])
@@ -255,6 +408,34 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-language", default="zh-TW")
     parser.add_argument("--output-dir", default="out")
     parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT_SECONDS)
+    parser.add_argument(
+        "--report-format",
+        choices=["json", "sarif"],
+        default=None,
+        help="Primary machine-readable output format.",
+    )
+    parser.add_argument(
+        "--fail-on",
+        choices=["critical", "serious", "moderate"],
+        default=None,
+        help="Fail with deterministic exit code when unresolved findings reach this severity.",
+    )
+    parser.add_argument(
+        "--include-rule",
+        action="append",
+        default=[],
+        help="Include only specific normalized rule ids (repeatable).",
+    )
+    parser.add_argument(
+        "--ignore-rule",
+        action="append",
+        default=[],
+        help="Ignore specific normalized rule ids (repeatable).",
+    )
+    parser.add_argument(
+        "--policy-config",
+        help="Optional JSON file with report_format/fail_on/include_rules/ignore_rules.",
+    )
     parser.add_argument(
         "--scanner-retry-attempts",
         type=int,
@@ -282,6 +463,22 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    policy_config = _load_policy_config(args.policy_config)
+    config_report_format = policy_config.get('report_format')
+    config_fail_on = policy_config.get('fail_on')
+    config_include = _normalize_rule_list(policy_config.get('include_rules'), 'include_rules')
+    config_ignore = _normalize_rule_list(policy_config.get('ignore_rules'), 'ignore_rules')
+
+    if config_report_format and config_report_format not in {'json', 'sarif'}:
+        raise ValueError('policy-config report_format must be one of: json, sarif')
+    if config_fail_on and config_fail_on not in {'critical', 'serious', 'moderate'}:
+        raise ValueError('policy-config fail_on must be one of: critical, serious, moderate')
+
+    report_format = args.report_format or config_report_format or 'json'
+    fail_on = args.fail_on or config_fail_on
+    include_rules = config_include + [item.strip() for item in args.include_rule if item.strip()]
+    ignore_rules = config_ignore + [item.strip() for item in args.ignore_rule if item.strip()]
+
     if args.skip_axe and args.mock_axe_json:
         raise ValueError('--skip-axe cannot be combined with --mock-axe-json')
     if args.skip_lighthouse and args.mock_lighthouse_json:
@@ -401,6 +598,18 @@ def main() -> int:
             'Preflight checks detected tooling issues; scanner results may be incomplete.'
         )
 
+    before_policy_count, after_policy_count = _apply_rule_policy(report, include_rules, ignore_rules)
+    if include_rules or ignore_rules:
+        report['run_meta']['policy'] = {
+            'include_rules': include_rules,
+            'ignore_rules': ignore_rules,
+            'before_filter_count': before_policy_count,
+            'after_filter_count': after_policy_count,
+        }
+        report['run_meta']['notes'].append(
+            f'Rule policy filter applied: {before_policy_count} -> {after_policy_count} findings.'
+        )
+
     if contract.execution_mode == 'apply-fixes':
         if args.dry_run:
             diff_path = output_dir / 'wcag-fixes.dry-run.diff'
@@ -438,18 +647,52 @@ def main() -> int:
                 _remove_if_exists(diff_path)
                 _remove_if_exists(snapshot_path)
 
-    output_json = output_dir / "wcag-report.json"
-    output_md = output_dir / "wcag-report.md"
-    write_report_files(report, str(output_json), str(output_md))
+    output_json = output_dir / 'wcag-report.json'
+    output_md = output_dir / 'wcag-report.md'
+    if report_format == 'json':
+        write_report_files(report, str(output_json), str(output_md))
+        machine_output = output_json
+    else:
+        output_sarif = output_dir / 'wcag-report.sarif'
+        output_sarif.write_text(
+            json.dumps(_report_to_sarif(report, contract.target, local_target), ensure_ascii=False, indent=2),
+            encoding='utf-8',
+        )
+        output_md.parent.mkdir(parents=True, exist_ok=True)
+        output_md.write_text(to_markdown_table(report), encoding='utf-8')
+        machine_output = output_sarif
 
-    print(f"Saved JSON report: {output_json}")
-    print(f"Saved Markdown table: {output_md}")
-    if report["run_meta"]["notes"]:
-        print("Notes:")
-        for note in report["run_meta"]["notes"]:
-            print(f"- {note}")
+    if fail_on:
+        should_fail, exit_code = _resolve_fail_threshold(report, fail_on)
+        report['run_meta']['policy_gate'] = {
+            'fail_on': fail_on,
+            'failed': should_fail,
+            'exit_code': exit_code if should_fail else 0,
+        }
+        if report_format == 'json':
+            write_report_files(report, str(output_json), str(output_md))
+        elif machine_output.suffix == '.sarif':
+            output_sarif = machine_output
+            output_sarif.write_text(
+                json.dumps(_report_to_sarif(report, contract.target, local_target), ensure_ascii=False, indent=2),
+                encoding='utf-8',
+            )
+            output_md.write_text(to_markdown_table(report), encoding='utf-8')
+    else:
+        should_fail, exit_code = False, 0
+
+    print(f'Saved machine-readable report ({report_format}): {machine_output}')
+    print(f'Saved Markdown table: {output_md}')
+    if report['run_meta']['notes']:
+        print('Notes:')
+        for note in report['run_meta']['notes']:
+            print(f'- {note}')
+    if should_fail:
+        print(f'Policy gate failed: unresolved finding severity >= {fail_on}')
+        return exit_code
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
