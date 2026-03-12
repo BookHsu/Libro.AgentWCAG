@@ -11,3 +11,9 @@
 1. Keep the canonical contract unchanged.
 2. Re-run in `suggest-only` when the target is remote or high-risk.
 3. Preserve deduplicated findings and W3C citations in the follow-up output.
+
+## Downgrade And Escalation Example
+
+- Downgrade: scanner result is partial or a fix requires product intent decisions.
+- Escalate: change may affect heading semantics, landmarks, or navigation behavior.
+- Required note: report `downgrade_reason` and keep manual items explicit.

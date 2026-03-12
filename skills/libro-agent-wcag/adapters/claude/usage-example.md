@@ -27,3 +27,26 @@ python .\scripts\doctor-agent.py --agent claude
 
 - Confirm Claude preserves the same issue IDs between Markdown and JSON.
 - Confirm W3C citations are version-matched.
+
+## First-Run Output Example
+
+```markdown
+### Summary
+- Mode: suggest-only
+- Findings: 3
+- Manual review required: true
+```
+
+```json
+{
+  "summary": {
+    "total_findings": 3,
+    "manual_required_count": 1,
+    "remediation_lifecycle": {
+      "implemented": 0,
+      "planned": 2,
+      "manual_review_required": 1
+    }
+  }
+}
+```

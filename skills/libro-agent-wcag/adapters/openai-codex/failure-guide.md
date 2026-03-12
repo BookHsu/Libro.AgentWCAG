@@ -10,7 +10,12 @@
 
 Use `apply-fixes` only when the target and rule set remain within safe workflow boundaries.
 
-
 1. Re-run with `execution_mode: suggest-only` if a safe fix cannot be applied.
 2. Preserve the JSON issue IDs and citations.
 3. Ask the user to approve any higher-risk semantic or visual change.
+
+## Downgrade And Escalation Example
+
+- Downgrade: unsupported `rule_id` or unresolved file rewrite precondition.
+- Escalate: semantic structure change that can impact reading order or keyboard flow.
+- Required note: include `downgrade_reason` and keep unresolved fixes in `planned`.

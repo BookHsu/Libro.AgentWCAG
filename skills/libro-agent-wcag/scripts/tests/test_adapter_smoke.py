@@ -80,6 +80,21 @@ class AdapterSmokeTests(unittest.TestCase):
                 self.assertIn('apply-fixes', failure)
                 self.assertIn('canonical', e2e.lower())
 
+    def test_adapter_docs_cover_first_run_snapshots_and_downgrade_examples(self) -> None:
+        adapters = ('openai-codex', 'claude', 'gemini', 'copilot')
+        for adapter in adapters:
+            with self.subTest(adapter=adapter):
+                usage = self._read('adapters', adapter, 'usage-example.md')
+                failure = self._read('adapters', adapter, 'failure-guide.md')
+                e2e = self._read('adapters', adapter, 'e2e-example.md')
+                self.assertIn('## First-Run Output Example', usage)
+                self.assertIn('remediation_lifecycle', usage)
+                self.assertIn('## Output Snapshot', e2e)
+                self.assertIn('remediation_lifecycle', e2e)
+                self.assertIn('manual_required_count', e2e)
+                self.assertIn('## Downgrade And Escalation Example', failure)
+                self.assertIn('downgrade_reason', failure)
+
 
 if __name__ == '__main__':
     unittest.main()

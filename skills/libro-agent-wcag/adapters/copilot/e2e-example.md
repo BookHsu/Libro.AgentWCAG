@@ -23,3 +23,23 @@ Use the libro-agent-wcag shared contract:
 - If the file exists, scan it.
 - If it does not exist yet, emit manual-review guidance instead of fake scanner claims.
 - Return canonical Markdown and JSON outputs.
+
+## Output Snapshot
+
+```json
+{
+  "run_meta": {
+    "task_mode": "create",
+    "execution_mode": "suggest-only"
+  },
+  "summary": {
+    "auto_fixed_count": 0,
+    "manual_required_count": 1,
+    "remediation_lifecycle": {
+      "implemented": 0,
+      "planned": 1,
+      "manual_review_required": 1
+    }
+  }
+}
+```

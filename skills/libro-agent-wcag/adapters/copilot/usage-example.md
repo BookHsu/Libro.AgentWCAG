@@ -27,3 +27,26 @@ python .\scripts\doctor-agent.py --agent copilot
 
 - Confirm create mode avoids fake scan claims when no concrete target exists.
 - Confirm canonical JSON keys remain unchanged.
+
+## First-Run Output Example
+
+```markdown
+### Summary
+- Mode: suggest-only
+- Findings: 1
+- Manual review required: true
+```
+
+```json
+{
+  "summary": {
+    "total_findings": 1,
+    "manual_required_count": 1,
+    "remediation_lifecycle": {
+      "implemented": 0,
+      "planned": 1,
+      "manual_review_required": 1
+    }
+  }
+}
+```
