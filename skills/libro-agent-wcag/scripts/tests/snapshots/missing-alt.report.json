@@ -7,6 +7,7 @@
     "files_modified": false,
     "modification_owner": "agent-or-adapter",
     "diff_artifacts": [],
+    "verification_evidence": [],
     "tools": {
       "axe": "ok",
       "lighthouse": "ok"
@@ -38,9 +39,15 @@
       "current": "Image elements have [alt] attributes",
       "changed_target": "img.hero",
       "status": "open",
+      "rule_family": "non-text-content",
+      "risk_level": "high",
       "fixability": "auto-fix",
       "verification_status": "not-run",
-      "manual_review_required": false
+      "manual_review_required": false,
+      "before_after_targets": {
+        "before_target": "img.hero",
+        "after_target": null
+      }
     }
   ],
   "fixes": [
@@ -53,9 +60,20 @@
       "remediation_priority": "high",
       "confidence": "high",
       "auto_fix_supported": true,
+      "rule_family": "non-text-content",
+      "risk_level": "high",
       "fixability": "auto-fix",
       "verification_status": "not-run",
       "manual_review_required": false,
+      "before_after_targets": {
+        "before_target": "img.hero",
+        "after_target": null
+      },
+      "verification_evidence": {
+        "status": "not-run",
+        "method": "not-run",
+        "artifacts": []
+      },
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
         "react": "Prefer semantic JSX and explicit aria/label props.",
@@ -74,7 +92,9 @@
   "summary": {
     "total_findings": 1,
     "fixed_findings": 0,
+    "auto_fixed_count": 0,
     "needs_manual_review": 0,
+    "manual_required_count": 0,
     "change_summary": [
       {
         "finding_id": "ISSUE-001",
