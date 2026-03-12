@@ -544,6 +544,50 @@ class AutoFixTests(unittest.TestCase):
                 with self.assertRaises(OSError):
                     apply_report_fixes(working, report)
             self.assertEqual(working.read_text(encoding='utf-8'), original)
+    def test_apply_report_fixes_handles_malformed_fixture_without_structure_breakage(self) -> None:
+        fixture = Path(__file__).parent / 'fixtures' / 'malformed-encoding.html'
+        with tempfile.TemporaryDirectory() as tmp:
+            working = Path(tmp) / fixture.name
+            working.write_text(fixture.read_text(encoding='utf-8'), encoding='utf-8')
+            contract = resolve_contract({'target': str(working), 'execution_mode': 'apply-fixes'})
+            axe_data = {
+                'violations': [
+                    {'id': 'image-alt', 'impact': 'serious', 'description': 'Images need alt', 'nodes': [{'target': ['img.hero']}]},
+                    {'id': 'link-name', 'impact': 'serious', 'description': 'Links need names', 'nodes': [{'target': ['a.cta']}]},
+                ]
+            }
+
+            report = normalize_report(contract, axe_data, {'audits': {}}, None, None)
+            updated_report, diff_text = apply_report_fixes(working, report)
+            updated_text = working.read_text(encoding='utf-8')
+
+            self.assertIn('img class="hero" src="hero.png" alt=""', updated_text)
+            self.assertIn('aria-label="Link"', updated_text)
+            self.assertIn('<ul class="plain">Loose text', updated_text)
+            self.assertIn('image-alt', [item['rule_id'] for item in updated_report['summary']['diff_summary']])
+            self.assertIn('link-name', [item['rule_id'] for item in updated_report['summary']['diff_summary']])
+            self.assertTrue(diff_text)
+
+    def test_apply_report_fixes_preserves_cp1252_edge_encoding(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            working = Path(tmp) / 'cp1252-edge.html'
+            source = '<!doctype html><html><head><title>Caf\xe9</title></head><body><img class="hero" src="hero.png"></body></html>'
+            working.write_bytes(source.encode('cp1252'))
+            contract = resolve_contract({'target': str(working), 'execution_mode': 'apply-fixes'})
+            axe_data = {
+                'violations': [
+                    {'id': 'image-alt', 'impact': 'serious', 'description': 'Images need alt', 'nodes': [{'target': ['img.hero']}]},
+                ]
+            }
+
+            report = normalize_report(contract, axe_data, {'audits': {}}, None, None)
+            updated_report, diff_text = apply_report_fixes(working, report)
+            decoded = working.read_bytes().decode('cp1252')
+
+            self.assertIn('Caf\xe9', decoded)
+            self.assertIn('alt=""', decoded)
+            self.assertIn('image-alt', [item['rule_id'] for item in updated_report['summary']['diff_summary']])
+            self.assertTrue(diff_text)
 class FrameworkSnapshotBaselineTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -619,4 +663,3 @@ class FrameworkSnapshotBaselineTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
