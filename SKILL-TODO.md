@@ -70,7 +70,10 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [x] Add Next.js layout and language rewrite helpers
 - [x] Upgrade framework hints into framework-aware remediation strategies
 - [x] Add framework-specific auto-fix tests
-- [ ] Add framework-specific snapshot baselines
+- [x] Add framework-specific snapshot baselines
+  - [x] Add React framework remediation snapshot baselines
+  - [x] Add Vue framework remediation snapshot baselines
+  - [x] Add Next.js framework remediation snapshot baselines
 
 ## M11 Adapter Maturity
 

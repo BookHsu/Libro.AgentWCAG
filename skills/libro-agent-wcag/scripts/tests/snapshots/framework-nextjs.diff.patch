@@ -1,0 +1,16 @@
+--- <target>
++++ <target>
+@@ -2,11 +2,11 @@
+ 
+ export default function Document() {
+   return (
+-    <Html>
++    <Html lang="en">
+       <Head />
+       <body>
+         <Main />
+-        <Image src="/hero.png" width={1200} height={800} />
++        <Image src="/hero.png" width={1200} height={800}  alt="" />
+         <NextScript />
+       </body>
+     </Html>

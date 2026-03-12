@@ -1,0 +1,7 @@
+[
+  {
+    "rule_id": "image-alt",
+    "changed_target": "img.hero",
+    "description": "Applied framework-aware alt remediation for vue."
+  }
+]
