@@ -157,8 +157,8 @@ Coverage target in this repo:
 
 ## Still Worth Adding
 
-- Broader real scanner-backed integration coverage in CI (additional fixtures and failure-mode assertions when `npx @axe-core/cli` and `lighthouse` are available).
-- Snapshot fixtures for larger JSON/Markdown outputs.
+- Real-scanner coverage in CI still depends on environment/tooling availability; keep expanding fixtures and failure-mode assertions when `npx @axe-core/cli` and `lighthouse` are available.
+- Keep refreshing representative realistic-sample artifacts (`docs/testing/realistic-sample/artifacts/`) as remediation behavior evolves.
 - Optional dependency vulnerability tooling once dependencies grow beyond the current minimal set.
 
 ## Execution Commands
@@ -169,4 +169,5 @@ Run the current automated suite:
 python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"
 python scripts/validate_skill.py skills/libro-agent-wcag
 ```
+
 

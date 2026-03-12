@@ -1,0 +1,1583 @@
+{
+  "run_meta": {
+    "generated_at": "2026-03-12T10:22:24.607392+00:00",
+    "workflow_version": "1.0.0",
+    "execution_mode": "apply-fixes",
+    "output_language": "en",
+    "files_modified": true,
+    "modification_owner": "core-workflow",
+    "diff_artifacts": [
+      {
+        "path": "C:\\Source\\Libro.AgentWCAG\\.tmp-realistic-smoke\\run\\mixed-findings.html",
+        "type": "modified-file"
+      },
+      {
+        "path": "C:\\Source\\Libro.AgentWCAG\\.tmp-realistic-smoke\\run\\audit-output\\wcag-fixes.diff",
+        "type": "unified-diff"
+      }
+    ],
+    "verification_evidence": [
+      {
+        "finding_id": "ISSUE-001",
+        "fix_id": "FIX-001",
+        "type": "diff-generated",
+        "status": "diff-generated",
+        "target": "meta[name=\"viewport\"]"
+      },
+      {
+        "finding_id": "ISSUE-002",
+        "fix_id": "FIX-002",
+        "type": "diff-generated",
+        "status": "diff-generated",
+        "target": "a.jump-link"
+      },
+      {
+        "finding_id": "ISSUE-003",
+        "fix_id": "FIX-003",
+        "type": "diff-generated",
+        "status": "diff-generated",
+        "target": "img.hero"
+      },
+      {
+        "finding_id": "ISSUE-004",
+        "fix_id": "FIX-004",
+        "type": "diff-generated",
+        "status": "diff-generated",
+        "target": "button.icon-only"
+      },
+      {
+        "finding_id": "ISSUE-005",
+        "fix_id": "FIX-005",
+        "type": "diff-generated",
+        "status": "diff-generated",
+        "target": "ul.plain"
+      }
+    ],
+    "tools": {
+      "axe": "ok",
+      "lighthouse": "ok"
+    },
+    "notes": [
+      "Applied 5 safe auto-fix change(s) to the local target.",
+      "Saved auto-fix diff: C:\\Source\\Libro.AgentWCAG\\.tmp-realistic-smoke\\run\\audit-output\\wcag-fixes.diff"
+    ],
+    "applied_changes": [
+      {
+        "rule_id": "meta-viewport",
+        "changed_target": "meta[name=\"viewport\"]",
+        "description": "Normalized viewport settings to an accessible value."
+      },
+      {
+        "rule_id": "link-name",
+        "changed_target": "a.jump-link",
+        "description": "Added aria-label=\"Link\" to an empty link."
+      },
+      {
+        "rule_id": "image-alt",
+        "changed_target": "img.hero",
+        "description": "Added an empty alt attribute to an img element missing alt text."
+      },
+      {
+        "rule_id": "button-name",
+        "changed_target": "button.icon-only",
+        "description": "Added aria-label=\"Button\" to an icon-only button."
+      },
+      {
+        "rule_id": "list",
+        "changed_target": "ul.plain",
+        "description": "Wrapped list content with a list item element."
+      }
+    ]
+  },
+  "target": {
+    "value": "C:\\Source\\Libro.AgentWCAG\\.tmp-realistic-smoke\\run\\mixed-findings.html",
+    "task_mode": "modify"
+  },
+  "standard": {
+    "wcag_version": "2.2",
+    "conformance_level": "AA"
+  },
+  "findings": [
+    {
+      "id": "ISSUE-001",
+      "source": "lighthouse",
+      "sources": [
+        "lighthouse"
+      ],
+      "rule_id": "meta-viewport",
+      "severity": "critical",
+      "confidence": "medium",
+      "sc": [
+        "1.4.4",
+        "1.4.10"
+      ],
+      "current": "User-scalable is not disabled",
+      "changed_target": "meta[name=\"viewport\"]",
+      "status": "fixed",
+      "fixability": "auto-fix",
+      "verification_status": "diff-generated",
+      "manual_review_required": false,
+      "risk_level": "high",
+      "rule_family": "visual",
+      "downgrade_reason": null,
+      "before_after_targets": [
+        {
+          "target": "meta[name=\"viewport\"]",
+          "before_status": "open",
+          "after_status": "fixed"
+        }
+      ]
+    },
+    {
+      "id": "ISSUE-002",
+      "source": "lighthouse",
+      "sources": [
+        "lighthouse"
+      ],
+      "rule_id": "link-name",
+      "severity": "critical",
+      "confidence": "high",
+      "sc": [
+        "2.4.4",
+        "4.1.2"
+      ],
+      "current": "Links have discernible text",
+      "changed_target": "a.jump-link",
+      "status": "fixed",
+      "fixability": "auto-fix",
+      "verification_status": "diff-generated",
+      "manual_review_required": false,
+      "risk_level": "high",
+      "rule_family": "accessible-name",
+      "downgrade_reason": null,
+      "before_after_targets": [
+        {
+          "target": "a.jump-link",
+          "before_status": "open",
+          "after_status": "fixed"
+        }
+      ]
+    },
+    {
+      "id": "ISSUE-003",
+      "source": "axe",
+      "sources": [
+        "axe"
+      ],
+      "rule_id": "image-alt",
+      "severity": "serious",
+      "confidence": "high",
+      "sc": [
+        "1.1.1"
+      ],
+      "current": "Images must have alternate text",
+      "changed_target": "img.hero",
+      "status": "fixed",
+      "fixability": "auto-fix",
+      "verification_status": "diff-generated",
+      "manual_review_required": false,
+      "risk_level": "high",
+      "rule_family": "accessible-name",
+      "downgrade_reason": null,
+      "before_after_targets": [
+        {
+          "target": "img.hero",
+          "before_status": "open",
+          "after_status": "fixed"
+        }
+      ]
+    },
+    {
+      "id": "ISSUE-004",
+      "source": "axe",
+      "sources": [
+        "axe"
+      ],
+      "rule_id": "button-name",
+      "severity": "serious",
+      "confidence": "high",
+      "sc": [
+        "4.1.2"
+      ],
+      "current": "Buttons must have discernible text",
+      "changed_target": "button.icon-only",
+      "status": "fixed",
+      "fixability": "auto-fix",
+      "verification_status": "diff-generated",
+      "manual_review_required": false,
+      "risk_level": "high",
+      "rule_family": "accessible-name",
+      "downgrade_reason": null,
+      "before_after_targets": [
+        {
+          "target": "button.icon-only",
+          "before_status": "open",
+          "after_status": "fixed"
+        }
+      ]
+    },
+    {
+      "id": "ISSUE-005",
+      "source": "axe",
+      "sources": [
+        "axe"
+      ],
+      "rule_id": "list",
+      "severity": "moderate",
+      "confidence": "high",
+      "sc": [
+        "1.3.1"
+      ],
+      "current": "Lists must contain only li elements",
+      "changed_target": "ul.plain",
+      "status": "fixed",
+      "fixability": "auto-fix",
+      "verification_status": "diff-generated",
+      "manual_review_required": false,
+      "risk_level": "medium",
+      "rule_family": "structure",
+      "downgrade_reason": null,
+      "before_after_targets": [
+        {
+          "target": "ul.plain",
+          "before_status": "open",
+          "after_status": "fixed"
+        }
+      ]
+    },
+    {
+      "id": "ISSUE-006",
+      "source": "axe",
+      "sources": [
+        "axe"
+      ],
+      "rule_id": "heading-order",
+      "severity": "moderate",
+      "confidence": "medium",
+      "sc": [
+        "1.3.1",
+        "2.4.6"
+      ],
+      "current": "Heading levels should only increase by one",
+      "changed_target": "h3",
+      "status": "open",
+      "fixability": "assisted",
+      "verification_status": "not-run",
+      "manual_review_required": false,
+      "risk_level": "medium",
+      "rule_family": "structure",
+      "downgrade_reason": "assisted-remediation-required",
+      "before_after_targets": []
+    },
+    {
+      "id": "ISSUE-007",
+      "source": "manual",
+      "sources": [
+        "manual"
+      ],
+      "rule_id": "wcag22-manual-2.4.11",
+      "severity": "info",
+      "confidence": "medium",
+      "sc": [
+        "2.4.11"
+      ],
+      "current": "Review whether focused elements remain at least partially visible.",
+      "changed_target": "manual-review",
+      "status": "needs-review",
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "risk_level": "low",
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": []
+    },
+    {
+      "id": "ISSUE-008",
+      "source": "manual",
+      "sources": [
+        "manual"
+      ],
+      "rule_id": "wcag22-manual-2.4.12",
+      "severity": "info",
+      "confidence": "medium",
+      "sc": [
+        "2.4.12"
+      ],
+      "current": "Review whether focused elements remain fully unobscured in enhanced scenarios.",
+      "changed_target": "manual-review",
+      "status": "needs-review",
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "risk_level": "low",
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": []
+    },
+    {
+      "id": "ISSUE-009",
+      "source": "manual",
+      "sources": [
+        "manual"
+      ],
+      "rule_id": "wcag22-manual-2.4.13",
+      "severity": "info",
+      "confidence": "medium",
+      "sc": [
+        "2.4.13"
+      ],
+      "current": "Review whether focus appearance meets WCAG 2.2 requirements.",
+      "changed_target": "manual-review",
+      "status": "needs-review",
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "risk_level": "low",
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": []
+    },
+    {
+      "id": "ISSUE-010",
+      "source": "manual",
+      "sources": [
+        "manual"
+      ],
+      "rule_id": "wcag22-manual-2.5.7",
+      "severity": "info",
+      "confidence": "medium",
+      "sc": [
+        "2.5.7"
+      ],
+      "current": "Review whether dragging interactions have a single-pointer alternative.",
+      "changed_target": "manual-review",
+      "status": "needs-review",
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "risk_level": "low",
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": []
+    },
+    {
+      "id": "ISSUE-011",
+      "source": "manual",
+      "sources": [
+        "manual"
+      ],
+      "rule_id": "wcag22-manual-2.5.8",
+      "severity": "info",
+      "confidence": "medium",
+      "sc": [
+        "2.5.8"
+      ],
+      "current": "Review whether targets meet minimum target size requirements.",
+      "changed_target": "manual-review",
+      "status": "needs-review",
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "risk_level": "low",
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": []
+    },
+    {
+      "id": "ISSUE-012",
+      "source": "manual",
+      "sources": [
+        "manual"
+      ],
+      "rule_id": "wcag22-manual-3.2.6",
+      "severity": "info",
+      "confidence": "medium",
+      "sc": [
+        "3.2.6"
+      ],
+      "current": "Review whether help mechanisms remain consistent across pages.",
+      "changed_target": "manual-review",
+      "status": "needs-review",
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "risk_level": "low",
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": []
+    },
+    {
+      "id": "ISSUE-013",
+      "source": "manual",
+      "sources": [
+        "manual"
+      ],
+      "rule_id": "wcag22-manual-3.3.7",
+      "severity": "info",
+      "confidence": "medium",
+      "sc": [
+        "3.3.7"
+      ],
+      "current": "Review whether redundant-entry protections are provided where needed.",
+      "changed_target": "manual-review",
+      "status": "needs-review",
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "risk_level": "low",
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": []
+    },
+    {
+      "id": "ISSUE-014",
+      "source": "manual",
+      "sources": [
+        "manual"
+      ],
+      "rule_id": "wcag22-manual-3.3.8",
+      "severity": "info",
+      "confidence": "medium",
+      "sc": [
+        "3.3.8"
+      ],
+      "current": "Review accessible authentication without cognitive function tests.",
+      "changed_target": "manual-review",
+      "status": "needs-review",
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "risk_level": "low",
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": []
+    },
+    {
+      "id": "ISSUE-015",
+      "source": "manual",
+      "sources": [
+        "manual"
+      ],
+      "rule_id": "wcag22-manual-3.3.9",
+      "severity": "info",
+      "confidence": "medium",
+      "sc": [
+        "3.3.9"
+      ],
+      "current": "Review enhanced accessible authentication support.",
+      "changed_target": "manual-review",
+      "status": "needs-review",
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "risk_level": "low",
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": []
+    }
+  ],
+  "fixes": [
+    {
+      "id": "FIX-001",
+      "finding_id": "ISSUE-001",
+      "description": "Allow zoom and avoid viewport settings that block reflow or text resize.",
+      "changed_target": "meta[name=\"viewport\"]",
+      "status": "implemented",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": true,
+      "fixability": "auto-fix",
+      "verification_status": "diff-generated",
+      "manual_review_required": false,
+      "risk_level": "high",
+      "rule_family": "visual",
+      "downgrade_reason": null,
+      "before_after_targets": [
+        {
+          "target": "meta[name=\"viewport\"]",
+          "before_status": "open",
+          "after_status": "fixed"
+        }
+      ],
+      "fix_blockers": [],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "lighthouse"
+          ],
+          "status": "captured"
+        },
+        {
+          "type": "diff-generated",
+          "status": "implemented",
+          "target": "meta[name=\"viewport\"]"
+        }
+      ],
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-002",
+      "finding_id": "ISSUE-002",
+      "description": "Ensure each link has meaningful, discernible text.",
+      "changed_target": "a.jump-link",
+      "status": "implemented",
+      "remediation_priority": "high",
+      "confidence": "high",
+      "auto_fix_supported": true,
+      "fixability": "auto-fix",
+      "verification_status": "diff-generated",
+      "manual_review_required": false,
+      "risk_level": "high",
+      "rule_family": "accessible-name",
+      "downgrade_reason": null,
+      "before_after_targets": [
+        {
+          "target": "a.jump-link",
+          "before_status": "open",
+          "after_status": "fixed"
+        }
+      ],
+      "fix_blockers": [],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "lighthouse"
+          ],
+          "status": "captured"
+        },
+        {
+          "type": "diff-generated",
+          "status": "implemented",
+          "target": "a.jump-link"
+        }
+      ],
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-003",
+      "finding_id": "ISSUE-003",
+      "description": "Add a meaningful alt attribute or mark decorative images with empty alt text.",
+      "changed_target": "img.hero",
+      "status": "implemented",
+      "remediation_priority": "high",
+      "confidence": "high",
+      "auto_fix_supported": true,
+      "fixability": "auto-fix",
+      "verification_status": "diff-generated",
+      "manual_review_required": false,
+      "risk_level": "high",
+      "rule_family": "accessible-name",
+      "downgrade_reason": null,
+      "before_after_targets": [
+        {
+          "target": "img.hero",
+          "before_status": "open",
+          "after_status": "fixed"
+        }
+      ],
+      "fix_blockers": [],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "axe"
+          ],
+          "status": "captured"
+        },
+        {
+          "type": "diff-generated",
+          "status": "implemented",
+          "target": "img.hero"
+        }
+      ],
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "In JSX, ensure every <img> has an explicit alt prop; keep icon-only media as alt=\"\".",
+        "vue": "In Vue templates, provide alt or :alt bindings for each img element.",
+        "nextjs": "For next/image, require alt on every <Image> usage and keep decorative media alt=\"\"."
+      }
+    },
+    {
+      "id": "FIX-004",
+      "finding_id": "ISSUE-004",
+      "description": "Give each button a discernible accessible name.",
+      "changed_target": "button.icon-only",
+      "status": "implemented",
+      "remediation_priority": "high",
+      "confidence": "high",
+      "auto_fix_supported": true,
+      "fixability": "auto-fix",
+      "verification_status": "diff-generated",
+      "manual_review_required": false,
+      "risk_level": "high",
+      "rule_family": "accessible-name",
+      "downgrade_reason": null,
+      "before_after_targets": [
+        {
+          "target": "button.icon-only",
+          "before_status": "open",
+          "after_status": "fixed"
+        }
+      ],
+      "fix_blockers": [],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "axe"
+          ],
+          "status": "captured"
+        },
+        {
+          "type": "diff-generated",
+          "status": "implemented",
+          "target": "button.icon-only"
+        }
+      ],
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer aria-label props for icon-only JSX buttons and keep visible text when present.",
+        "vue": "Use aria-label or v-bind:aria-label on icon-only template buttons.",
+        "nextjs": "Apply the same button-name rule in app/layout and client components; avoid empty interactive controls."
+      }
+    },
+    {
+      "id": "FIX-005",
+      "finding_id": "ISSUE-005",
+      "description": "Ensure list containers contain only listitem children.",
+      "changed_target": "ul.plain",
+      "status": "implemented",
+      "remediation_priority": "medium",
+      "confidence": "high",
+      "auto_fix_supported": true,
+      "fixability": "auto-fix",
+      "verification_status": "diff-generated",
+      "manual_review_required": false,
+      "risk_level": "medium",
+      "rule_family": "structure",
+      "downgrade_reason": null,
+      "before_after_targets": [
+        {
+          "target": "ul.plain",
+          "before_status": "open",
+          "after_status": "fixed"
+        }
+      ],
+      "fix_blockers": [],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "axe"
+          ],
+          "status": "captured"
+        },
+        {
+          "type": "diff-generated",
+          "status": "implemented",
+          "target": "ul.plain"
+        }
+      ],
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-006",
+      "finding_id": "ISSUE-006",
+      "description": "Use a logical heading hierarchy without skipping levels unnecessarily.",
+      "changed_target": "h3",
+      "status": "planned",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": false,
+      "fixability": "assisted",
+      "verification_status": "not-run",
+      "manual_review_required": false,
+      "risk_level": "medium",
+      "rule_family": "structure",
+      "downgrade_reason": "assisted-remediation-required",
+      "before_after_targets": [],
+      "fix_blockers": [
+        "assisted-remediation-required"
+      ],
+      "assisted_steps": [
+        "Identify heading level jumps in document reading order.",
+        "Adjust heading tags or section structure to maintain a logical hierarchy.",
+        "Confirm visual style remains consistent after semantic heading changes."
+      ],
+      "verification_rules": [
+        "Heading levels do not skip more than one level in sequence.",
+        "Document outline preserves section meaning after remediation."
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "axe"
+          ],
+          "status": "captured"
+        }
+      ],
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-007",
+      "finding_id": "ISSUE-007",
+      "description": "Review the affected element and implement a WCAG-conformant remediation.",
+      "changed_target": "manual-review",
+      "status": "planned",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": false,
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "risk_level": "low",
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": [],
+      "fix_blockers": [
+        "assisted-remediation-required",
+        "manual-verification-required"
+      ],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "manual"
+          ],
+          "status": "captured"
+        }
+      ],
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-008",
+      "finding_id": "ISSUE-008",
+      "description": "Review the affected element and implement a WCAG-conformant remediation.",
+      "changed_target": "manual-review",
+      "status": "planned",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": false,
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "risk_level": "low",
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": [],
+      "fix_blockers": [
+        "assisted-remediation-required",
+        "manual-verification-required"
+      ],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "manual"
+          ],
+          "status": "captured"
+        }
+      ],
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-009",
+      "finding_id": "ISSUE-009",
+      "description": "Review the affected element and implement a WCAG-conformant remediation.",
+      "changed_target": "manual-review",
+      "status": "planned",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": false,
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "risk_level": "low",
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": [],
+      "fix_blockers": [
+        "assisted-remediation-required",
+        "manual-verification-required"
+      ],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "manual"
+          ],
+          "status": "captured"
+        }
+      ],
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-010",
+      "finding_id": "ISSUE-010",
+      "description": "Review the affected element and implement a WCAG-conformant remediation.",
+      "changed_target": "manual-review",
+      "status": "planned",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": false,
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "risk_level": "low",
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": [],
+      "fix_blockers": [
+        "assisted-remediation-required",
+        "manual-verification-required"
+      ],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "manual"
+          ],
+          "status": "captured"
+        }
+      ],
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-011",
+      "finding_id": "ISSUE-011",
+      "description": "Review the affected element and implement a WCAG-conformant remediation.",
+      "changed_target": "manual-review",
+      "status": "planned",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": false,
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "risk_level": "low",
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": [],
+      "fix_blockers": [
+        "assisted-remediation-required",
+        "manual-verification-required"
+      ],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "manual"
+          ],
+          "status": "captured"
+        }
+      ],
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-012",
+      "finding_id": "ISSUE-012",
+      "description": "Review the affected element and implement a WCAG-conformant remediation.",
+      "changed_target": "manual-review",
+      "status": "planned",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": false,
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "risk_level": "low",
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": [],
+      "fix_blockers": [
+        "assisted-remediation-required",
+        "manual-verification-required"
+      ],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "manual"
+          ],
+          "status": "captured"
+        }
+      ],
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-013",
+      "finding_id": "ISSUE-013",
+      "description": "Review the affected element and implement a WCAG-conformant remediation.",
+      "changed_target": "manual-review",
+      "status": "planned",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": false,
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "risk_level": "low",
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": [],
+      "fix_blockers": [
+        "assisted-remediation-required",
+        "manual-verification-required"
+      ],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "manual"
+          ],
+          "status": "captured"
+        }
+      ],
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-014",
+      "finding_id": "ISSUE-014",
+      "description": "Review the affected element and implement a WCAG-conformant remediation.",
+      "changed_target": "manual-review",
+      "status": "planned",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": false,
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "risk_level": "low",
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": [],
+      "fix_blockers": [
+        "assisted-remediation-required",
+        "manual-verification-required"
+      ],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "manual"
+          ],
+          "status": "captured"
+        }
+      ],
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-015",
+      "finding_id": "ISSUE-015",
+      "description": "Review the affected element and implement a WCAG-conformant remediation.",
+      "changed_target": "manual-review",
+      "status": "planned",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": false,
+      "fixability": "manual",
+      "verification_status": "manual-review",
+      "manual_review_required": true,
+      "risk_level": "low",
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": [],
+      "fix_blockers": [
+        "assisted-remediation-required",
+        "manual-verification-required"
+      ],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "manual"
+          ],
+          "status": "captured"
+        }
+      ],
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    }
+  ],
+  "citations": [
+    {
+      "finding_id": "ISSUE-001",
+      "sc": "1.4.4",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/resize-text"
+    },
+    {
+      "finding_id": "ISSUE-001",
+      "sc": "1.4.10",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/reflow"
+    },
+    {
+      "finding_id": "ISSUE-002",
+      "sc": "2.4.4",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/link-purpose-in-context"
+    },
+    {
+      "finding_id": "ISSUE-002",
+      "sc": "4.1.2",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value"
+    },
+    {
+      "finding_id": "ISSUE-003",
+      "sc": "1.1.1",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/non-text-content"
+    },
+    {
+      "finding_id": "ISSUE-004",
+      "sc": "4.1.2",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/name-role-value"
+    },
+    {
+      "finding_id": "ISSUE-005",
+      "sc": "1.3.1",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships"
+    },
+    {
+      "finding_id": "ISSUE-006",
+      "sc": "1.3.1",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships"
+    },
+    {
+      "finding_id": "ISSUE-006",
+      "sc": "2.4.6",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/headings-and-labels"
+    },
+    {
+      "finding_id": "ISSUE-007",
+      "sc": "2.4.11",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum"
+    },
+    {
+      "finding_id": "ISSUE-008",
+      "sc": "2.4.12",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-enhanced"
+    },
+    {
+      "finding_id": "ISSUE-009",
+      "sc": "2.4.13",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/focus-appearance"
+    },
+    {
+      "finding_id": "ISSUE-010",
+      "sc": "2.5.7",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements"
+    },
+    {
+      "finding_id": "ISSUE-011",
+      "sc": "2.5.8",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum"
+    },
+    {
+      "finding_id": "ISSUE-012",
+      "sc": "3.2.6",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/consistent-help"
+    },
+    {
+      "finding_id": "ISSUE-013",
+      "sc": "3.3.7",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/redundant-entry"
+    },
+    {
+      "finding_id": "ISSUE-014",
+      "sc": "3.3.8",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/accessible-authentication-minimum"
+    },
+    {
+      "finding_id": "ISSUE-015",
+      "sc": "3.3.9",
+      "url": "https://www.w3.org/WAI/WCAG22/Understanding/accessible-authentication-enhanced"
+    }
+  ],
+  "summary": {
+    "total_findings": 15,
+    "fixed_findings": 5,
+    "auto_fixed_count": 5,
+    "needs_manual_review": 9,
+    "manual_required_count": 9,
+    "change_summary": [
+      {
+        "finding_id": "ISSUE-001",
+        "rule_id": "meta-viewport",
+        "changed_target": "meta[name=\"viewport\"]",
+        "recommended_action": "Allow zoom and avoid viewport settings that block reflow or text resize.",
+        "remediation_priority": "medium"
+      },
+      {
+        "finding_id": "ISSUE-002",
+        "rule_id": "link-name",
+        "changed_target": "a.jump-link",
+        "recommended_action": "Ensure each link has meaningful, discernible text.",
+        "remediation_priority": "high"
+      },
+      {
+        "finding_id": "ISSUE-003",
+        "rule_id": "image-alt",
+        "changed_target": "img.hero",
+        "recommended_action": "Add a meaningful alt attribute or mark decorative images with empty alt text.",
+        "remediation_priority": "high"
+      },
+      {
+        "finding_id": "ISSUE-004",
+        "rule_id": "button-name",
+        "changed_target": "button.icon-only",
+        "recommended_action": "Give each button a discernible accessible name.",
+        "remediation_priority": "high"
+      },
+      {
+        "finding_id": "ISSUE-005",
+        "rule_id": "list",
+        "changed_target": "ul.plain",
+        "recommended_action": "Ensure list containers contain only listitem children.",
+        "remediation_priority": "medium"
+      },
+      {
+        "finding_id": "ISSUE-006",
+        "rule_id": "heading-order",
+        "changed_target": "h3",
+        "recommended_action": "Use a logical heading hierarchy without skipping levels unnecessarily.",
+        "remediation_priority": "medium"
+      },
+      {
+        "finding_id": "ISSUE-007",
+        "rule_id": "wcag22-manual-2.4.11",
+        "changed_target": "manual-review",
+        "recommended_action": "Review the affected element and implement a WCAG-conformant remediation.",
+        "remediation_priority": "medium"
+      },
+      {
+        "finding_id": "ISSUE-008",
+        "rule_id": "wcag22-manual-2.4.12",
+        "changed_target": "manual-review",
+        "recommended_action": "Review the affected element and implement a WCAG-conformant remediation.",
+        "remediation_priority": "medium"
+      },
+      {
+        "finding_id": "ISSUE-009",
+        "rule_id": "wcag22-manual-2.4.13",
+        "changed_target": "manual-review",
+        "recommended_action": "Review the affected element and implement a WCAG-conformant remediation.",
+        "remediation_priority": "medium"
+      },
+      {
+        "finding_id": "ISSUE-010",
+        "rule_id": "wcag22-manual-2.5.7",
+        "changed_target": "manual-review",
+        "recommended_action": "Review the affected element and implement a WCAG-conformant remediation.",
+        "remediation_priority": "medium"
+      },
+      {
+        "finding_id": "ISSUE-011",
+        "rule_id": "wcag22-manual-2.5.8",
+        "changed_target": "manual-review",
+        "recommended_action": "Review the affected element and implement a WCAG-conformant remediation.",
+        "remediation_priority": "medium"
+      },
+      {
+        "finding_id": "ISSUE-012",
+        "rule_id": "wcag22-manual-3.2.6",
+        "changed_target": "manual-review",
+        "recommended_action": "Review the affected element and implement a WCAG-conformant remediation.",
+        "remediation_priority": "medium"
+      },
+      {
+        "finding_id": "ISSUE-013",
+        "rule_id": "wcag22-manual-3.3.7",
+        "changed_target": "manual-review",
+        "recommended_action": "Review the affected element and implement a WCAG-conformant remediation.",
+        "remediation_priority": "medium"
+      },
+      {
+        "finding_id": "ISSUE-014",
+        "rule_id": "wcag22-manual-3.3.8",
+        "changed_target": "manual-review",
+        "recommended_action": "Review the affected element and implement a WCAG-conformant remediation.",
+        "remediation_priority": "medium"
+      },
+      {
+        "finding_id": "ISSUE-015",
+        "rule_id": "wcag22-manual-3.3.9",
+        "changed_target": "manual-review",
+        "recommended_action": "Review the affected element and implement a WCAG-conformant remediation.",
+        "remediation_priority": "medium"
+      },
+      {
+        "finding_id": "FIXED-001",
+        "rule_id": "meta-viewport",
+        "changed_target": "meta[name=\"viewport\"]",
+        "recommended_action": "Normalized viewport settings to an accessible value.",
+        "remediation_priority": "high"
+      },
+      {
+        "finding_id": "FIXED-002",
+        "rule_id": "link-name",
+        "changed_target": "a.jump-link",
+        "recommended_action": "Added aria-label=\"Link\" to an empty link.",
+        "remediation_priority": "high"
+      },
+      {
+        "finding_id": "FIXED-003",
+        "rule_id": "image-alt",
+        "changed_target": "img.hero",
+        "recommended_action": "Added an empty alt attribute to an img element missing alt text.",
+        "remediation_priority": "high"
+      },
+      {
+        "finding_id": "FIXED-004",
+        "rule_id": "button-name",
+        "changed_target": "button.icon-only",
+        "recommended_action": "Added aria-label=\"Button\" to an icon-only button.",
+        "remediation_priority": "high"
+      },
+      {
+        "finding_id": "FIXED-005",
+        "rule_id": "list",
+        "changed_target": "ul.plain",
+        "recommended_action": "Wrapped list content with a list item element.",
+        "remediation_priority": "high"
+      }
+    ],
+    "diff_summary": [
+      {
+        "rule_id": "meta-viewport",
+        "changed_target": "meta[name=\"viewport\"]",
+        "description": "Normalized viewport settings to an accessible value."
+      },
+      {
+        "rule_id": "link-name",
+        "changed_target": "a.jump-link",
+        "description": "Added aria-label=\"Link\" to an empty link."
+      },
+      {
+        "rule_id": "image-alt",
+        "changed_target": "img.hero",
+        "description": "Added an empty alt attribute to an img element missing alt text."
+      },
+      {
+        "rule_id": "button-name",
+        "changed_target": "button.icon-only",
+        "description": "Added aria-label=\"Button\" to an icon-only button."
+      },
+      {
+        "rule_id": "list",
+        "changed_target": "ul.plain",
+        "description": "Wrapped list content with a list item element."
+      }
+    ],
+    "before_after_targets": [
+      {
+        "finding_id": "ISSUE-001",
+        "target": "meta[name=\"viewport\"]",
+        "before_status": "open",
+        "after_status": "fixed"
+      },
+      {
+        "finding_id": "ISSUE-002",
+        "target": "a.jump-link",
+        "before_status": "open",
+        "after_status": "fixed"
+      },
+      {
+        "finding_id": "ISSUE-003",
+        "target": "img.hero",
+        "before_status": "open",
+        "after_status": "fixed"
+      },
+      {
+        "finding_id": "ISSUE-004",
+        "target": "button.icon-only",
+        "before_status": "open",
+        "after_status": "fixed"
+      },
+      {
+        "finding_id": "ISSUE-005",
+        "target": "ul.plain",
+        "before_status": "open",
+        "after_status": "fixed"
+      }
+    ],
+    "remediation_lifecycle": {
+      "planned": 10,
+      "implemented": 5,
+      "verified": 0,
+      "manual_review_required": 9
+    },
+    "fix_blockers": [
+      {
+        "finding_id": "ISSUE-006",
+        "rule_id": "heading-order",
+        "blockers": [
+          "assisted-remediation-required"
+        ]
+      },
+      {
+        "finding_id": "ISSUE-007",
+        "rule_id": "wcag22-manual-2.4.11",
+        "blockers": [
+          "assisted-remediation-required",
+          "manual-verification-required"
+        ]
+      },
+      {
+        "finding_id": "ISSUE-008",
+        "rule_id": "wcag22-manual-2.4.12",
+        "blockers": [
+          "assisted-remediation-required",
+          "manual-verification-required"
+        ]
+      },
+      {
+        "finding_id": "ISSUE-009",
+        "rule_id": "wcag22-manual-2.4.13",
+        "blockers": [
+          "assisted-remediation-required",
+          "manual-verification-required"
+        ]
+      },
+      {
+        "finding_id": "ISSUE-010",
+        "rule_id": "wcag22-manual-2.5.7",
+        "blockers": [
+          "assisted-remediation-required",
+          "manual-verification-required"
+        ]
+      },
+      {
+        "finding_id": "ISSUE-011",
+        "rule_id": "wcag22-manual-2.5.8",
+        "blockers": [
+          "assisted-remediation-required",
+          "manual-verification-required"
+        ]
+      },
+      {
+        "finding_id": "ISSUE-012",
+        "rule_id": "wcag22-manual-3.2.6",
+        "blockers": [
+          "assisted-remediation-required",
+          "manual-verification-required"
+        ]
+      },
+      {
+        "finding_id": "ISSUE-013",
+        "rule_id": "wcag22-manual-3.3.7",
+        "blockers": [
+          "assisted-remediation-required",
+          "manual-verification-required"
+        ]
+      },
+      {
+        "finding_id": "ISSUE-014",
+        "rule_id": "wcag22-manual-3.3.8",
+        "blockers": [
+          "assisted-remediation-required",
+          "manual-verification-required"
+        ]
+      },
+      {
+        "finding_id": "ISSUE-015",
+        "rule_id": "wcag22-manual-3.3.9",
+        "blockers": [
+          "assisted-remediation-required",
+          "manual-verification-required"
+        ]
+      }
+    ]
+  }
+}

@@ -2,6 +2,12 @@
 
 This checklist tracks the remaining work needed to make `libro-agent-wcag` more complete as a production-grade accessibility skill.
 
+## Current Execution Order
+
+1. Complete `M15 Broader Real-World Validation` to prove the current workflow on realistic targets, not only synthetic fixtures.
+2. Complete `M16 Apply-Fixes Productization` to align actual rewrite behavior with the product promise in docs.
+3. Start `M17 Release Packaging Extras` only after the validation and behavior scope are stable.
+
 ## M5 Safe Auto-Fix Expansion
 
 - [x] Add safe auto-fix support for `aria-valid-attr-value`
@@ -106,17 +112,28 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M15 Broader Real-World Validation
 
-- [ ] Add a scripted smoke scenario that runs install -> invoke -> audit on a realistic sample target
-- [ ] Expand real scanner coverage beyond fixtures when prerequisites are available
-- [ ] Capture representative end-to-end artifacts for a real-world remediation flow
-- [ ] Document known limitations and manual review boundaries from real-project validation
+- [x] Add a realistic sample target under `docs/` or test fixtures that exercises mixed auto-fix plus manual-review findings
+- [x] Add a scripted smoke scenario that runs install -> invoke -> audit against that realistic sample target
+- [x] Add real-scanner assertions for the realistic sample target when `npx @axe-core/cli` and `lighthouse` are available
+- [x] Capture representative end-to-end artifacts for that flow, including JSON report, Markdown report, and any diff outputs
+- [x] Document known limitations, false-positive boundaries, and manual-review expectations discovered during realistic validation
+- [x] Update `TESTING-PLAN.md` coverage assets if realistic validation introduces a new durable test lane
 
 ## M16 Apply-Fixes Productization
 
-- [ ] Audit current `apply-fixes` behavior against README future-direction expectations
-- [ ] Close gaps between safe rewrite support and documented apply-fixes capabilities
-- [ ] Add regression coverage for multi-file or repeated apply-fixes workflows if supported
-- [ ] Clarify which remediation classes remain intentionally suggest-only
+- [ ] Audit `skills/libro-agent-wcag/scripts/auto_fix.py` and `run_accessibility_audit.py` behavior against README wording for `apply-fixes`
+- [ ] Define the supported `apply-fixes` scope explicitly by rule family, file type, and safety level
+- [ ] Close the highest-value gaps between safe rewrite support and documented `apply-fixes` capabilities
+- [ ] Add regression coverage for repeated `apply-fixes` runs on the same target and verify idempotent artifacts remain stable
+- [ ] Add regression coverage for mixed supported-plus-unsupported findings so unsupported rules never cause overreach
+- [ ] Clarify in docs which remediation classes remain intentionally `suggest-only` or assisted-only
+
+## M17 Release Packaging Extras
+
+- [ ] Add a minimal demo package or walkthrough that can be used to verify the skill outside the test suite
+- [ ] Add reusable templates for common audit prompts or adapter invocation flows
+- [ ] Add issue templates or troubleshooting intake docs for installation failures and remediation mismatches
+- [ ] Decide whether release packaging extras belong inside this repo or in a companion examples repo
 ## Notes
 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
