@@ -16,6 +16,7 @@ if str(SCRIPT_ROOT) not in sys.path:
 from run_accessibility_audit import (
     DEFAULT_TIMEOUT_SECONDS,
     _resolve_target_for_scanners,
+    _extract_version_line,
     _run_command,
     _try_run_axe,
     _try_run_lighthouse,
@@ -148,6 +149,28 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(result["checks"][0]["status"], "error")
         self.assertIn("PATH", result["checks"][0]["message"])
 
+    def test_extract_version_line_returns_first_non_empty_line(self) -> None:
+        output = "\n\n10.9.0\nsecondary"
+        self.assertEqual(_extract_version_line(output), "10.9.0")
+
+    @patch("run_accessibility_audit.shutil.which")
+    @patch("run_accessibility_audit._tool_available", return_value=True)
+    @patch("run_accessibility_audit._run_command")
+    def test_preflight_includes_diagnostics_fields(
+        self,
+        mock_run_command,
+        _mock_tool_available,
+        mock_which,
+    ) -> None:
+        mock_which.return_value = '/usr/bin/npx'
+        mock_run_command.return_value = (True, '10.9.0\n')
+        result = run_preflight_checks(timeout_seconds=5)
+        self.assertIn('tools', result)
+        self.assertIn('npx', result['tools'])
+        npx = result['tools']['npx']
+        self.assertEqual(npx['resolved_command'], '/usr/bin/npx')
+        self.assertEqual(npx['version'], '10.9.0')
+        self.assertIn('npx --version', npx['command'])
 
 if __name__ == "__main__":
     unittest.main()
