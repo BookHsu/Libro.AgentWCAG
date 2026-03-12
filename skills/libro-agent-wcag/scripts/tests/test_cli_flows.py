@@ -433,5 +433,91 @@ class CliFlowTests(unittest.TestCase):
             self.assertFalse(payload['adapter_prompt'])
 
 
+    def test_run_accessibility_audit_with_sarif_and_rule_filters(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            html_path = Path(tmp) / 'sample.html'
+            output_dir = Path(tmp) / 'out'
+            axe_json = Path(tmp) / 'axe.json'
+            html_path.write_text('<!doctype html><html><body><img class="hero" src="hero.png"><button class="icon"></button></body></html>', encoding='utf-8')
+            axe_json.write_text(
+                json.dumps(
+                    {
+                        'violations': [
+                            {'id': 'image-alt', 'impact': 'serious', 'description': 'Image alt missing', 'nodes': [{'target': ['img.hero']}]},
+                            {'id': 'button-name', 'impact': 'serious', 'description': 'Button name missing', 'nodes': [{'target': ['button.icon']}]},
+                        ]
+                    }
+                ),
+                encoding='utf-8',
+            )
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                    '--target',
+                    str(html_path),
+                    '--output-dir',
+                    str(output_dir),
+                    '--report-format',
+                    'sarif',
+                    '--include-rule',
+                    'image-alt',
+                    '--mock-axe-json',
+                    str(axe_json),
+                    '--skip-lighthouse',
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+            self.assertTrue((output_dir / 'wcag-report.sarif').exists())
+            payload = json.loads((output_dir / 'wcag-report.sarif').read_text(encoding='utf-8'))
+            rules = payload['runs'][0]['tool']['driver']['rules']
+            self.assertEqual(len(rules), 1)
+            self.assertEqual(rules[0]['id'], 'image-alt')
+
+    def test_run_accessibility_audit_fail_on_returns_deterministic_exit_code(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            html_path = Path(tmp) / 'sample.html'
+            output_dir = Path(tmp) / 'out'
+            axe_json = Path(tmp) / 'axe.json'
+            html_path.write_text('<!doctype html><html><body><img class="hero" src="hero.png"></body></html>', encoding='utf-8')
+            axe_json.write_text(
+                json.dumps(
+                    {
+                        'violations': [
+                            {'id': 'image-alt', 'impact': 'serious', 'description': 'Image alt missing', 'nodes': [{'target': ['img.hero']}]},
+                        ]
+                    }
+                ),
+                encoding='utf-8',
+            )
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                    '--target',
+                    str(html_path),
+                    '--output-dir',
+                    str(output_dir),
+                    '--fail-on',
+                    'serious',
+                    '--mock-axe-json',
+                    str(axe_json),
+                    '--skip-lighthouse',
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 43, completed.stdout + completed.stderr)
+            payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
+            self.assertTrue(payload['run_meta']['policy_gate']['failed'])
+
 if __name__ == '__main__':
     unittest.main()
+
+

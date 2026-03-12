@@ -13,6 +13,8 @@ SCRIPT_ROOT = Path(__file__).resolve().parents[1]
 if str(SCRIPT_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPT_ROOT))
 
+import run_accessibility_audit as runner
+
 from run_accessibility_audit import (
     DEFAULT_SCANNER_RETRY_ATTEMPTS,
     DEFAULT_TIMEOUT_SECONDS,
@@ -226,5 +228,70 @@ class RunnerRetryTests(unittest.TestCase):
         self.assertEqual(runner.call_count, 1)
         mock_sleep.assert_not_called()
 
+class RunnerPolicyTests(unittest.TestCase):
+    def test_apply_rule_policy_filters_findings_and_summary(self) -> None:
+        report = {
+            'findings': [
+                {'id': 'ISSUE-001', 'rule_id': 'image-alt', 'status': 'open', 'manual_review_required': False, 'severity': 'serious'},
+                {'id': 'ISSUE-002', 'rule_id': 'button-name', 'status': 'open', 'manual_review_required': False, 'severity': 'moderate'},
+            ],
+            'fixes': [
+                {'finding_id': 'ISSUE-001', 'status': 'planned', 'manual_review_required': False},
+                {'finding_id': 'ISSUE-002', 'status': 'planned', 'manual_review_required': False},
+            ],
+            'citations': [
+                {'finding_id': 'ISSUE-001', 'sc': '1.1.1', 'url': 'https://example.com'},
+                {'finding_id': 'ISSUE-002', 'sc': '4.1.2', 'url': 'https://example.com'},
+            ],
+            'summary': {
+                'change_summary': [
+                    {'finding_id': 'ISSUE-001', 'rule_id': 'image-alt'},
+                    {'finding_id': 'ISSUE-002', 'rule_id': 'button-name'},
+                ],
+                'fix_blockers': [],
+            },
+        }
+
+        before_count, after_count = runner._apply_rule_policy(
+            report,
+            include_rules=['image-alt'],
+            ignore_rules=[],
+        )
+
+        self.assertEqual(before_count, 2)
+        self.assertEqual(after_count, 1)
+        self.assertEqual(report['findings'][0]['rule_id'], 'image-alt')
+        self.assertEqual(report['summary']['total_findings'], 1)
+
+    def test_resolve_fail_threshold_returns_exit_code(self) -> None:
+        report = {
+            'findings': [
+                {'severity': 'serious', 'status': 'open'},
+            ]
+        }
+        should_fail, exit_code = runner._resolve_fail_threshold(report, 'serious')
+        self.assertTrue(should_fail)
+        self.assertEqual(exit_code, 43)
+
+    def test_report_to_sarif_includes_rule_and_selector(self) -> None:
+        report = {
+            'findings': [
+                {
+                    'id': 'ISSUE-001',
+                    'rule_id': 'image-alt',
+                    'severity': 'serious',
+                    'current': 'Image needs alt',
+                    'changed_target': 'img.hero',
+                    'status': 'open',
+                    'sc': ['1.1.1'],
+                }
+            ]
+        }
+
+        sarif = runner._report_to_sarif(report, 'https://example.com', None)
+        self.assertEqual(sarif['runs'][0]['results'][0]['ruleId'], 'image-alt')
+        self.assertIn('selector: img.hero', sarif['runs'][0]['results'][0]['message']['text'])
+
 if __name__ == "__main__":
     unittest.main()
+
