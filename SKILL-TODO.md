@@ -42,11 +42,11 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M8 Fixture And Snapshot Corpus
 
-- [ ] Add ARIA family fixtures
-- [ ] Add form error fixtures
-- [ ] Add heading hierarchy fixtures
-- [ ] Add landmark and region fixtures
-- [ ] Add table semantics fixtures
+- [x] Add ARIA family fixtures
+- [x] Add form error fixtures
+- [x] Add heading hierarchy fixtures
+- [x] Add landmark and region fixtures
+- [x] Add table semantics fixtures
 - [ ] Add keyboard and tabindex fixtures
 - [ ] Add WCAG 2.2 focus-related fixtures
 - [ ] Add `create` mode draft fixtures
@@ -93,6 +93,3 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
-
-
-
