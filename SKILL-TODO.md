@@ -11,9 +11,9 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [x] Add safe auto-fix support for `aria-progressbar-name`
 - [x] Add safe auto-fix support for `aria-meter-name`
 - [x] Add safe auto-fix support for `document-title`
-- [ ] Add safe auto-fix support for `list`
-- [ ] Add safe auto-fix support for `listitem`
-- [ ] Add safe auto-fix support for `table-fake-caption`
+- [x] Add safe auto-fix support for `list`
+- [x] Add safe auto-fix support for `listitem`
+- [x] Add safe auto-fix support for `table-fake-caption`
 - [x] Add safe auto-fix support for `td-has-header`
 - [x] Add safe auto-fix support for `th-has-data-cells`
 
@@ -93,5 +93,6 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
+
 
 
