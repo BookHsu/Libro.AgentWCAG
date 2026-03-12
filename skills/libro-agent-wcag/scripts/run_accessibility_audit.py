@@ -111,11 +111,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT_SECONDS)
     parser.add_argument("--skip-axe", action="store_true")
     parser.add_argument("--skip-lighthouse", action="store_true")
+    parser.add_argument("--mock-axe-json")
+    parser.add_argument("--mock-lighthouse-json")
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
+    if args.skip_axe and args.mock_axe_json:
+        raise ValueError('--skip-axe cannot be combined with --mock-axe-json')
+    if args.skip_lighthouse and args.mock_lighthouse_json:
+        raise ValueError('--skip-lighthouse cannot be combined with --mock-lighthouse-json')
+
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -134,12 +141,16 @@ def main() -> int:
 
     axe_data = None
     axe_error = None
-    if not args.skip_axe:
+    if args.mock_axe_json:
+        axe_data = json.loads(Path(args.mock_axe_json).read_text(encoding='utf-8'))
+    elif not args.skip_axe:
         axe_data, axe_error = _try_run_axe(scanner_target, output_dir, args.timeout)
 
     lighthouse_data = None
     lighthouse_error = None
-    if not args.skip_lighthouse:
+    if args.mock_lighthouse_json:
+        lighthouse_data = json.loads(Path(args.mock_lighthouse_json).read_text(encoding='utf-8'))
+    elif not args.skip_lighthouse:
         lighthouse_data, lighthouse_error = _try_run_lighthouse(
             scanner_target,
             output_dir,
