@@ -10,6 +10,15 @@ DEFAULT_STRATEGY = {
     "priority": "medium",
     "confidence": "medium",
     "auto_fix_supported": False,
+    "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually.",
+    ],
+    "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change.",
+    ],
     "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
         "react": "Prefer semantic JSX and explicit aria/label props.",
@@ -156,6 +165,51 @@ RULE_STRATEGIES = {
         "priority": "medium",
         "confidence": "medium",
         "auto_fix_supported": True,
+    },
+    "region": {
+        "summary": "Wrap significant page sections with landmark regions and ensure each region has a clear accessible name when needed.",
+        "priority": "medium",
+        "confidence": "medium",
+        "auto_fix_supported": False,
+        "assisted_steps": [
+            "Locate repeated structural containers and decide whether they should be landmarks (main/nav/aside/section).",
+            "Promote non-semantic wrappers to semantic landmarks or add region roles conservatively.",
+            "When multiple identical landmarks exist, add concise labels to distinguish them.",
+        ],
+        "verification_rules": [
+            "Each significant page section is represented by an appropriate landmark or semantic region element.",
+            "Duplicate landmarks are distinguishable by accessible names where required.",
+        ],
+    },
+    "skip-link": {
+        "summary": "Provide a visible-on-focus skip link that moves keyboard users directly to the main content landmark.",
+        "priority": "high",
+        "confidence": "medium",
+        "auto_fix_supported": False,
+        "assisted_steps": [
+            "Add a first-focusable skip link near the beginning of the document.",
+            "Ensure the skip link target points to an existing main content container with a stable id.",
+            "Keep skip link styling discoverable on keyboard focus without harming layout.",
+        ],
+        "verification_rules": [
+            "The first Tab press exposes an operable skip link.",
+            "Activating the skip link moves focus to main content and bypasses repeated navigation.",
+        ],
+    },
+    "tabindex": {
+        "summary": "Remove positive tabindex values and keep focus order aligned with DOM reading order.",
+        "priority": "high",
+        "confidence": "medium",
+        "auto_fix_supported": False,
+        "assisted_steps": [
+            "Find elements using positive tabindex and review whether they are natively focusable.",
+            "Replace positive tabindex with semantic controls or tabindex='0' only when necessary.",
+            "Retest full keyboard traversal to confirm predictable focus order.",
+        ],
+        "verification_rules": [
+            "No interactive element relies on positive tabindex for focus sequencing.",
+            "Tab and Shift+Tab order follows a logical visual and DOM progression.",
+        ],
     },
     "document-title": {
         "summary": "Ensure the document has a non-empty, descriptive title.",

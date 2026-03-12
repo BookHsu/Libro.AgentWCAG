@@ -32,6 +32,13 @@ class RemediationLibraryTests(unittest.TestCase):
         self.assertFalse(strategy["auto_fix_supported"])
         self.assertIn("react", strategy["framework_hints"])
 
+    def test_assisted_rules_expose_steps_and_verification_rules(self) -> None:
+        for rule_id in ("region", "skip-link", "tabindex"):
+            with self.subTest(rule_id=rule_id):
+                strategy = get_strategy(rule_id)
+                self.assertFalse(strategy["auto_fix_supported"])
+                self.assertGreaterEqual(len(strategy["assisted_steps"]), 2)
+                self.assertGreaterEqual(len(strategy["verification_rules"]), 2)
 
 if __name__ == "__main__":
     unittest.main()

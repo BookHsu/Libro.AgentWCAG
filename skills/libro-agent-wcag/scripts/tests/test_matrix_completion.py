@@ -182,6 +182,9 @@ class MatrixCompletionTests(unittest.TestCase):
             'label': ('high', True),
             'color-contrast': ('high', False),
             'unknown-rule': ('medium', False),
+            'region': ('medium', False),
+            'skip-link': ('high', False),
+            'tabindex': ('high', False),
         }
         for rule_id, (priority, auto_fix_supported) in expectations.items():
             with self.subTest(rule_id=rule_id):
@@ -192,3 +195,4 @@ class MatrixCompletionTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
