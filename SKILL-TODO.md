@@ -96,6 +96,27 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [x] Align image-alt framework hints in fixture snapshots with framework-aware remediation wording
 - [x] Refresh fixture report snapshots for missing-alt, React, Vue, and Next.js framework fixtures
 - [x] Verify fixture integration and remediation strategy tests pass after snapshot updates
+
+## M14 Release Readiness
+
+- [x] Add a release checklist for packaging, validation, and publish readiness
+- [x] Add a changelog or release-notes workflow for versioned updates
+- [x] Document a supported-environment matrix for Python, Node, and scanner prerequisites
+- [x] Add install-plus-doctor smoke instructions for first-run validation
+
+## M15 Broader Real-World Validation
+
+- [ ] Add a scripted smoke scenario that runs install -> invoke -> audit on a realistic sample target
+- [ ] Expand real scanner coverage beyond fixtures when prerequisites are available
+- [ ] Capture representative end-to-end artifacts for a real-world remediation flow
+- [ ] Document known limitations and manual review boundaries from real-project validation
+
+## M16 Apply-Fixes Productization
+
+- [ ] Audit current `apply-fixes` behavior against README future-direction expectations
+- [ ] Close gaps between safe rewrite support and documented apply-fixes capabilities
+- [ ] Add regression coverage for multi-file or repeated apply-fixes workflows if supported
+- [ ] Clarify which remediation classes remain intentionally suggest-only
 ## Notes
 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
