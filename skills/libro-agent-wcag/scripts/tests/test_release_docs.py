@@ -19,6 +19,12 @@ class ReleaseDocsTests(unittest.TestCase):
             self.repo_root / 'docs' / 'release' / 'supported-environments.md',
             self.repo_root / 'docs' / 'release' / 'first-run-smoke.md',
             self.repo_root / 'docs' / 'release' / 'apply-fixes-scope.md',
+            self.repo_root / 'docs' / 'release' / 'demo-package-walkthrough.md',
+            self.repo_root / 'docs' / 'release' / 'prompt-invocation-templates.md',
+            self.repo_root / 'docs' / 'release' / 'troubleshooting-intake.md',
+            self.repo_root / 'docs' / 'release' / 'release-packaging-extras-placement.md',
+            self.repo_root / '.github' / 'ISSUE_TEMPLATE' / 'installation-failure.yml',
+            self.repo_root / '.github' / 'ISSUE_TEMPLATE' / 'remediation-mismatch.yml',
         ]
         for file_path in expected_files:
             self.assertTrue(file_path.exists(), f'Missing file: {file_path}')
@@ -40,8 +46,10 @@ class ReleaseDocsTests(unittest.TestCase):
         self.assertIn('docs/release/release-checklist.md', content)
         self.assertIn('docs/release/first-run-smoke.md', content)
         self.assertIn('docs/release/apply-fixes-scope.md', content)
+        self.assertIn('docs/release/demo-package-walkthrough.md', content)
+        self.assertIn('docs/release/prompt-invocation-templates.md', content)
+        self.assertIn('docs/release/troubleshooting-intake.md', content)
 
 
 if __name__ == '__main__':
     unittest.main()
-
