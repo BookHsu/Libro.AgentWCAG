@@ -20,6 +20,7 @@ from rewrite_helpers import (
 )
 
 LANG_PATTERN = re.compile(r'^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$')
+SUPPORTED_APPLY_FIXES_SUFFIXES = {'.html', '.htm', '.xhtml', '.jsx', '.tsx', '.vue'}
 
 
 def target_to_local_path(target: str) -> Path | None:
@@ -30,6 +31,10 @@ def target_to_local_path(target: str) -> Path | None:
     if parsed.scheme == 'file' and parsed.netloc in {'', 'localhost'}:
         return Path(url2pathname(parsed.path)).resolve()
     return None
+
+def supports_apply_fixes_target(local_target: Path) -> bool:
+    return local_target.suffix.lower() in SUPPORTED_APPLY_FIXES_SUFFIXES
+
 
 
 def _fix_html_has_lang(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
@@ -804,9 +809,4 @@ def write_diff(diff_text: str, diff_path: Path) -> None:
 def write_snapshot(report: dict[str, Any], snapshot_path: Path) -> None:
     snapshot_path.parent.mkdir(parents=True, exist_ok=True)
     snapshot_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
-
-
-
-
-
 

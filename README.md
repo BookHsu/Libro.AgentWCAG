@@ -117,8 +117,8 @@ The shared contract also distinguishes task intent:
 Current implementation note:
 
 - `apply-fixes` is an execution intent exposed through the contract and report output.
-- For supported local HTML targets, the core Python workflow can now apply a safe first-pass remediation pass for language attributes, alt text gaps, simple control naming, ARIA naming widgets, document titles, list semantics (`list`/`listitem`), table caption normalization (`table-fake-caption`), meta refresh removal, and viewport normalization, then emit a diff artifact. Remaining or unsupported changes still belong to the calling agent or adapter.
-- The core workflow still reports canonical fix metadata, and now includes a reusable remediation strategy library plus safe local HTML rewrite helpers for supported rules.
+- For supported local targets (`.html`, `.htm`, `.xhtml`, `.jsx`, `.tsx`, `.vue`), the core Python workflow applies safe first-pass deterministic rewrites (language attributes, alt text, control naming, ARIA naming/validity, document/title/list/table semantics, and viewport/meta refresh handling), then emits diff artifacts when changes are made.
+- Non-local targets, unsupported local file types, and higher-risk remediation classes remain `suggest-only` or assisted/manual by design. See `docs/release/apply-fixes-scope.md` for the explicit scope matrix and boundaries.
 
 Current adapter coverage:
 
@@ -148,9 +148,10 @@ python scripts/validate_skill.py skills/libro-agent-wcag
 - `docs/release/release-notes-workflow.md`:  release-notes update workflow
 - `docs/release/supported-environments.md`:  supported runtime and toolchain matrix
 - `docs/release/first-run-smoke.md`:  install-plus-doctor first-run smoke guide
+- `docs/release/apply-fixes-scope.md`:  explicit apply-fixes scope, boundaries, and remediation classes
 
 ## Future directions
-- Actual file-rewriting auto-remediation engine for `apply-fixes`
+- Broader safe rewrite coverage after regression baselines prove stability for additional rule families
 - Release packaging extras such as demos, templates, and issue forms
 
 ## Testing Strategy
