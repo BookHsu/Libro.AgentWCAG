@@ -627,6 +627,79 @@ class CliFlowTests(unittest.TestCase):
             self.assertTrue(payload['run_meta']['policy_gate']['failed'])
             self.assertEqual(payload['run_meta']['policy_gate']['scope'], 'introduced-only')
 
+    def test_run_accessibility_audit_max_findings_caps_sorted_output(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            html_path = Path(tmp) / 'sample.html'
+            output_dir = Path(tmp) / 'out'
+            axe_json = Path(tmp) / 'axe.json'
+            html_path.write_text('<!doctype html><html><body><img class="hero" src="hero.png"><button class="icon"></button></body></html>', encoding='utf-8')
+            axe_json.write_text(
+                json.dumps(
+                    {
+                        'violations': [
+                            {'id': 'image-alt', 'impact': 'serious', 'description': 'Image alt missing', 'nodes': [{'target': ['img.hero']}]},
+                            {'id': 'button-name', 'impact': 'serious', 'description': 'Button name missing', 'nodes': [{'target': ['button.icon']}]},
+                        ]
+                    }
+                ),
+                encoding='utf-8',
+            )
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                    '--target',
+                    str(html_path),
+                    '--output-dir',
+                    str(output_dir),
+                    '--mock-axe-json',
+                    str(axe_json),
+                    '--skip-lighthouse',
+                    '--sort-findings',
+                    'rule',
+                    '--max-findings',
+                    '1',
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+            payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
+            self.assertEqual(len(payload['findings']), 1)
+            self.assertEqual(payload['findings'][0]['rule_id'], 'button-name')
+            self.assertEqual(payload['run_meta']['findings_cap']['truncated'], 1)
+
+    def test_run_accessibility_audit_summary_only_prints_compact_json(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            html_path = Path(tmp) / 'sample.html'
+            output_dir = Path(tmp) / 'out'
+            html_path.write_text('<!doctype html><html><title>Fixture</title><body></body></html>', encoding='utf-8')
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                    '--target',
+                    str(html_path),
+                    '--output-dir',
+                    str(output_dir),
+                    '--skip-axe',
+                    '--skip-lighthouse',
+                    '--summary-only',
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+            compact = json.loads(completed.stdout.strip())
+            self.assertEqual(compact['status'], 'ok')
+            self.assertTrue((output_dir / 'wcag-report.json').exists())
+            self.assertTrue((output_dir / 'wcag-report.md').exists())
+            self.assertIn('machine_output', compact)
 if __name__ == '__main__':
     unittest.main()
+
 
