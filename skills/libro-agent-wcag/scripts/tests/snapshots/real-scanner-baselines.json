@@ -21,6 +21,11 @@
     {
       "fixture": "heading-hierarchy.html",
       "minimum_findings": 1
+    },
+    {
+      "fixture": "realistic-mixed-findings.html",
+      "minimum_findings": 2,
+      "expected_any_rules": ["image-alt", "button-name", "link-name"]
     }
   ],
   "version_baseline": {
@@ -40,6 +45,10 @@
     {
       "fixture": "keyboard-tabindex.html",
       "minimum_findings": 1
+    },
+    {
+      "fixture": "realistic-mixed-findings.html",
+      "minimum_findings": 2
     }
   ]
 }

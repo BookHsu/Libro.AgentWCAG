@@ -15,6 +15,10 @@
     {
       "fixture": "keyboard-tabindex.html",
       "expected_rules": ["tabindex"]
+    },
+    {
+      "fixture": "realistic-mixed-findings.html",
+      "expected_rules": ["image-alt", "button-name", "list"]
     }
   ],
   "wcag_version_baseline": {

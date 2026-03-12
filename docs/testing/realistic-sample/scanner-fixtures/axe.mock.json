@@ -1,0 +1,28 @@
+{
+  "violations": [
+    {
+      "id": "image-alt",
+      "impact": "serious",
+      "description": "Images must have alternate text",
+      "nodes": [{"target": ["img.hero"]}]
+    },
+    {
+      "id": "button-name",
+      "impact": "serious",
+      "description": "Buttons must have discernible text",
+      "nodes": [{"target": ["button.icon-only"]}]
+    },
+    {
+      "id": "list",
+      "impact": "moderate",
+      "description": "Lists must contain only li elements",
+      "nodes": [{"target": ["ul.plain"]}]
+    },
+    {
+      "id": "heading-order",
+      "impact": "moderate",
+      "description": "Heading levels should only increase by one",
+      "nodes": [{"target": ["h3"]}]
+    }
+  ]
+}
