@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import difflib
 import json
+import os
 import re
+import tempfile
 from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import urlparse
@@ -36,6 +38,26 @@ def supports_apply_fixes_target(local_target: Path) -> bool:
     return local_target.suffix.lower() in SUPPORTED_APPLY_FIXES_SUFFIXES
 
 
+def _write_text_atomic(target: Path, content: str) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode='w',
+            encoding='utf-8',
+            delete=False,
+            dir=str(target.parent),
+            prefix=f'.{target.name}.',
+            suffix='.tmp',
+        ) as handle:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+            temp_path = Path(handle.name)
+        os.replace(temp_path, target)
+    finally:
+        if temp_path and temp_path.exists():
+            temp_path.unlink()
 
 def _fix_html_has_lang(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
     match = re.search(r'<html\b([^>]*)>', html, flags=re.IGNORECASE)
@@ -680,7 +702,9 @@ FIXERS: dict[str, Callable[[str, dict[str, Any]], tuple[str, dict[str, Any] | No
 }
 
 
-def apply_report_fixes(local_target: Path, report: dict[str, Any]) -> tuple[dict[str, Any], str]:
+def apply_report_fixes(
+    local_target: Path, report: dict[str, Any], dry_run: bool = False
+) -> tuple[dict[str, Any], str]:
     original = local_target.read_text(encoding='utf-8')
     updated = original
     applied_changes: list[dict[str, Any]] = []
@@ -727,7 +751,8 @@ def apply_report_fixes(local_target: Path, report: dict[str, Any]) -> tuple[dict
         report['run_meta']['notes'].append('No safe auto-fix changes were applied by the core workflow.')
         return report, ''
 
-    local_target.write_text(updated, encoding='utf-8')
+    if not dry_run:
+        _write_text_atomic(local_target, updated)
     diff = ''.join(
         difflib.unified_diff(
             original.splitlines(keepends=True),
@@ -739,7 +764,14 @@ def apply_report_fixes(local_target: Path, report: dict[str, Any]) -> tuple[dict
     report['run_meta']['files_modified'] = True
     report['run_meta']['modification_owner'] = 'core-workflow'
     report['run_meta'].setdefault('diff_artifacts', []).append({'path': str(local_target), 'type': 'modified-file'})
-    report['run_meta']['notes'].append(f'Applied {len(applied_changes)} safe auto-fix change(s) to the local target.')
+    if dry_run:
+        report['run_meta']['notes'].append(
+            f'Projected {len(applied_changes)} safe auto-fix change(s) (--dry-run, no files mutated).'
+        )
+    else:
+        report['run_meta']['notes'].append(
+            f'Applied {len(applied_changes)} safe auto-fix change(s) to the local target.'
+        )
     report['summary']['fixed_findings'] = sum(1 for item in report['findings'] if item['status'] == 'fixed')
     report['summary']['auto_fixed_count'] = report['summary']['fixed_findings']
     report['summary']['needs_manual_review'] = sum(
@@ -784,6 +816,19 @@ def apply_report_fixes(local_target: Path, report: dict[str, Any]) -> tuple[dict
         for index, change in enumerate(applied_changes)
     )
     report['run_meta']['applied_changes'] = applied_changes
+    mutation_counts: dict[str, int] = {}
+    for change in applied_changes:
+        rule_id = change.get('rule_id', 'unknown')
+        mutation_counts[rule_id] = mutation_counts.get(rule_id, 0) + 1
+    telemetry_key = 'projected_mutation_telemetry' if dry_run else 'mutation_telemetry'
+    report['run_meta'][telemetry_key] = [
+        {
+            'path': str(local_target),
+            'rule_id': rule_id,
+            'mutation_count': mutation_count,
+        }
+        for rule_id, mutation_count in sorted(mutation_counts.items())
+    ]
     report['run_meta'].setdefault('verification_evidence', [])
     report['run_meta']['verification_evidence'].extend(
         {
