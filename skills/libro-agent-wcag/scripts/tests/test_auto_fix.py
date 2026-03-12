@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import json
+import shutil
 import sys
 import tempfile
 import unittest
+from dataclasses import dataclass
 from pathlib import Path
 
 SCRIPT_ROOT = Path(__file__).resolve().parents[1]
@@ -13,6 +16,13 @@ if str(SCRIPT_ROOT) not in sys.path:
 
 from auto_fix import apply_report_fixes, target_to_local_path
 from wcag_workflow import normalize_report, resolve_contract
+
+
+@dataclass(frozen=True)
+class FrameworkSnapshotCase:
+    name: str
+    fixture: str
+    axe_data: dict
 
 
 class AutoFixTests(unittest.TestCase):
@@ -468,6 +478,80 @@ class AutoFixTests(unittest.TestCase):
             self.assertIn('alt=""', updated_text)
             self.assertTrue(any('Next.js Html/html layout root' in item['description'] for item in updated_report['summary']['diff_summary']))
             self.assertGreaterEqual(updated_report['summary']['remediation_lifecycle']['implemented'], 2)
+
+
+class FrameworkSnapshotBaselineTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        root = Path(__file__).parent
+        cls.fixture_root = root / 'fixtures'
+        cls.snapshot_root = root / 'snapshots'
+        cls.cases = [
+            FrameworkSnapshotCase(
+                name='react',
+                fixture='react-specific.jsx',
+                axe_data={
+                    'violations': [
+                        {'id': 'image-alt', 'impact': 'serious', 'description': 'Images need alt', 'nodes': [{'target': ['img.hero']}]},
+                        {'id': 'button-name', 'impact': 'serious', 'description': 'Buttons need names', 'nodes': [{'target': ['button.icon-only']}]},
+                    ]
+                },
+            ),
+            FrameworkSnapshotCase(
+                name='vue',
+                fixture='vue-specific.vue',
+                axe_data={
+                    'violations': [
+                        {'id': 'image-alt', 'impact': 'serious', 'description': 'Images need alt', 'nodes': [{'target': ['img.hero']}]},
+                    ]
+                },
+            ),
+            FrameworkSnapshotCase(
+                name='nextjs',
+                fixture='nextjs-layout.tsx',
+                axe_data={
+                    'violations': [
+                        {'id': 'html-has-lang', 'impact': 'moderate', 'description': 'Document should define language', 'nodes': [{'target': ['Html']}]},
+                        {'id': 'image-alt', 'impact': 'serious', 'description': 'Images need alt', 'nodes': [{'target': ['Image']}]},
+                    ]
+                },
+            ),
+        ]
+
+    def _read_snapshot_text(self, case_name: str, suffix: str) -> str:
+        return (self.snapshot_root / f'framework-{case_name}.{suffix}').read_text(encoding='utf-8')
+
+    def _run_case(self, case: FrameworkSnapshotCase) -> tuple[str, list[dict], str]:
+        fixture = self.fixture_root / case.fixture
+        scratch_root = Path(__file__).resolve().parents[4] / '.tmp-framework-baseline-tests'
+        if scratch_root.exists():
+            shutil.rmtree(scratch_root)
+        scratch_root.mkdir(parents=True, exist_ok=True)
+
+        working = scratch_root / fixture.name
+        working.write_text(fixture.read_text(encoding='utf-8'), encoding='utf-8')
+
+        contract = resolve_contract({'target': str(working), 'execution_mode': 'apply-fixes'})
+        report = normalize_report(contract, case.axe_data, {'audits': {}}, None, None)
+        updated_report, diff_text = apply_report_fixes(working, report)
+
+        normalized_diff = diff_text.replace(str(working), '<target>')
+        updated_text = working.read_text(encoding='utf-8')
+        shutil.rmtree(scratch_root)
+        return updated_text, updated_report['run_meta']['applied_changes'], normalized_diff
+
+    def test_framework_specific_snapshots_match_baselines(self) -> None:
+        for case in self.cases:
+            with self.subTest(framework=case.name):
+                updated_text, applied_changes, normalized_diff = self._run_case(case)
+
+                expected_text = self._read_snapshot_text(case.name, 'fixed.txt')
+                expected_changes = json.loads(self._read_snapshot_text(case.name, 'applied.json'))
+                expected_diff = self._read_snapshot_text(case.name, 'diff.patch')
+
+                self.assertEqual(updated_text, expected_text)
+                self.assertEqual(applied_changes, expected_changes)
+                self.assertEqual(normalized_diff, expected_diff)
 
 if __name__ == '__main__':
     unittest.main()
