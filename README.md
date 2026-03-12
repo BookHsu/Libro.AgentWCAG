@@ -119,6 +119,7 @@ Current implementation note:
 - `apply-fixes` is an execution intent exposed through the contract and report output.
 - For supported local targets (`.html`, `.htm`, `.xhtml`, `.jsx`, `.tsx`, `.vue`), the core Python workflow applies safe first-pass deterministic rewrites (language attributes, alt text, control naming, ARIA naming/validity, document/title/list/table semantics, and viewport/meta refresh handling), then emits diff artifacts when changes are made.
 - Non-local targets, unsupported local file types, and higher-risk remediation classes remain `suggest-only` or assisted/manual by design. See `docs/release/apply-fixes-scope.md` for the explicit scope matrix and boundaries.
+- Scanner runtime resilience is configurable via `--scanner-retry-attempts` and `--scanner-retry-backoff-seconds`. See `docs/release/resilient-run-patterns.md` for recommended CI patterns.
 
 Current adapter coverage:
 
@@ -152,6 +153,7 @@ python scripts/validate_skill.py skills/libro-agent-wcag
 - `docs/release/demo-package-walkthrough.md`:  minimal package-style validation walkthrough outside test suite
 - `docs/release/prompt-invocation-templates.md`:  reusable contract and adapter invocation templates
 - `docs/release/troubleshooting-intake.md`:  triage intake checklist for install and remediation problems
+- `docs/release/resilient-run-patterns.md`:  resilient scanner retry/backoff CLI patterns for CI and local automation
 - `docs/release/release-packaging-extras-placement.md`:  decision record for extras placement
 - `.github/ISSUE_TEMPLATE/installation-failure.yml`:  installation failure intake form
 - `.github/ISSUE_TEMPLATE/remediation-mismatch.yml`:  remediation mismatch intake form

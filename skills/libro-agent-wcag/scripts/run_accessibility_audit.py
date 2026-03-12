@@ -7,8 +7,9 @@ import argparse
 import json
 import shutil
 import subprocess
+import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import urlparse
 from urllib.request import url2pathname
 
@@ -22,6 +23,9 @@ from auto_fix import (
 from wcag_workflow import normalize_report, resolve_contract, write_report_files
 
 DEFAULT_TIMEOUT_SECONDS = 120
+DEFAULT_SCANNER_RETRY_ATTEMPTS = 1
+DEFAULT_SCANNER_RETRY_BACKOFF_SECONDS = 0.5
+MAX_SCANNER_RETRY_BACKOFF_SECONDS = 5.0
 ALLOWED_URL_SCHEMES = {"http", "https", "file"}
 PREFLIGHT_TOOL_CHECKS = (
     ("npx", ["npx", "--version"]),
@@ -56,6 +60,66 @@ def _run_command(command: list[str], timeout_seconds: int) -> tuple[bool, str]:
     error = completed.stderr.strip() or completed.stdout.strip() or "unknown error"
     return False, error
 
+def _is_transient_scanner_error(error_message: str | None) -> bool:
+    text = (error_message or "").lower()
+    return any(
+        token in text
+        for token in (
+            "timed out",
+            "econnreset",
+            "econnrefused",
+            "eai_again",
+            "temporarily unavailable",
+            "temporary failure",
+            "network",
+        )
+    )
+
+
+def _run_scanner_with_retry(
+    scanner: str,
+    runner: Callable[[], tuple[dict[str, Any] | None, str | None]],
+    retry_attempts: int,
+    retry_backoff_seconds: float,
+) -> tuple[dict[str, Any] | None, str | None, dict[str, Any]]:
+    attempts = max(1, retry_attempts)
+    initial_backoff = max(0.0, retry_backoff_seconds)
+    transient_error = False
+    data: dict[str, Any] | None = None
+    error: str | None = None
+
+    for attempt in range(1, attempts + 1):
+        data, error = runner()
+        if data is not None and not error:
+            return data, None, {
+                "tool": scanner,
+                "attempts": attempt,
+                "retry_count": attempt - 1,
+                "succeeded": True,
+                "last_error": "",
+                "transient_error": False,
+            }
+
+        transient_error = _is_transient_scanner_error(error)
+        should_retry = attempt < attempts and transient_error
+        if not should_retry:
+            break
+
+        if initial_backoff > 0:
+            delay = min(
+                initial_backoff * (2 ** (attempt - 1)),
+                MAX_SCANNER_RETRY_BACKOFF_SECONDS,
+            )
+            time.sleep(delay)
+
+    return data, error, {
+        "tool": scanner,
+        "attempts": attempt,
+        "retry_count": attempt - 1,
+        "succeeded": False,
+        "last_error": error or "unknown error",
+        "transient_error": transient_error,
+    }
 
 def _try_run_axe(
     target: str,
@@ -191,6 +255,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-language", default="zh-TW")
     parser.add_argument("--output-dir", default="out")
     parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT_SECONDS)
+    parser.add_argument(
+        "--scanner-retry-attempts",
+        type=int,
+        default=DEFAULT_SCANNER_RETRY_ATTEMPTS,
+        help="Retry attempts per scanner for transient runtime failures (minimum: 1).",
+    )
+    parser.add_argument(
+        "--scanner-retry-backoff-seconds",
+        type=float,
+        default=DEFAULT_SCANNER_RETRY_BACKOFF_SECONDS,
+        help="Initial retry backoff in seconds for transient scanner failures.",
+    )
     parser.add_argument("--skip-axe", action="store_true")
     parser.add_argument("--skip-lighthouse", action="store_true")
     parser.add_argument("--mock-axe-json")
@@ -212,6 +288,10 @@ def main() -> int:
         raise ValueError('--skip-lighthouse cannot be combined with --mock-lighthouse-json')
     if args.dry_run and args.execution_mode != 'apply-fixes':
         raise ValueError('--dry-run is only supported when --execution-mode is apply-fixes')
+    if args.scanner_retry_attempts < 1:
+        raise ValueError('--scanner-retry-attempts must be >= 1')
+    if args.scanner_retry_backoff_seconds < 0:
+        raise ValueError('--scanner-retry-backoff-seconds must be >= 0')
 
     if args.preflight_only:
         preflight = run_preflight_checks(args.timeout)
@@ -265,21 +345,34 @@ def main() -> int:
 
     axe_data = None
     axe_error = None
+    scanner_retry_runs: list[dict[str, Any]] = []
     if args.mock_axe_json:
         axe_data = json.loads(Path(args.mock_axe_json).read_text(encoding='utf-8'))
     elif not args.skip_axe:
-        axe_data, axe_error = _try_run_axe(scanner_target, output_dir, args.timeout)
+        axe_data, axe_error, axe_retry = _run_scanner_with_retry(
+            'axe',
+            lambda: _try_run_axe(scanner_target, output_dir, args.timeout),
+            args.scanner_retry_attempts,
+            args.scanner_retry_backoff_seconds,
+        )
+        scanner_retry_runs.append(axe_retry)
 
     lighthouse_data = None
     lighthouse_error = None
     if args.mock_lighthouse_json:
         lighthouse_data = json.loads(Path(args.mock_lighthouse_json).read_text(encoding='utf-8'))
     elif not args.skip_lighthouse:
-        lighthouse_data, lighthouse_error = _try_run_lighthouse(
-            scanner_target,
-            output_dir,
-            args.timeout,
+        lighthouse_data, lighthouse_error, lighthouse_retry = _run_scanner_with_retry(
+            'lighthouse',
+            lambda: _try_run_lighthouse(
+                scanner_target,
+                output_dir,
+                args.timeout,
+            ),
+            args.scanner_retry_attempts,
+            args.scanner_retry_backoff_seconds,
         )
+        scanner_retry_runs.append(lighthouse_retry)
 
     report = normalize_report(
         contract=contract,
@@ -291,6 +384,18 @@ def main() -> int:
         lighthouse_skipped=args.skip_lighthouse,
     )
     report['run_meta']['preflight'] = preflight
+    report['run_meta']['retry_policy'] = {
+        'attempts': args.scanner_retry_attempts,
+        'initial_backoff_seconds': args.scanner_retry_backoff_seconds,
+        'max_backoff_seconds': MAX_SCANNER_RETRY_BACKOFF_SECONDS,
+    }
+    if scanner_retry_runs:
+        report['run_meta']['scanner_retries'] = scanner_retry_runs
+        retried_tools = [item['tool'] for item in scanner_retry_runs if item.get('retry_count', 0) > 0]
+        if retried_tools:
+            report['run_meta']['notes'].append(
+                f"Retried scanner execution for transient errors: {', '.join(sorted(set(retried_tools)))}."
+            )
     if not preflight['ok']:
         report['run_meta']['notes'].append(
             'Preflight checks detected tooling issues; scanner results may be incomplete.'
@@ -348,4 +453,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

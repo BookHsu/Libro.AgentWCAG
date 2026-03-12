@@ -23,6 +23,7 @@ from rewrite_helpers import (
 
 LANG_PATTERN = re.compile(r'^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$')
 SUPPORTED_APPLY_FIXES_SUFFIXES = {'.html', '.htm', '.xhtml', '.jsx', '.tsx', '.vue'}
+AUTO_FIX_READ_ENCODINGS = ('utf-8', 'utf-8-sig', 'cp1252', 'latin-1')
 
 
 def target_to_local_path(target: str) -> Path | None:
@@ -37,14 +38,24 @@ def target_to_local_path(target: str) -> Path | None:
 def supports_apply_fixes_target(local_target: Path) -> bool:
     return local_target.suffix.lower() in SUPPORTED_APPLY_FIXES_SUFFIXES
 
+def _read_text_with_fallback_encoding(target: Path) -> tuple[str, str]:
+    raw = target.read_bytes()
+    for encoding in AUTO_FIX_READ_ENCODINGS:
+        try:
+            text = raw.decode(encoding)
+            return text.replace('\r\n', '\n').replace('\r', '\n'), encoding
+        except UnicodeDecodeError:
+            continue
+    text = raw.decode('latin-1')
+    return text.replace('\r\n', '\n').replace('\r', '\n'), 'latin-1'
 
-def _write_text_atomic(target: Path, content: str) -> None:
+def _write_text_atomic(target: Path, content: str, encoding: str = 'utf-8') -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     temp_path = None
     try:
         with tempfile.NamedTemporaryFile(
             mode='w',
-            encoding='utf-8',
+            encoding=encoding,
             delete=False,
             dir=str(target.parent),
             prefix=f'.{target.name}.',
@@ -705,7 +716,7 @@ FIXERS: dict[str, Callable[[str, dict[str, Any]], tuple[str, dict[str, Any] | No
 def apply_report_fixes(
     local_target: Path, report: dict[str, Any], dry_run: bool = False
 ) -> tuple[dict[str, Any], str]:
-    original = local_target.read_text(encoding='utf-8')
+    original, source_encoding = _read_text_with_fallback_encoding(local_target)
     updated = original
     applied_changes: list[dict[str, Any]] = []
     fixes_by_finding = {item['finding_id']: item for item in report.get('fixes', [])}
@@ -752,7 +763,7 @@ def apply_report_fixes(
         return report, ''
 
     if not dry_run:
-        _write_text_atomic(local_target, updated)
+        _write_text_atomic(local_target, updated, encoding=source_encoding)
     diff = ''.join(
         difflib.unified_diff(
             original.splitlines(keepends=True),
@@ -854,4 +865,3 @@ def write_diff(diff_text: str, diff_path: Path) -> None:
 def write_snapshot(report: dict[str, Any], snapshot_path: Path) -> None:
     snapshot_path.parent.mkdir(parents=True, exist_ok=True)
     snapshot_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
-
