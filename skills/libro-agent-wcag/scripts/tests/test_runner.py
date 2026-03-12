@@ -345,6 +345,8 @@ class RunnerTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertEqual(result["checks"][0]["status"], "error")
         self.assertIn("PATH", result["checks"][0]["message"])
+        self.assertEqual(result["checks"][0]["version_provenance"]["source"], "binary-missing")
+        self.assertEqual(result["tools"]["npx"]["version_provenance"]["source"], "binary-missing")
 
     def test_extract_version_line_returns_first_non_empty_line(self) -> None:
         output = "\n\n10.9.0\nsecondary"
@@ -589,3 +591,4 @@ class RunnerPolicyTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
