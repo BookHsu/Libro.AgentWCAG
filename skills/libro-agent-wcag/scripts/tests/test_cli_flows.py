@@ -635,6 +635,65 @@ class CliFlowTests(unittest.TestCase):
             self.assertFalse(payload['run_meta']['policy_gate']['failed'])
             self.assertEqual(payload['run_meta']['policy_gate']['scope'], 'introduced-only')
 
+    def test_run_accessibility_audit_baseline_diff_includes_debt_transition_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            html_path = Path(tmp) / 'sample.html'
+            output_dir = Path(tmp) / 'out'
+            axe_json = Path(tmp) / 'axe.json'
+            baseline_json = Path(tmp) / 'baseline.json'
+            html_path.write_text('<!doctype html><html><body><img class="hero" src="hero.png"><button class="icon"></button></body></html>', encoding='utf-8')
+            axe_json.write_text(
+                json.dumps(
+                    {
+                        'violations': [
+                            {'id': 'image-alt', 'impact': 'serious', 'description': 'Image alt missing', 'nodes': [{'target': ['img.hero']}]},
+                            {'id': 'button-name', 'impact': 'moderate', 'description': 'Button name missing', 'nodes': [{'target': ['button.icon']}]},
+                        ]
+                    }
+                ),
+                encoding='utf-8',
+            )
+            baseline_json.write_text(
+                json.dumps(
+                    {
+                        'findings': [
+                            {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'status': 'open'},
+                            {'rule_id': 'label', 'changed_target': 'input#email', 'status': 'open'},
+                        ]
+                    }
+                ),
+                encoding='utf-8',
+            )
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                    '--target',
+                    str(html_path),
+                    '--output-dir',
+                    str(output_dir),
+                    '--baseline-report',
+                    str(baseline_json),
+                    '--mock-axe-json',
+                    str(axe_json),
+                    '--skip-lighthouse',
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+            payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
+            transitions = payload['run_meta']['baseline_diff']['debt_transitions']
+            self.assertEqual(transitions['new']['count'], 1)
+            self.assertEqual(transitions['accepted']['count'], 1)
+            self.assertEqual(transitions['retired']['count'], 1)
+            findings = {item['rule_id']: item for item in payload['findings']}
+            self.assertEqual(findings['button-name']['debt_state'], 'new')
+            self.assertEqual(findings['image-alt']['debt_state'], 'accepted')
+            self.assertEqual(payload['summary']['debt_transitions']['retired']['count'], 1)
+
     def test_run_accessibility_audit_fail_on_new_only_fails_for_introduced_debt(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             html_path = Path(tmp) / 'sample.html'
