@@ -17,8 +17,40 @@ This matrix defines the currently supported runtime and scanner prerequisites.
 - Node.js and `npx` are installed and callable from terminal.
 - Network and local file permissions allow scanner invocation on target files.
 
+## Dependency lock and version-capture guidance
+
+### Local workflow
+
+1. Lock Python tooling for repeatable audits:
+   - `python -m pip install --upgrade pip`
+   - `python -m pip install pyyaml pip-audit`
+   - `python -m pip freeze > .ci/requirements-lock.txt`
+2. Lock scanner tooling with explicit versions:
+   - `mkdir -p .ci/scanner-toolchain`
+   - `npm install --prefix .ci/scanner-toolchain --package-lock-only @axe-core/cli@4.10.2 lighthouse@12.3.0`
+3. Capture resolved versions for triage evidence:
+   - `python skills/libro-agent-wcag/scripts/run_accessibility_audit.py --preflight-only`
+   - Preserve `checks[].version`, `checks[].resolved_command`, and `checks[].version_provenance` in build artifacts.
+
+### CI workflow
+
+- Pin Python and Node versions in workflow config (`actions/setup-python`, `actions/setup-node`).
+- Install Python tooling from a committed lock file when available.
+- Generate and audit scanner lock files in CI before running WCAG scans.
+- Store preflight JSON output and dependency audit logs with the same retention policy as WCAG reports.
+
+## Supply-chain triage evidence minimum
+
+When opening a dependency/security triage ticket, include:
+
+- Python runtime version and lock reference (`requirements-lock.txt` or equivalent).
+- Node runtime version and scanner lock reference (`package-lock.json` path).
+- `run_meta.preflight.tools.*.version` and `run_meta.preflight.tools.*.version_provenance` from the failing run.
+- Raw dependency audit outputs (`pip-audit`, `npm audit`) with timestamp and commit SHA.
+
 ## Not guaranteed
 
 - Legacy Python versions below 3.12.
 - Node versions outside active LTS maintenance.
 - Environments that block subprocess execution for scanner commands.
+

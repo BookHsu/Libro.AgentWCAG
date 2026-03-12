@@ -4,7 +4,7 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## Current Execution Order
 
-1. [ ] Complete `M27 Dependency And Supply-Chain Guardrails` to formalize dependency audit and pinned-tooling workflows.
+1. [x] Complete `M27 Dependency And Supply-Chain Guardrails` to formalize dependency audit and pinned-tooling workflows.
 2. [ ] Complete `M28 Real-Scanner CI Lane Productization` to make optional scanner lanes reusable across repositories.
 3. [ ] Complete `M29 Baseline Debt Lifecycle Governance` to standardize debt triage and retirement evidence.
 
@@ -201,9 +201,9 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [x] Add strict overlap enforcement flag (`--strict-rule-overlap`) so ambiguous include/ignore policy combinations fail fast in CI.
 ## M27 Dependency And Supply-Chain Guardrails
 
-- [ ] Add dependency-lock and scanner-tool version capture guidance for Python and Node toolchains used by local and CI runs.
-- [ ] Add a reproducible dependency-audit lane (`pip-audit` and npm audit equivalent) with documented pass/fail policy and remediation workflow.
-- [ ] Add regression tests that verify preflight diagnostics include tool version provenance needed for supply-chain triage.
+- [x] Add dependency-lock and scanner-tool version capture guidance for Python and Node toolchains used by local and CI runs.
+- [x] Add a reproducible dependency-audit lane (`pip-audit` and npm audit equivalent) with documented pass/fail policy and remediation workflow.
+- [x] Add regression tests that verify preflight diagnostics include tool version provenance needed for supply-chain triage.
 
 ## M28 Real-Scanner CI Lane Productization
 
