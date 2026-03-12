@@ -5,7 +5,7 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 ## Current Execution Order
 
 1. Complete `M20 CI Reporting And Policy Control` to make scanner results first-class in PR and CI workflows.
-2. Backfill release notes and docs examples based on M20 outputs.
+2. [x] Backfill release notes and docs examples based on M20 outputs.
 3. Re-run real-scanner validation lanes and verify no regression in `apply-fixes` safety semantics.
 
 ## M5 Safe Auto-Fix Expansion
@@ -158,8 +158,8 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [x] Add a structured machine-readable export (`--report-format sarif|json`) so CI can annotate pull requests with precise finding locations
 - [x] Add severity threshold gates (`--fail-on critical|serious|moderate`) that map normalized findings to deterministic process exit codes
 - [x] Add rule include/ignore controls (`--include-rule`, `--ignore-rule`, optional config file) for project-level policy tuning without code changes
-- [ ] Add baseline diff mode to compare against a committed prior report and fail only on newly introduced accessibility debt
-- [ ] Add CI integration docs and sample workflows for GitHub Actions, including artifact retention and PR annotation examples
+- [x] Add baseline diff mode to compare against a committed prior report and fail only on newly introduced accessibility debt
+- [x] Add CI integration docs and sample workflows for GitHub Actions, including artifact retention and PR annotation examples
 ## Notes
 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
