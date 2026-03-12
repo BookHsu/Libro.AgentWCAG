@@ -971,9 +971,90 @@ class CliFlowTests(unittest.TestCase):
         self.assertIn('policy_effective', compact)
         self.assertEqual(compact['policy_effective']['preset'], 'legacy')
         self.assertEqual(compact['policy_effective']['fail_on'], 'serious')
+        self.assertEqual(compact['policy_effective']['sources']['fail_on'], 'policy-preset')
         payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
         self.assertIn('policy_effective', payload['run_meta'])
 
+    def test_run_accessibility_audit_policy_config_rejects_unknown_keys(self) -> None:
+        test_dir = self.repo_root / 'automation-work' / 'm25-policy-config-validation-test'
+        if test_dir.exists():
+            shutil.rmtree(test_dir, ignore_errors=True)
+        test_dir.mkdir(parents=True, exist_ok=True)
+
+        html_path = test_dir / 'sample.html'
+        output_dir = test_dir / 'out'
+        policy_json = test_dir / 'policy.json'
+        html_path.write_text('<!doctype html><html><body></body></html>', encoding='utf-8')
+        policy_json.write_text(
+            json.dumps({'fail_on': 'serious', 'unknown_key': True}),
+            encoding='utf-8',
+        )
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(output_dir),
+                '--policy-config',
+                str(policy_json),
+                '--skip-axe',
+                '--skip-lighthouse',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn('unsupported keys: unknown_key', completed.stderr + completed.stdout)
+
+    def test_run_accessibility_audit_writes_effective_policy_artifact(self) -> None:
+        test_dir = self.repo_root / 'automation-work' / 'm25-effective-policy-artifact-test'
+        if test_dir.exists():
+            shutil.rmtree(test_dir, ignore_errors=True)
+        test_dir.mkdir(parents=True, exist_ok=True)
+
+        html_path = test_dir / 'sample.html'
+        output_dir = test_dir / 'out'
+        policy_json = test_dir / 'policy.json'
+        html_path.write_text('<!doctype html><html><body></body></html>', encoding='utf-8')
+        policy_json.write_text(
+            json.dumps({'fail_on': 'moderate', 'ignore_rules': ['color-contrast']}),
+            encoding='utf-8',
+        )
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(output_dir),
+                '--policy-preset',
+                'legacy',
+                '--policy-config',
+                str(policy_json),
+                '--write-effective-policy',
+                '--skip-axe',
+                '--skip-lighthouse',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        artifact_path = output_dir / 'wcag-effective-policy.json'
+        self.assertTrue(artifact_path.exists())
+        artifact = json.loads(artifact_path.read_text(encoding='utf-8'))
+        self.assertEqual(artifact['fail_on'], 'moderate')
+        self.assertEqual(artifact['sources']['fail_on'], 'policy-config')
+        self.assertEqual(artifact['sources']['ignore_rules']['meta-viewport'], 'policy-preset')
+        self.assertEqual(artifact['sources']['ignore_rules']['color-contrast'], 'policy-config')
+        payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
+        self.assertEqual(payload['run_meta']['effective_policy_artifact'], str(artifact_path))
+
 if __name__ == '__main__':
     unittest.main()
-
