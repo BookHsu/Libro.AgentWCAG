@@ -1,0 +1,30 @@
+--- C:\Source\Libro.AgentWCAG\.tmp-realistic-smoke\run\mixed-findings.html
++++ C:\Source\Libro.AgentWCAG\.tmp-realistic-smoke\run\mixed-findings.html
+@@ -3,22 +3,22 @@
+ <head>
+   <meta charset="utf-8">
+   <title></title>
+-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
++  <meta name="viewport" content="width=device-width, initial-scale=1">
+ </head>
+ <body>
+   <header>
+     <h1>Validation Sample</h1>
+-    <a class="jump-link" href="#main"></a>
++    <a class="jump-link" href="#main" aria-label="Link"></a>
+   </header>
+   <main id="main">
+-    <img class="hero" src="hero.png">
+-    <button class="icon-only"></button>
++    <img class="hero" src="hero.png" alt="">
++    <button class="icon-only" aria-label="Button"></button>
+     <div role="switch" class="toggle"></div>
+     <section>
+       <h3>Skipped heading level</h3>
+       <p>This sample intentionally mixes fixable and manual-review findings.</p>
+     </section>
+-    <ul class="plain">Plan A</ul>
++    <ul class="plain"><li>Plan A</li></ul>
+   </main>
+ </body>
+ </html>

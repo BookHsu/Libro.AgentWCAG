@@ -59,6 +59,24 @@ class RunnerTests(unittest.TestCase):
             sys.argv = original
         self.assertEqual(args.timeout, DEFAULT_TIMEOUT_SECONDS)
 
+    def test_cli_accepts_mock_scanner_json_arguments(self) -> None:
+        original = sys.argv
+        sys.argv = [
+            "run_accessibility_audit.py",
+            "--target",
+            "https://example.com",
+            "--mock-axe-json",
+            "axe.json",
+            "--mock-lighthouse-json",
+            "lighthouse.json",
+        ]
+        try:
+            args = parse_args()
+        finally:
+            sys.argv = original
+        self.assertEqual(args.mock_axe_json, "axe.json")
+        self.assertEqual(args.mock_lighthouse_json, "lighthouse.json")
+
     @patch("run_accessibility_audit.subprocess.run")
     def test_run_command_returns_stdout_on_success(self, mock_run) -> None:
         mock_run.return_value = type("Result", (), {"returncode": 0, "stdout": "ok", "stderr": ""})()
