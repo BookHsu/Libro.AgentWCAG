@@ -10,6 +10,8 @@ DEFAULT_STRATEGY = {
     "priority": "medium",
     "confidence": "medium",
     "auto_fix_supported": False,
+    "assisted_steps": [],
+    "verification_rules": [],
     "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
         "react": "Prefer semantic JSX and explicit aria/label props.",
@@ -126,12 +128,45 @@ RULE_STRATEGIES = {
         "priority": "high",
         "confidence": "medium",
         "auto_fix_supported": False,
+        "assisted_steps": [
+            "Locate duplicated IDs used by aria-* relationships.",
+            "Rename duplicated IDs to unique values and update all references.",
+            "Re-run accessibility scan to confirm relationship integrity.",
+        ],
+        "verification_rules": [
+            "All ID values are unique in document scope.",
+            "aria-labelledby/aria-describedby/aria-controls references resolve to existing elements.",
+        ],
     },
     "heading-order": {
         "summary": "Use a logical heading hierarchy without skipping levels unnecessarily.",
         "priority": "medium",
         "confidence": "medium",
         "auto_fix_supported": False,
+        "assisted_steps": [
+            "Identify heading level jumps in document reading order.",
+            "Adjust heading tags or section structure to maintain a logical hierarchy.",
+            "Confirm visual style remains consistent after semantic heading changes.",
+        ],
+        "verification_rules": [
+            "Heading levels do not skip more than one level in sequence.",
+            "Document outline preserves section meaning after remediation.",
+        ],
+    },
+    "presentation-role-conflict": {
+        "summary": "Remove presentational roles from interactive elements or restore required semantics.",
+        "priority": "high",
+        "confidence": "medium",
+        "auto_fix_supported": False,
+        "assisted_steps": [
+            "Find elements where role='presentation' or role='none' conflicts with interactive semantics.",
+            "Remove conflicting role or replace element with semantically correct markup.",
+            "Validate keyboard and screen reader behavior after updates.",
+        ],
+        "verification_rules": [
+            "Interactive elements expose expected role/name/value semantics.",
+            "No role='presentation' or role='none' remains on focusable interactive controls.",
+        ],
     },
     "document-title": {
         "summary": "Ensure the document has a non-empty, descriptive title.",
