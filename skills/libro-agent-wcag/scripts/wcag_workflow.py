@@ -275,6 +275,27 @@ def _derive_fix_blockers(
     return blockers
 
 
+def _derive_rule_family(rule_id: str) -> str:
+    if rule_id.startswith("aria-"):
+        return "aria"
+    if rule_id.startswith("html-") or rule_id == "valid-lang":
+        return "language"
+    if any(
+        token in rule_id
+        for token in ("heading", "landmark", "region", "list", "table", "td-", "th-")
+    ):
+        return "structure"
+    if any(token in rule_id for token in ("tabindex", "keyboard", "focus")):
+        return "keyboard-focus"
+    if any(token in rule_id for token in ("label", "name", "title", "alt")):
+        return "accessible-name"
+    if any(token in rule_id for token in ("contrast", "viewport", "reflow", "resize")):
+        return "visual"
+    if any(token in rule_id for token in ("refresh", "timing", "pause")):
+        return "timing"
+    return "general"
+
+
 def build_citation_url(wcag_version: str, sc: str) -> str:
     slug = WCAG_UNDERSTANDING_PATHS.get(sc)
     if not slug:
@@ -529,12 +550,20 @@ def normalize_report(
         )
         manual_review_required = raw["status"] == "needs-review"
         risk_level = _risk_level_from_severity(raw["severity"])
+        rule_family = _derive_rule_family(raw["rule_id"])
         downgrade_reason = _derive_downgrade_reason(
             contract.execution_mode, strategy["auto_fix_supported"], manual_review_required
         )
         fix_blockers = _derive_fix_blockers(
             contract.execution_mode, strategy["auto_fix_supported"], manual_review_required
         )
+        verification_evidence = [
+            {
+                "type": "scanner-detection",
+                "source": raw.get("sources", [raw["source"]]),
+                "status": "captured",
+            }
+        ]
         normalized_findings.append(
             {
                 "id": issue_id,
@@ -551,7 +580,9 @@ def normalize_report(
                 "verification_status": verification_status,
                 "manual_review_required": manual_review_required,
                 "risk_level": risk_level,
+                "rule_family": rule_family,
                 "downgrade_reason": downgrade_reason,
+                "before_after_targets": [],
             }
         )
         fixes.append(
@@ -568,8 +599,11 @@ def normalize_report(
                 "verification_status": verification_status,
                 "manual_review_required": manual_review_required,
                 "risk_level": risk_level,
+                "rule_family": rule_family,
                 "downgrade_reason": downgrade_reason,
+                "before_after_targets": [],
                 "fix_blockers": fix_blockers,
+                "verification_evidence": verification_evidence,
                 "framework_hints": strategy["framework_hints"],
             }
         )
@@ -598,11 +632,16 @@ def normalize_report(
     summary = {
         "total_findings": len(normalized_findings),
         "fixed_findings": sum(1 for item in normalized_findings if item["status"] == "fixed"),
+        "auto_fixed_count": sum(1 for item in normalized_findings if item["status"] == "fixed"),
         "needs_manual_review": sum(
             1 for item in normalized_findings if item["status"] == "needs-review"
         ),
+        "manual_required_count": sum(
+            1 for item in normalized_findings if item["manual_review_required"]
+        ),
         "change_summary": change_summary,
         "diff_summary": [],
+        "before_after_targets": [],
         "remediation_lifecycle": {
             "planned": sum(1 for item in fixes if item["status"] == "planned"),
             "implemented": sum(1 for item in fixes if item["status"] == "implemented"),
@@ -621,6 +660,7 @@ def normalize_report(
             "files_modified": False,
             "modification_owner": "agent-or-adapter",
             "diff_artifacts": [],
+            "verification_evidence": [],
             "tools": tools,
             "notes": notes,
         },

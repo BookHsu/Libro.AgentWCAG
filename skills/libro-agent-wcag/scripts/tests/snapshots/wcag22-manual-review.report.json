@@ -7,6 +7,7 @@
     "files_modified": false,
     "modification_owner": "agent-or-adapter",
     "diff_artifacts": [],
+    "verification_evidence": [],
     "tools": {
       "axe": "ok",
       "lighthouse": "ok"
@@ -41,7 +42,9 @@
       "verification_status": "manual-review",
       "manual_review_required": true,
       "risk_level": "low",
-      "downgrade_reason": "manual-review-required"
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": []
     },
     {
       "id": "ISSUE-002",
@@ -62,7 +65,9 @@
       "verification_status": "manual-review",
       "manual_review_required": true,
       "risk_level": "low",
-      "downgrade_reason": "manual-review-required"
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": []
     },
     {
       "id": "ISSUE-003",
@@ -83,7 +88,9 @@
       "verification_status": "manual-review",
       "manual_review_required": true,
       "risk_level": "low",
-      "downgrade_reason": "manual-review-required"
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": []
     },
     {
       "id": "ISSUE-004",
@@ -104,7 +111,9 @@
       "verification_status": "manual-review",
       "manual_review_required": true,
       "risk_level": "low",
-      "downgrade_reason": "manual-review-required"
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": []
     },
     {
       "id": "ISSUE-005",
@@ -125,7 +134,9 @@
       "verification_status": "manual-review",
       "manual_review_required": true,
       "risk_level": "low",
-      "downgrade_reason": "manual-review-required"
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": []
     },
     {
       "id": "ISSUE-006",
@@ -146,7 +157,9 @@
       "verification_status": "manual-review",
       "manual_review_required": true,
       "risk_level": "low",
-      "downgrade_reason": "manual-review-required"
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": []
     },
     {
       "id": "ISSUE-007",
@@ -167,7 +180,9 @@
       "verification_status": "manual-review",
       "manual_review_required": true,
       "risk_level": "low",
-      "downgrade_reason": "manual-review-required"
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": []
     },
     {
       "id": "ISSUE-008",
@@ -188,7 +203,9 @@
       "verification_status": "manual-review",
       "manual_review_required": true,
       "risk_level": "low",
-      "downgrade_reason": "manual-review-required"
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": []
     },
     {
       "id": "ISSUE-009",
@@ -209,7 +226,9 @@
       "verification_status": "manual-review",
       "manual_review_required": true,
       "risk_level": "low",
-      "downgrade_reason": "manual-review-required"
+      "rule_family": "general",
+      "downgrade_reason": "manual-review-required",
+      "before_after_targets": []
     }
   ],
   "fixes": [
@@ -226,9 +245,20 @@
       "verification_status": "manual-review",
       "manual_review_required": true,
       "risk_level": "low",
+      "rule_family": "general",
       "downgrade_reason": "manual-review-required",
+      "before_after_targets": [],
       "fix_blockers": [
         "manual-verification-required"
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "manual"
+          ],
+          "status": "captured"
+        }
       ],
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
@@ -250,9 +280,20 @@
       "verification_status": "manual-review",
       "manual_review_required": true,
       "risk_level": "low",
+      "rule_family": "general",
       "downgrade_reason": "manual-review-required",
+      "before_after_targets": [],
       "fix_blockers": [
         "manual-verification-required"
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "manual"
+          ],
+          "status": "captured"
+        }
       ],
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
@@ -274,9 +315,20 @@
       "verification_status": "manual-review",
       "manual_review_required": true,
       "risk_level": "low",
+      "rule_family": "general",
       "downgrade_reason": "manual-review-required",
+      "before_after_targets": [],
       "fix_blockers": [
         "manual-verification-required"
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "manual"
+          ],
+          "status": "captured"
+        }
       ],
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
@@ -298,9 +350,20 @@
       "verification_status": "manual-review",
       "manual_review_required": true,
       "risk_level": "low",
+      "rule_family": "general",
       "downgrade_reason": "manual-review-required",
+      "before_after_targets": [],
       "fix_blockers": [
         "manual-verification-required"
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "manual"
+          ],
+          "status": "captured"
+        }
       ],
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
@@ -322,9 +385,20 @@
       "verification_status": "manual-review",
       "manual_review_required": true,
       "risk_level": "low",
+      "rule_family": "general",
       "downgrade_reason": "manual-review-required",
+      "before_after_targets": [],
       "fix_blockers": [
         "manual-verification-required"
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "manual"
+          ],
+          "status": "captured"
+        }
       ],
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
@@ -346,9 +420,20 @@
       "verification_status": "manual-review",
       "manual_review_required": true,
       "risk_level": "low",
+      "rule_family": "general",
       "downgrade_reason": "manual-review-required",
+      "before_after_targets": [],
       "fix_blockers": [
         "manual-verification-required"
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "manual"
+          ],
+          "status": "captured"
+        }
       ],
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
@@ -370,9 +455,20 @@
       "verification_status": "manual-review",
       "manual_review_required": true,
       "risk_level": "low",
+      "rule_family": "general",
       "downgrade_reason": "manual-review-required",
+      "before_after_targets": [],
       "fix_blockers": [
         "manual-verification-required"
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "manual"
+          ],
+          "status": "captured"
+        }
       ],
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
@@ -394,9 +490,20 @@
       "verification_status": "manual-review",
       "manual_review_required": true,
       "risk_level": "low",
+      "rule_family": "general",
       "downgrade_reason": "manual-review-required",
+      "before_after_targets": [],
       "fix_blockers": [
         "manual-verification-required"
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "manual"
+          ],
+          "status": "captured"
+        }
       ],
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
@@ -418,9 +525,20 @@
       "verification_status": "manual-review",
       "manual_review_required": true,
       "risk_level": "low",
+      "rule_family": "general",
       "downgrade_reason": "manual-review-required",
+      "before_after_targets": [],
       "fix_blockers": [
         "manual-verification-required"
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "manual"
+          ],
+          "status": "captured"
+        }
       ],
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
@@ -480,7 +598,9 @@
   "summary": {
     "total_findings": 9,
     "fixed_findings": 0,
+    "auto_fixed_count": 0,
     "needs_manual_review": 9,
+    "manual_required_count": 9,
     "change_summary": [
       {
         "finding_id": "ISSUE-001",
@@ -547,6 +667,7 @@
       }
     ],
     "diff_summary": [],
+    "before_after_targets": [],
     "remediation_lifecycle": {
       "planned": 9,
       "implemented": 0,

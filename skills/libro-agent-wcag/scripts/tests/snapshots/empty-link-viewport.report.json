@@ -7,6 +7,7 @@
     "files_modified": false,
     "modification_owner": "agent-or-adapter",
     "diff_artifacts": [],
+    "verification_evidence": [],
     "tools": {
       "axe": "ok",
       "lighthouse": "ok"
@@ -43,7 +44,9 @@
       "verification_status": "not-run",
       "manual_review_required": false,
       "risk_level": "high",
-      "downgrade_reason": null
+      "rule_family": "accessible-name",
+      "downgrade_reason": null,
+      "before_after_targets": []
     },
     {
       "id": "ISSUE-002",
@@ -66,7 +69,9 @@
       "verification_status": "not-run",
       "manual_review_required": false,
       "risk_level": "high",
-      "downgrade_reason": null
+      "rule_family": "visual",
+      "downgrade_reason": null,
+      "before_after_targets": []
     }
   ],
   "fixes": [
@@ -83,8 +88,20 @@
       "verification_status": "not-run",
       "manual_review_required": false,
       "risk_level": "high",
+      "rule_family": "accessible-name",
       "downgrade_reason": null,
+      "before_after_targets": [],
       "fix_blockers": [],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "axe",
+            "lighthouse"
+          ],
+          "status": "captured"
+        }
+      ],
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
         "react": "Prefer semantic JSX and explicit aria/label props.",
@@ -105,8 +122,20 @@
       "verification_status": "not-run",
       "manual_review_required": false,
       "risk_level": "high",
+      "rule_family": "visual",
       "downgrade_reason": null,
+      "before_after_targets": [],
       "fix_blockers": [],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "axe",
+            "lighthouse"
+          ],
+          "status": "captured"
+        }
+      ],
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
         "react": "Prefer semantic JSX and explicit aria/label props.",
@@ -140,7 +169,9 @@
   "summary": {
     "total_findings": 2,
     "fixed_findings": 0,
+    "auto_fixed_count": 0,
     "needs_manual_review": 0,
+    "manual_required_count": 0,
     "change_summary": [
       {
         "finding_id": "ISSUE-001",
@@ -158,6 +189,7 @@
       }
     ],
     "diff_summary": [],
+    "before_after_targets": [],
     "remediation_lifecycle": {
       "planned": 2,
       "implemented": 0,

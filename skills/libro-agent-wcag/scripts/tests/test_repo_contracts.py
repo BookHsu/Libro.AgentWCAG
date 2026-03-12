@@ -176,6 +176,7 @@ class RepoContractTests(unittest.TestCase):
             and '__pycache__' not in path.parts
             and '.tmp' not in path.parts
             and 'out-test-invalid' not in path.parts
+            and '.tmp-test' not in path.parts
             and 'scripts/tests' not in str(path).replace('\\', '/')
         }
         self.assertEqual(actual, expected)
