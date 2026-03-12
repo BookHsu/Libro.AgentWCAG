@@ -20,6 +20,7 @@ from run_accessibility_audit import (
     DEFAULT_TIMEOUT_SECONDS,
     _extract_version_line,
     _is_transient_scanner_error,
+    _resolve_npx_executable,
     _resolve_target_for_scanners,
     _run_command,
     _run_scanner_with_retry,
@@ -142,6 +143,29 @@ class RunnerTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertEqual(result, "command timed out after 7 seconds")
 
+    @patch("run_accessibility_audit.shutil.which")
+    @patch("run_accessibility_audit.os.name", "nt")
+    def test_resolve_npx_executable_prefers_cmd_on_windows(self, mock_which) -> None:
+        mock_which.side_effect = lambda tool: "C:/Program Files/nodejs/npx.cmd" if tool == "npx.cmd" else None
+        self.assertEqual(_resolve_npx_executable(), "npx.cmd")
+
+    def test_try_run_axe_uses_resolved_npx_executable(self) -> None:
+        output_dir = Path(__file__).parent / "fixtures" / "_tmp-npx-command"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        axe_json = output_dir / "axe.raw.json"
+        axe_json.write_text('{"violations": []}', encoding="utf-8")
+        try:
+            with patch("run_accessibility_audit.NPX_EXECUTABLE", "npx.cmd"), patch("run_accessibility_audit._run_command", return_value=(True, "")) as mock_run:
+                payload, err = _try_run_axe("https://example.com", output_dir, timeout_seconds=15)
+            self.assertIsNone(err)
+            self.assertEqual(payload, {"violations": []})
+            self.assertEqual(mock_run.call_args[0][0][0], "npx.cmd")
+        finally:
+            if axe_json.exists():
+                axe_json.unlink()
+            if output_dir.exists():
+                output_dir.rmdir()
+
     def test_try_run_axe_returns_error_when_output_missing(self) -> None:
         output_dir = Path(__file__).parent / "fixtures"
         with patch("run_accessibility_audit._run_command", return_value=(True, "")):
@@ -194,7 +218,7 @@ class RunnerTests(unittest.TestCase):
         npx = result['tools']['npx']
         self.assertEqual(npx['resolved_command'], '/usr/bin/npx')
         self.assertEqual(npx['version'], '10.9.0')
-        self.assertIn('npx --version', npx['command'])
+        self.assertIn('--version', npx['command'])
 
 
 class RunnerRetryTests(unittest.TestCase):
