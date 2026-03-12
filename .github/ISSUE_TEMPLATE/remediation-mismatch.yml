@@ -1,0 +1,63 @@
+name: Remediation mismatch
+description: Report unexpected WCAG findings/fix behavior differences.
+title: "[remediation] "
+labels:
+  - bug
+  - remediation
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Include contract inputs and both report artifacts for triage.
+  - type: input
+    id: target
+    attributes:
+      label: Target file or URL
+      placeholder: docs/testing/realistic-sample/mixed-findings.html
+    validations:
+      required: true
+  - type: dropdown
+    id: task_mode
+    attributes:
+      label: Task mode
+      options:
+        - create
+        - modify
+    validations:
+      required: true
+  - type: dropdown
+    id: execution_mode
+    attributes:
+      label: Execution mode
+      options:
+        - audit-only
+        - suggest-only
+        - apply-fixes
+    validations:
+      required: true
+  - type: input
+    id: wcag
+    attributes:
+      label: WCAG version and level
+      placeholder: 2.2 / AA
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: artifacts
+    attributes:
+      label: Artifacts
+      description: Attach or link wcag-report.json, wcag-report.md, and diff/snapshot outputs when available
+    validations:
+      required: true
