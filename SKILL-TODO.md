@@ -74,7 +74,7 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M11 Adapter Maturity
 
-- [ ] Add adapter-specific failure recovery transcripts
+- [x] Add adapter-specific failure recovery transcripts
 - [ ] Add adapter-specific first-run output examples
 - [ ] Add adapter-specific end-to-end output snapshots
 - [ ] Add adapter-specific downgrade and escalation examples
