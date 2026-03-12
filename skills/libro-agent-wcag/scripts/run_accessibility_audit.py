@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import time
@@ -27,10 +28,22 @@ DEFAULT_SCANNER_RETRY_ATTEMPTS = 1
 DEFAULT_SCANNER_RETRY_BACKOFF_SECONDS = 0.5
 MAX_SCANNER_RETRY_BACKOFF_SECONDS = 5.0
 ALLOWED_URL_SCHEMES = {"http", "https", "file"}
+def _resolve_npx_executable() -> str:
+    candidates = ["npx"]
+    if os.name == "nt":
+        # subprocess on Windows should prefer cmd shim to avoid shell resolution mismatches.
+        candidates = ["npx.cmd", "npx.exe", "npx"]
+    for candidate in candidates:
+        if shutil.which(candidate):
+            return candidate
+    return "npx"
+
+
+NPX_EXECUTABLE = _resolve_npx_executable()
 PREFLIGHT_TOOL_CHECKS = (
-    ("npx", ["npx", "--version"]),
-    ("@axe-core/cli", ["npx", "--no-install", "@axe-core/cli", "--version"]),
-    ("lighthouse", ["npx", "--no-install", "lighthouse", "--version"]),
+    ("npx", [NPX_EXECUTABLE, "--version"]),
+    ("@axe-core/cli", [NPX_EXECUTABLE, "--no-install", "@axe-core/cli", "--version"]),
+    ("lighthouse", [NPX_EXECUTABLE, "--no-install", "lighthouse", "--version"]),
 )
 SEVERITY_RANK = {"critical": 4, "serious": 3, "moderate": 2, "minor": 1, "info": 0}
 FAIL_ON_EXIT_CODES = {"critical": 42, "serious": 43, "moderate": 44}
@@ -50,6 +63,8 @@ def _run_command(command: list[str], timeout_seconds: int) -> tuple[bool, str]:
             command,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             check=False,
             timeout=timeout_seconds,
         )
@@ -57,9 +72,11 @@ def _run_command(command: list[str], timeout_seconds: int) -> tuple[bool, str]:
         return False, f"command timed out after {timeout_seconds} seconds"
     except FileNotFoundError as err:
         return False, f"command not found: {err.filename or command[0]}"
+    stdout = completed.stdout or ""
+    stderr = completed.stderr or ""
     if completed.returncode == 0:
-        return True, completed.stdout
-    error = completed.stderr.strip() or completed.stdout.strip() or "unknown error"
+        return True, stdout
+    error = stderr.strip() or stdout.strip() or "unknown error"
     return False, error
 
 
@@ -131,7 +148,7 @@ def _try_run_axe(
     timeout_seconds: int,
 ) -> tuple[dict[str, Any] | None, str | None]:
     axe_json = output_dir / "axe.raw.json"
-    command = ["npx", "@axe-core/cli", target, "--save", str(axe_json)]
+    command = [NPX_EXECUTABLE, "@axe-core/cli", target, "--save", str(axe_json)]
     ok, result = _run_command(command, timeout_seconds)
     if not ok:
         return None, result
@@ -148,7 +165,7 @@ def _try_run_lighthouse(
 ) -> tuple[dict[str, Any] | None, str | None]:
     lighthouse_json = output_dir / "lighthouse.raw.json"
     command = [
-        "npx",
+        NPX_EXECUTABLE,
         "lighthouse",
         target,
         "--only-categories=accessibility",
