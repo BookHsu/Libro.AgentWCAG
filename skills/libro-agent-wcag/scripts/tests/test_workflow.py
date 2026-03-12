@@ -460,9 +460,9 @@ class WorkflowTests(unittest.TestCase):
         report = normalize_report(contract, axe_data, {"audits": {}}, None, None)
         finding = report["findings"][0]
         fix = report["fixes"][0]
-        self.assertEqual(finding["downgrade_reason"], "auto-fix-not-supported")
-        self.assertEqual(fix["downgrade_reason"], "auto-fix-not-supported")
-        self.assertIn("no-safe-auto-fix", fix["fix_blockers"])
+        self.assertEqual(finding["downgrade_reason"], "assisted-remediation-required")
+        self.assertEqual(fix["downgrade_reason"], "assisted-remediation-required")
+        self.assertIn("assisted-remediation-required", fix["fix_blockers"])
         self.assertEqual(report["summary"]["fix_blockers"][0]["rule_id"], "heading-order")
 
     def test_assisted_fix_includes_steps_and_verification_rules(self) -> None:

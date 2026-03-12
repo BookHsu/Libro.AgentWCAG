@@ -244,6 +244,21 @@ RULE_STRATEGIES = {
             "Tab and Shift+Tab order follows a logical visual and DOM progression.",
         ],
     },
+    "nested-interactive": {
+        "summary": "Separate nested interactive controls so each actionable element has its own valid focus and activation behavior.",
+        "priority": "high",
+        "confidence": "medium",
+        "auto_fix_supported": False,
+        "assisted_steps": [
+            "Locate interactive descendants placed inside other interactive ancestors.",
+            "Refactor markup so only one interactive root handles the action, or split controls into sibling elements.",
+            "Retest keyboard focus, Enter/Space activation, and screen reader announcements.",
+        ],
+        "verification_rules": [
+            "No interactive element is nested within another interactive control.",
+            "Each control exposes a distinct role/name/value and predictable keyboard behavior.",
+        ],
+    },
     "document-title": {
         "summary": "Ensure the document has a non-empty, descriptive title.",
         "priority": "medium",
@@ -286,6 +301,4 @@ def get_strategy(rule_id: str) -> dict[str, Any]:
         **specific.get("framework_hints", {}),
     }
     return merged
-
-
 
