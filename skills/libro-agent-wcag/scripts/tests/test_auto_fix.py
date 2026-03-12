@@ -231,7 +231,188 @@ class AutoFixTests(unittest.TestCase):
             self.assertFalse(updated_report['run_meta']['files_modified'])
             self.assertIn('No safe auto-fix changes were applied', ' '.join(updated_report['run_meta']['notes']))
 
+    def test_apply_report_fixes_idempotent_for_expanded_rule_sets(self) -> None:
+        cases = [
+            (
+                'aria-table-auto-fix.html',
+                {
+                    'violations': [
+                        {'id': 'aria-required-attr', 'impact': 'serious', 'description': 'missing required aria attrs', 'nodes': [{'target': ['.acceptance']}]},
+                        {'id': 'aria-valid-attr-value', 'impact': 'moderate', 'description': 'invalid aria attr values', 'nodes': [{'target': ['.status']}]},
+                        {'id': 'td-has-header', 'impact': 'moderate', 'description': 'td needs headers', 'nodes': [{'target': ['.sales-table td']}]},
+                    ]
+                },
+                {
+                    'audits': {
+                        'th-has-data-cells': {
+                            'score': 0,
+                            'scoreDisplayMode': 'binary',
+                            'title': 'th elements should map to data cells',
+                            'details': {'items': [{'node': {'selector': '.sales-table th'}}]},
+                        }
+                    }
+                },
+            ),
+            (
+                'list-table-fixes.html',
+                {
+                    'violations': [
+                        {'id': 'list', 'impact': 'moderate', 'description': 'Lists must contain li elements', 'nodes': [{'target': ['ul.plain']}]},
+                        {'id': 'listitem', 'impact': 'moderate', 'description': 'Listitem must be in list container', 'nodes': [{'target': ['li.orphan']}]},
+                        {'id': 'table-fake-caption', 'impact': 'moderate', 'description': 'Caption-like header should use caption', 'nodes': [{'target': ['table.pricing']}]},
+                    ]
+                },
+                {'audits': {}},
+            ),
+            (
+                'deep-auto-fix.html',
+                {
+                    'violations': [
+                        {'id': 'html-xml-lang-mismatch', 'impact': 'moderate', 'description': 'lang and xml:lang should match', 'nodes': [{'target': ['html']}]},
+                        {'id': 'valid-lang', 'impact': 'moderate', 'description': 'invalid language code', 'nodes': [{'target': ['p[lang]']}]},
+                        {'id': 'meta-refresh', 'impact': 'moderate', 'description': 'refresh should be removed', 'nodes': [{'target': ['meta[http-equiv="refresh"]']}]},
+                        {'id': 'input-image-alt', 'impact': 'serious', 'description': 'image input needs alt', 'nodes': [{'target': ['input[type="image"]']}]},
+                        {'id': 'area-alt', 'impact': 'serious', 'description': 'area needs alt', 'nodes': [{'target': ['area']}]},
+                    ]
+                },
+                {'audits': {}},
+            ),
+        ]
+
+        for fixture_name, axe_data, lighthouse_data in cases:
+            with self.subTest(fixture=fixture_name), tempfile.TemporaryDirectory() as tmp:
+                fixture = Path(__file__).parent / 'fixtures' / fixture_name
+                working = Path(tmp) / fixture.name
+                working.write_text(fixture.read_text(encoding='utf-8'), encoding='utf-8')
+                contract = resolve_contract({'target': str(working), 'execution_mode': 'apply-fixes'})
+
+                first_report = normalize_report(contract, axe_data, lighthouse_data, None, None)
+                patched_report, first_diff = apply_report_fixes(working, first_report)
+                second_report, second_diff = apply_report_fixes(working, patched_report)
+
+                self.assertTrue(first_diff)
+                self.assertEqual(second_diff, '')
+                self.assertIn('No safe auto-fix changes were applied', ' '.join(second_report['run_meta']['notes']))
+
+    def test_apply_report_fixes_preserves_manual_review_items_in_mixed_report(self) -> None:
+        fixture = Path(__file__).parent / 'fixtures' / 'missing-lang-button-label.html'
+        with tempfile.TemporaryDirectory() as tmp:
+            working = Path(tmp) / fixture.name
+            working.write_text(fixture.read_text(encoding='utf-8'), encoding='utf-8')
+            contract = resolve_contract(
+                {
+                    'target': str(working),
+                    'execution_mode': 'apply-fixes',
+                    'wcag_version': '2.2',
+                }
+            )
+            axe_data = {
+                'violations': [
+                    {'id': 'button-name', 'impact': 'serious', 'description': 'Buttons need names', 'nodes': [{'target': ['button.icon-only']}]},
+                ]
+            }
+
+            report = normalize_report(contract, axe_data, {'audits': {}}, None, None)
+            updated_report, diff_text = apply_report_fixes(working, report)
+
+            self.assertTrue(diff_text)
+            self.assertEqual(updated_report['summary']['auto_fixed_count'], 1)
+            self.assertGreaterEqual(updated_report['summary']['manual_required_count'], 1)
+            self.assertEqual(
+                updated_report['summary']['manual_required_count'],
+                updated_report['summary']['needs_manual_review'],
+            )
+            manual_findings = [
+                item for item in updated_report['findings'] if item['rule_id'].startswith('wcag22-manual-')
+            ]
+            self.assertTrue(manual_findings)
+            self.assertTrue(all(item['status'] == 'needs-review' for item in manual_findings))
+
+    def test_diff_artifacts_cover_rewrite_families(self) -> None:
+        cases = [
+            ('aria-table-auto-fix.html', 'aria-required-attr', 'aria-checked="false"'),
+            ('deep-auto-fix.html', 'html-xml-lang-mismatch', 'xml:lang="en-US"'),
+            ('list-table-fixes.html', 'table-fake-caption', '<caption>Plan Comparison</caption>'),
+            ('missing-lang-button-label.html', 'button-name', 'aria-label="Button"'),
+            ('empty-link-viewport.html', 'meta-viewport', 'width=device-width, initial-scale=1'),
+            ('deep-auto-fix.html', 'meta-refresh', 'http-equiv="refresh"'),
+        ]
+
+        for fixture_name, rule_id, expected_token in cases:
+            with self.subTest(rule_id=rule_id), tempfile.TemporaryDirectory() as tmp:
+                fixture = Path(__file__).parent / 'fixtures' / fixture_name
+                working = Path(tmp) / fixture.name
+                working.write_text(fixture.read_text(encoding='utf-8'), encoding='utf-8')
+                contract = resolve_contract({'target': str(working), 'execution_mode': 'apply-fixes'})
+                axe_data = {
+                    'violations': [
+                        {'id': rule_id, 'impact': 'serious', 'description': f'{rule_id} violation', 'nodes': [{'target': ['body']}]},
+                    ]
+                }
+
+                report = normalize_report(contract, axe_data, {'audits': {}}, None, None)
+                updated_report, diff_text = apply_report_fixes(working, report)
+
+                self.assertTrue(updated_report['run_meta']['diff_artifacts'])
+                self.assertTrue(updated_report['summary']['diff_summary'])
+                self.assertIn(rule_id, [item['rule_id'] for item in updated_report['summary']['diff_summary']])
+                self.assertIn(rule_id, [item['rule_id'] for item in updated_report['run_meta']['applied_changes']])
+                self.assertIn(expected_token, diff_text)
+
+    def test_apply_report_fixes_noop_for_unsupported_and_manual_only_findings(self) -> None:
+        fixture = Path(__file__).parent / 'fixtures' / 'wcag22-manual-review.html'
+        with tempfile.TemporaryDirectory() as tmp:
+            working = Path(tmp) / fixture.name
+            working.write_text(fixture.read_text(encoding='utf-8'), encoding='utf-8')
+            contract = resolve_contract(
+                {
+                    'target': str(working),
+                    'execution_mode': 'apply-fixes',
+                    'wcag_version': '2.2',
+                }
+            )
+            axe_data = {
+                'violations': [
+                    {'id': 'heading-order', 'impact': 'serious', 'description': 'Heading order issue', 'nodes': [{'target': ['h3']}]},
+                ]
+            }
+
+            report = normalize_report(contract, axe_data, {'audits': {}}, None, None)
+            updated_report, diff_text = apply_report_fixes(working, report)
+
+            self.assertEqual(diff_text, '')
+            self.assertFalse(updated_report['run_meta']['files_modified'])
+            self.assertEqual(updated_report['run_meta']['diff_artifacts'], [])
+            self.assertIn('No safe auto-fix changes were applied', ' '.join(updated_report['run_meta']['notes']))
+
+    def test_repeated_normalize_and_apply_fixes_runs_remain_stable(self) -> None:
+        fixture = Path(__file__).parent / 'fixtures' / 'empty-link-viewport.html'
+        with tempfile.TemporaryDirectory() as tmp:
+            working = Path(tmp) / fixture.name
+            working.write_text(fixture.read_text(encoding='utf-8'), encoding='utf-8')
+
+            axe_data = {
+                'violations': [
+                    {'id': 'link-name', 'impact': 'serious', 'description': 'Links need names', 'nodes': [{'target': ['a.cta']}]},
+                    {'id': 'meta-viewport', 'impact': 'moderate', 'description': 'Viewport must allow zoom', 'nodes': [{'target': ['meta[name="viewport"]']}]},
+                ]
+            }
+            contract = resolve_contract({'target': str(working), 'execution_mode': 'apply-fixes'})
+
+            diffs = []
+            fixed_counts = []
+            for _ in range(3):
+                report = normalize_report(contract, axe_data, {'audits': {}}, None, None)
+                updated_report, diff_text = apply_report_fixes(working, report)
+                diffs.append(diff_text)
+                fixed_counts.append(updated_report['summary']['auto_fixed_count'])
+
+            self.assertTrue(diffs[0])
+            self.assertEqual(diffs[1], '')
+            self.assertEqual(diffs[2], '')
+            self.assertEqual(fixed_counts, [2, 0, 0])
 
 if __name__ == '__main__':
     unittest.main()
+
 

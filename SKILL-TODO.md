@@ -82,14 +82,15 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M12 Quality Gates
 
-- [ ] Add more idempotency tests for newly supported auto-fix rules
-- [ ] Add regression tests for mixed auto-fix plus manual-review reports
-- [ ] Add diff artifact validation tests for each rewrite family
-- [ ] Add negative tests to ensure unsupported rules do not mutate files
-- [ ] Add stability tests for repeated normalize plus apply-fixes runs
+- [x] Add more idempotency tests for newly supported auto-fix rules
+- [x] Add regression tests for mixed auto-fix plus manual-review reports
+- [x] Add diff artifact validation tests for each rewrite family
+- [x] Add negative tests to ensure unsupported rules do not mutate files
+- [x] Add stability tests for repeated normalize plus apply-fixes runs
 
 ## Notes
 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
+
