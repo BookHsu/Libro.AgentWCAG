@@ -175,6 +175,13 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [x] Add regression coverage for policy gate behavior across mixed severity and baseline-diff combinations
 - [x] Add docs for triage workflow (`new`, `persistent`, `resolved`) with sample review checklists and ownership handoff
 
+## M23 Policy Ergonomics And Contract Stability
+
+- [ ] Add policy preset profiles (`strict`, `balanced`, `legacy`) that expand into deterministic `fail-on` and rule filter combinations
+- [ ] Add report schema versioning with JSON schema artifacts so CI consumers can validate compatibility before parsing
+- [ ] Add scanner capability negotiation output (which scanners/rules were available) and surface it in summary metadata
+- [ ] Add baseline signature customization hooks (target normalization and selector canonicalization) to reduce noisy churn across environments
+- [ ] Add regression tests that freeze CLI contract behavior for mixed options (`--summary-only`, `--report-format sarif`, baseline gating, and findings cap)
 ## Notes
 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
