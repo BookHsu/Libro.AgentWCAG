@@ -47,7 +47,12 @@ class AutoFixTests(unittest.TestCase):
             self.assertEqual(updated_report['findings'][0]['verification_status'], 'diff-generated')
             self.assertTrue(updated_report['run_meta']['diff_artifacts'])
             self.assertGreaterEqual(updated_report['summary']['fixed_findings'], 1)
+            self.assertEqual(updated_report['summary']['auto_fixed_count'], updated_report['summary']['fixed_findings'])
+            self.assertEqual(updated_report['summary']['manual_required_count'], updated_report['summary']['needs_manual_review'])
             self.assertTrue(updated_report['summary']['diff_summary'])
+            self.assertTrue(updated_report['summary']['before_after_targets'])
+            self.assertTrue(updated_report['run_meta']['verification_evidence'])
+            self.assertTrue(updated_report['fixes'][0]['verification_evidence'])
 
     def test_apply_report_fixes_supports_link_name_and_meta_viewport(self) -> None:
         fixture = Path(__file__).parent / 'fixtures' / 'empty-link-viewport.html'
@@ -131,6 +136,41 @@ class AutoFixTests(unittest.TestCase):
             self.assertIn('role="meter" aria-label="Meter"', updated_html)
             self.assertIn('<title>Dashboard</title>', diff_text)
             self.assertGreaterEqual(updated_report['summary']['remediation_lifecycle']['implemented'], 5)
+
+    def test_apply_report_fixes_supports_aria_and_table_semantic_rules(self) -> None:
+        fixture = Path(__file__).parent / 'fixtures' / 'aria-table-auto-fix.html'
+        with tempfile.TemporaryDirectory() as tmp:
+            working = Path(tmp) / fixture.name
+            working.write_text(fixture.read_text(encoding='utf-8'), encoding='utf-8')
+            contract = resolve_contract({'target': str(working), 'execution_mode': 'apply-fixes'})
+            axe_data = {
+                'violations': [
+                    {'id': 'aria-required-attr', 'impact': 'serious', 'description': 'missing required aria attrs', 'nodes': [{'target': ['.acceptance']}]},
+                    {'id': 'aria-valid-attr-value', 'impact': 'moderate', 'description': 'invalid aria attr values', 'nodes': [{'target': ['.status']}]},
+                    {'id': 'td-has-header', 'impact': 'moderate', 'description': 'td needs headers', 'nodes': [{'target': ['.sales-table td']}]},
+                ]
+            }
+            lighthouse_data = {
+                'audits': {
+                    'th-has-data-cells': {
+                        'score': 0,
+                        'scoreDisplayMode': 'binary',
+                        'title': 'th elements should map to data cells',
+                        'details': {'items': [{'node': {'selector': '.sales-table th'}}]},
+                    }
+                }
+            }
+            report = normalize_report(contract, axe_data, lighthouse_data, None, None)
+            updated_report, diff_text = apply_report_fixes(working, report)
+            updated_html = working.read_text(encoding='utf-8')
+            self.assertIn('role="checkbox" aria-checked="false"', updated_html)
+            self.assertIn('role="switch" aria-checked="false"', updated_html)
+            self.assertIn('scope="col"', updated_html)
+            self.assertIn('headers="col-1"', updated_html)
+            self.assertIn('headers="col-2"', updated_html)
+            self.assertIn('aria-checked="false"', diff_text)
+            self.assertIn('headers="col-1"', diff_text)
+            self.assertGreaterEqual(updated_report['summary']['remediation_lifecycle']['implemented'], 4)
 
     def test_apply_report_fixes_is_idempotent(self) -> None:
         fixture = Path(__file__).parent / 'fixtures' / 'empty-link-viewport.html'

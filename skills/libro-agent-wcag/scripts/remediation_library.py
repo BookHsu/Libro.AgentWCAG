@@ -103,6 +103,18 @@ RULE_STRATEGIES = {
         "confidence": "high",
         "auto_fix_supported": True,
     },
+    "aria-required-attr": {
+        "summary": "Add the role-required ARIA attributes with safe default values.",
+        "priority": "high",
+        "confidence": "medium",
+        "auto_fix_supported": True,
+    },
+    "aria-valid-attr-value": {
+        "summary": "Normalize invalid ARIA attribute values to valid safe defaults.",
+        "priority": "medium",
+        "confidence": "medium",
+        "auto_fix_supported": True,
+    },
     "link-name": {
         "summary": "Ensure each link has meaningful, discernible text.",
         "priority": "high",
@@ -132,6 +144,18 @@ RULE_STRATEGIES = {
         "priority": "medium",
         "confidence": "medium",
         "auto_fix_supported": False,
+    },
+    "td-has-header": {
+        "summary": "Link table data cells to matching header cells using headers/id attributes.",
+        "priority": "high",
+        "confidence": "medium",
+        "auto_fix_supported": True,
+    },
+    "th-has-data-cells": {
+        "summary": "Add explicit scope attributes on table headers for data-cell association.",
+        "priority": "medium",
+        "confidence": "medium",
+        "auto_fix_supported": True,
     },
     "document-title": {
         "summary": "Ensure the document has a non-empty, descriptive title.",
