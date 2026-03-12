@@ -25,6 +25,7 @@ class ReleaseDocsTests(unittest.TestCase):
             self.repo_root / 'docs' / 'release' / 'resilient-run-patterns.md',
             self.repo_root / 'docs' / 'release' / 'release-packaging-extras-placement.md',
             self.repo_root / 'docs' / 'release' / 'real-scanner-ci-lane.md',
+            self.repo_root / 'docs' / 'release' / 'baseline-debt-lifecycle.md',
             self.repo_root / '.github' / 'ISSUE_TEMPLATE' / 'installation-failure.yml',
             self.repo_root / '.github' / 'ISSUE_TEMPLATE' / 'remediation-mismatch.yml',
         ]
@@ -53,7 +54,9 @@ class ReleaseDocsTests(unittest.TestCase):
         self.assertIn('docs/release/troubleshooting-intake.md', content)
         self.assertIn('docs/release/resilient-run-patterns.md', content)
         self.assertIn('docs/release/real-scanner-ci-lane.md', content)
+        self.assertIn('docs/release/baseline-debt-lifecycle.md', content)
 
 
 if __name__ == '__main__':
     unittest.main()
+

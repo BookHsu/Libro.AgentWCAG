@@ -6,7 +6,7 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 1. [x] Complete `M27 Dependency And Supply-Chain Guardrails` to formalize dependency audit and pinned-tooling workflows.
 2. [x] Complete `M28 Real-Scanner CI Lane Productization` to make optional scanner lanes reusable across repositories.
-3. [ ] Complete `M29 Baseline Debt Lifecycle Governance` to standardize debt triage and retirement evidence.
+3. [x] Complete `M29 Baseline Debt Lifecycle Governance` to standardize debt triage and retirement evidence.
 
 ## M21 Post-M20 Validation Closure
 
@@ -213,13 +213,12 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M29 Baseline Debt Lifecycle Governance
 
-- [ ] Add baseline maintenance playbook for `new`, `accepted`, and `retired` accessibility debt states with approval checkpoints.
-- [ ] Add CLI/report metadata support to tag findings with debt state transitions across baseline updates.
-- [ ] Add release checklist updates to require baseline refresh evidence before publishing significant remediation changes.
+- [x] Add baseline maintenance playbook for `new`, `accepted`, and `retired` accessibility debt states with approval checkpoints.
+- [x] Add CLI/report metadata support to tag findings with debt state transitions across baseline updates.
+- [x] Add release checklist updates to require baseline refresh evidence before publishing significant remediation changes.
 ## Notes
 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
-
 
