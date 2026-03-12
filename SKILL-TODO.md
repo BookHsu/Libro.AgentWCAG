@@ -6,7 +6,8 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 1. Complete `M15 Broader Real-World Validation` to prove the current workflow on realistic targets, not only synthetic fixtures.
 2. Complete `M16 Apply-Fixes Productization` to align actual rewrite behavior with the product promise in docs.
-3. Start `M17 Release Packaging Extras` only after the validation and behavior scope are stable.
+3. Complete `M18 Apply-Fixes Safety And Operability` to add safe preflight, dry-run, and rollback behavior.
+4. Start `M19 Scanner Runtime Resilience` after M18 safety controls are in place.
 
 ## M5 Safe Auto-Fix Expansion
 
@@ -142,6 +143,16 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [ ] Add atomic write plus rollback safeguards for `apply_report_fixes` to prevent partial writes on interruption or I/O failure
 - [ ] Add rule-level mutation telemetry in `run_meta` (changed file path, rule id, and mutation count) for every successful auto-fix
 - [ ] Add regression fixtures for malformed HTML and edge encodings to verify regex-based rewrites do not corrupt source structure
+
+
+
+## M19 Scanner Runtime Resilience
+
+- [ ] Add scanner preflight diagnostics output (`tools`, `versions`, `resolved command`) to `run_meta` for easier environment debugging
+- [ ] Add explicit error classification for scanner failures (`timeout`, `missing-tool`, `bad-target`, `runtime-error`) and expose them in report summary
+- [ ] Add partial-success contract tests to ensure single-scanner results stay actionable when `axe` or `lighthouse` individually fail
+- [ ] Add retry policy hooks for transient scanner failures (configurable attempts with bounded backoff)
+- [ ] Add CLI docs for resilient run patterns, including CI examples for `audit-only`, `suggest-only`, and `apply-fixes`
 
 ## Notes
 
