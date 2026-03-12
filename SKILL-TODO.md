@@ -193,6 +193,12 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [x] Add effective-policy source provenance (`cli`, `policy-config`, `policy-preset`, default) for deterministic audit trails.
 - [x] Add `--write-effective-policy` artifact export plus regression tests and README usage notes.
 
+
+## M26 Policy Conflict Guardrails And Discoverability
+
+- [x] Add machine-readable policy config key discovery output (`--list-policy-config-keys`) so automation can validate allowed config surface before generating files.
+- [x] Add effective-policy overlap metadata for include/ignore rule collisions, including deterministic resolution semantics (`ignore-rules-win`) in `run_meta` and summary outputs.
+- [x] Add strict overlap enforcement flag (`--strict-rule-overlap`) so ambiguous include/ignore policy combinations fail fast in CI.
 ## Notes
 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.

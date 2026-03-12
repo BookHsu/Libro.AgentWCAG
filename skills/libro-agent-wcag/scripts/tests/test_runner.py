@@ -19,7 +19,9 @@ from run_accessibility_audit import (
     DEFAULT_SCANNER_RETRY_ATTEMPTS,
     DEFAULT_TIMEOUT_SECONDS,
     _extract_version_line,
+    _find_rule_policy_overlaps,
     _is_transient_scanner_error,
+    _policy_config_keys_payload,
     _resolve_npx_executable,
     _resolve_target_for_scanners,
     _run_command,
@@ -180,6 +182,34 @@ class RunnerTests(unittest.TestCase):
         self.assertTrue(args.list_policy_presets)
         self.assertTrue(args.explain_policy)
 
+    def test_cli_accepts_policy_config_key_listing_and_strict_overlap_flags(self) -> None:
+        original = sys.argv
+        sys.argv = [
+            "run_accessibility_audit.py",
+            "--target",
+            "https://example.com",
+            "--list-policy-config-keys",
+            "--strict-rule-overlap",
+        ]
+        try:
+            args = parse_args()
+        finally:
+            sys.argv = original
+        self.assertTrue(args.list_policy_config_keys)
+        self.assertTrue(args.strict_rule_overlap)
+
+    def test_policy_config_keys_payload_contains_fail_on(self) -> None:
+        payload = _policy_config_keys_payload()
+        names = [item['name'] for item in payload['keys']]
+        self.assertIn('fail_on', names)
+
+    def test_find_rule_policy_overlaps_returns_sorted_unique_values(self) -> None:
+        overlaps = _find_rule_policy_overlaps(
+            ['image-alt', 'button-name', 'image-alt'],
+            ['button-name', 'meta-viewport', 'button-name'],
+        )
+        self.assertEqual(overlaps, ['button-name'])
+
     def test_resolve_policy_preset_returns_expected_fail_on_and_ignore_rules(self) -> None:
         preset = runner._resolve_policy_preset('legacy')
         self.assertEqual(preset['fail_on'], 'serious')
@@ -198,6 +228,7 @@ class RunnerTests(unittest.TestCase):
             ignore_rules=['meta-viewport'],
             policy_preset={'name': 'legacy'},
             policy_config_path='policy.json',
+            policy_sources={},
             fail_on_new_only=True,
             baseline_report_path='baseline.json',
             baseline_signature_config={
@@ -205,10 +236,12 @@ class RunnerTests(unittest.TestCase):
                 'target_normalization': 'host-path',
                 'selector_canonicalization': 'basic',
             },
+            overlapping_rules=['meta-viewport'],
         )
         self.assertEqual(policy['preset'], 'legacy')
         self.assertTrue(policy['fail_on_new_only'])
         self.assertEqual(policy['baseline_signature']['selector_canonicalization'], 'basic')
+        self.assertEqual(policy['overlapping_rules'], ['meta-viewport'])
 
     def test_build_scanner_capabilities_reports_mocked_rule_catalog(self) -> None:
         preflight = {
@@ -556,4 +589,3 @@ class RunnerPolicyTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
