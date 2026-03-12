@@ -38,7 +38,7 @@ Treat local file paths as first-class inputs. The audit runner converts existing
 4. Respect `execution_mode`:
    - `audit-only`: find issues only
    - `suggest-only`: find issues and propose remediation steps without editing
-   - `apply-fixes`: apply safe first-pass remediations for supported local HTML targets, then let the agent or adapter handle any remaining changes
+   - `apply-fixes`: apply safe first-pass remediations for supported local targets (`.html`, `.htm`, `.xhtml`, `.jsx`, `.tsx`, `.vue`), then let the agent or adapter handle any remaining changes
 5. Produce the two required outputs:
    - Markdown comparison table
    - JSON structured report
@@ -71,7 +71,7 @@ Key remediation fields to preserve:
 - `run_meta.diff_artifacts[]`
 
 Report the chosen `execution_mode` in both JSON and Markdown summary text.
-For `apply-fixes`, the core scripts may modify supported local HTML targets, emit a diff artifact, and mark `files_modified=true`; unsupported cases still fall back to agent or adapter-driven remediation.
+For `apply-fixes`, the core scripts may modify supported local targets, emit diff artifacts, and mark `files_modified=true`; unsupported target types plus assisted/manual-only remediation classes still fall back to agent or adapter-driven remediation.
 
 Use `scripts/normalize_report.py` to normalize mixed tool outputs into the contract.
 
