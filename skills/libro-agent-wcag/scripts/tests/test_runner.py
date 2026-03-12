@@ -7,17 +7,20 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 SCRIPT_ROOT = Path(__file__).resolve().parents[1]
 if str(SCRIPT_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPT_ROOT))
 
 from run_accessibility_audit import (
+    DEFAULT_SCANNER_RETRY_ATTEMPTS,
     DEFAULT_TIMEOUT_SECONDS,
-    _resolve_target_for_scanners,
     _extract_version_line,
+    _is_transient_scanner_error,
+    _resolve_target_for_scanners,
     _run_command,
+    _run_scanner_with_retry,
     _try_run_axe,
     _try_run_lighthouse,
     parse_args,
@@ -172,6 +175,56 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(npx['version'], '10.9.0')
         self.assertIn('npx --version', npx['command'])
 
+
+class RunnerRetryTests(unittest.TestCase):
+    def test_cli_has_scanner_retry_defaults(self) -> None:
+        original = sys.argv
+        sys.argv = ["run_accessibility_audit.py", "--target", "https://example.com"]
+        try:
+            args = parse_args()
+        finally:
+            sys.argv = original
+        self.assertEqual(args.scanner_retry_attempts, DEFAULT_SCANNER_RETRY_ATTEMPTS)
+        self.assertGreaterEqual(args.scanner_retry_backoff_seconds, 0)
+
+    def test_is_transient_scanner_error_detects_timeout_and_network_signals(self) -> None:
+        self.assertTrue(_is_transient_scanner_error("command timed out after 5 seconds"))
+        self.assertTrue(_is_transient_scanner_error("network failure: ECONNRESET"))
+        self.assertFalse(_is_transient_scanner_error("command not found: npx"))
+
+    @patch("run_accessibility_audit.time.sleep")
+    def test_run_scanner_with_retry_retries_transient_error_then_succeeds(self, mock_sleep: Mock) -> None:
+        runner = Mock(side_effect=[(None, "command timed out after 2 seconds"), ({"violations": []}, None)])
+
+        payload, error, telemetry = _run_scanner_with_retry(
+            "axe",
+            runner,
+            retry_attempts=3,
+            retry_backoff_seconds=0.01,
+        )
+
+        self.assertEqual(payload, {"violations": []})
+        self.assertIsNone(error)
+        self.assertEqual(telemetry["retry_count"], 1)
+        self.assertEqual(runner.call_count, 2)
+        mock_sleep.assert_called_once()
+
+    @patch("run_accessibility_audit.time.sleep")
+    def test_run_scanner_with_retry_does_not_retry_non_transient_errors(self, mock_sleep: Mock) -> None:
+        runner = Mock(return_value=(None, "command not found: npx"))
+
+        payload, error, telemetry = _run_scanner_with_retry(
+            "lighthouse",
+            runner,
+            retry_attempts=4,
+            retry_backoff_seconds=0.01,
+        )
+
+        self.assertIsNone(payload)
+        self.assertEqual(error, "command not found: npx")
+        self.assertEqual(telemetry["retry_count"], 0)
+        self.assertEqual(runner.call_count, 1)
+        mock_sleep.assert_not_called()
+
 if __name__ == "__main__":
     unittest.main()
-
