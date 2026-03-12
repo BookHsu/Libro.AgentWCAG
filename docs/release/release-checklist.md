@@ -25,5 +25,6 @@ Use this checklist before publishing a new version of `libro-agent-wcag`.
 - [ ] Confirm target version tag and release title are finalized.
 - [ ] Ensure `CHANGELOG.md` has a dated version section with highlights and known limits.
 - [ ] Confirm all blocking defects are closed or explicitly listed as known limitations.
+- [ ] For significant remediation changes, attach baseline refresh evidence (`run_meta.baseline_diff.debt_transitions`, baseline artifact path, approver).
 - [ ] Push `master` and create release artifacts/tags per project policy.
 

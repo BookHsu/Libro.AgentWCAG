@@ -544,6 +544,34 @@ class RunnerPolicyTests(unittest.TestCase):
         self.assertEqual(diff['persistent_count'], 1)
         self.assertEqual(diff['introduced_signatures'], ['button-name|button.icon'])
 
+    def test_tag_findings_with_debt_state_marks_new_accepted_and_retired(self) -> None:
+        signature_config = {
+            'include_target_in_signature': False,
+            'target_normalization': 'none',
+            'selector_canonicalization': 'none',
+        }
+        report = {
+            'target': {'value': 'https://example.com'},
+            'findings': [
+                {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'status': 'open'},
+                {'rule_id': 'button-name', 'changed_target': 'button.icon', 'status': 'open'},
+                {'rule_id': 'label', 'changed_target': 'input#email', 'status': 'fixed'},
+            ],
+        }
+        baseline = {
+            'findings': [
+                {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'status': 'open'},
+                {'rule_id': 'label', 'changed_target': 'input#email', 'status': 'open'},
+            ]
+        }
+
+        diff = runner._build_baseline_diff(report, baseline, signature_config)
+        runner._tag_findings_with_debt_state(report, diff, signature_config)
+        findings = {f['rule_id']: f for f in report['findings']}
+        self.assertEqual(findings['button-name']['debt_state'], 'new')
+        self.assertEqual(findings['image-alt']['debt_state'], 'accepted')
+        self.assertEqual(findings['label']['debt_state'], 'retired')
+
 
     def test_build_baseline_diff_selector_canonicalization_reduces_noise(self) -> None:
         signature_config = {
