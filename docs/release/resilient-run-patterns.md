@@ -69,3 +69,35 @@ python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
 ```
 
 This bypasses runtime scanner invocation while keeping contract/report behavior stable.
+
+## CI policy controls
+
+Use policy flags to gate CI outcomes and tune rule scope without code changes:
+
+- `--report-format json|sarif`: choose machine-readable output for pipelines and PR annotation tooling.
+- `--fail-on critical|serious|moderate`: return deterministic non-zero exit code when unresolved findings meet the threshold.
+- `--include-rule` / `--ignore-rule`: include or suppress normalized rule ids (repeatable).
+- `--policy-config <path.json>`: load `report_format`, `fail_on`, `include_rules`, and `ignore_rules` from a JSON file.
+
+### Example: SARIF + severity gate
+
+```powershell
+python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
+  --target docs/testing/realistic-sample/mixed-findings.html \
+  --execution-mode suggest-only \
+  --output-dir out/ci-policy \
+  --report-format sarif \
+  --fail-on serious
+```
+
+### Example: project policy config
+
+```json
+{
+  "report_format": "json",
+  "fail_on": "moderate",
+  "include_rules": ["image-alt", "button-name"],
+  "ignore_rules": ["meta-viewport"]
+}
+```
+
