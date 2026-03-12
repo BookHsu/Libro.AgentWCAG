@@ -44,6 +44,7 @@ class CliFlowTests(unittest.TestCase):
             markdown = (output_dir / 'wcag-report.md').read_text(encoding='utf-8')
             self.assertEqual(payload['run_meta']['tools']['axe'], 'skipped')
             self.assertEqual(payload['run_meta']['tools']['lighthouse'], 'skipped')
+            self.assertEqual(payload['run_meta']['preflight']['tools']['runtime']['version_provenance']['source'], 'skipped')
             self.assertIn('Execution mode: suggest-only', markdown)
 
     def test_run_accessibility_audit_rejects_invalid_target_before_scanning(self) -> None:

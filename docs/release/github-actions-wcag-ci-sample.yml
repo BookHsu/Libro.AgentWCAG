@@ -5,7 +5,47 @@ on:
   workflow_dispatch:
 
 jobs:
+  dependency-audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Prepare dependency audit workspace
+        run: mkdir -p .ci/scanner-toolchain out/dependency
+
+      - name: Run Python dependency audit
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml pip-audit
+          python -m pip-audit --strict --desc | tee out/dependency/pip-audit.txt
+
+      - name: Run Node scanner dependency audit
+        run: |
+          npm install --prefix .ci/scanner-toolchain --package-lock-only @axe-core/cli@4.10.2 lighthouse@12.3.0
+          npm audit --prefix .ci/scanner-toolchain --audit-level=high --json > out/dependency/npm-audit.json
+
+      - name: Upload dependency audit artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit-artifacts
+          path: out/dependency
+          retention-days: 14
+
   wcag-audit:
+    needs: dependency-audit
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -29,6 +69,10 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install pyyaml
 
+      - name: Capture preflight version provenance
+        run: |
+          python skills/libro-agent-wcag/scripts/run_accessibility_audit.py --preflight-only > out/ci-preflight.json
+
       - name: Run WCAG audit (SARIF + baseline gate)
         run: |
           python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
@@ -49,6 +93,7 @@ jobs:
             out/ci/wcag-report.json
             out/ci/wcag-report.md
             out/ci/wcag-report.sarif
+            out/ci-preflight.json
           retention-days: 14
 
       - name: Upload SARIF for PR annotation
