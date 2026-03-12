@@ -50,10 +50,10 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [x] Add keyboard and tabindex fixtures
 - [x] Add WCAG 2.2 focus-related fixtures
 - [x] Add `create` mode draft fixtures
-- [ ] Add React-specific fixtures
-- [ ] Add Vue-specific fixtures
-- [ ] Add Next.js-specific fixtures
-- [ ] Add snapshot baselines for each new fixture family
+- [x] Add React-specific fixtures
+- [x] Add Vue-specific fixtures
+- [x] Add Next.js-specific fixtures
+- [x] Add snapshot baselines for each new fixture family
 
 ## M9 Real Scanner Integration
 
@@ -93,4 +93,5 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
+
 
