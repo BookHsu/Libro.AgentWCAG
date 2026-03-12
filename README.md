@@ -141,8 +141,15 @@ python scripts/validate_skill.py skills/libro-agent-wcag
 - `@axe-core/cli` and `lighthouse` available through `npx`
 - `PyYAML` for skill validation
 
-## Future directions
+## Release readiness
 
+- `docs/release/release-checklist.md`:  packaging, validation, and publish gate checklist
+- `CHANGELOG.md`:  versioned release notes baseline
+- `docs/release/release-notes-workflow.md`:  release-notes update workflow
+- `docs/release/supported-environments.md`:  supported runtime and toolchain matrix
+- `docs/release/first-run-smoke.md`:  install-plus-doctor first-run smoke guide
+
+## Future directions
 - Actual file-rewriting auto-remediation engine for `apply-fixes`
 - Release packaging extras such as demos, templates, and issue forms
 
