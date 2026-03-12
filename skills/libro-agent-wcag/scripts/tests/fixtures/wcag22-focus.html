@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>WCAG 2.2 Focus Fixture</title>
+  <style>
+    .nav-link:focus {
+      outline: none;
+    }
+    .sticky-banner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 80px;
+      background: #111;
+      color: #fff;
+    }
+    main {
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="sticky-banner">Persistent header</div>
+  <main>
+    <a class="nav-link" href="#target">Focusable link without visible focus</a>
+    <button id="target" style="margin-top: 8px;">Focusable target near obscured region</button>
+  </main>
+</body>
+</html>
