@@ -27,3 +27,36 @@ jobs:
 
       - name: Validate skill
         run: python scripts/validate_skill.py skills/libro-agent-wcag
+
+  real-scanner-integration:
+    if: ${{ vars.LIBRO_RUN_REAL_SCANNERS == '1' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml
+
+      - name: Verify real scanner prerequisites
+        run: |
+          npx @axe-core/cli --help > /dev/null
+          npx lighthouse --help > /dev/null
+
+      - name: Run real scanner matrix tests
+        env:
+          LIBRO_RUN_REAL_SCANNERS: "1"
+        run: python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_fixtures_and_integration.py"
+
