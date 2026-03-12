@@ -30,6 +30,14 @@ PREFLIGHT_TOOL_CHECKS = (
 )
 
 
+def _extract_version_line(output: str) -> str | None:
+    for line in output.splitlines():
+        value = line.strip()
+        if value:
+            return value
+    return None
+
+
 def _run_command(command: list[str], timeout_seconds: int) -> tuple[bool, str]:
     try:
         completed = subprocess.run(
@@ -115,19 +123,53 @@ def _tool_available(tool: str) -> bool:
 
 def run_preflight_checks(timeout_seconds: int) -> dict[str, Any]:
     results: list[dict[str, str]] = []
+    tools: dict[str, dict[str, str]] = {}
     ok = True
     for name, command in PREFLIGHT_TOOL_CHECKS:
+        command_text = " ".join(command)
+        resolved_command = shutil.which(command[0]) or ""
         if not _tool_available(command[0]):
             message = f'{command[0]} is not available in PATH'
-            results.append({"tool": name, "status": "error", "message": message})
+            entry = {
+                "tool": name,
+                "status": "error",
+                "message": message,
+                "command": command_text,
+                "resolved_command": resolved_command,
+                "version": "",
+            }
+            results.append(entry)
+            tools[name] = {
+                "status": "error",
+                "command": command_text,
+                "resolved_command": resolved_command,
+                "version": "",
+                "message": message,
+            }
             ok = False
             continue
         command_ok, output = _run_command(command, timeout_seconds)
         status = "ok" if command_ok else "error"
         message = (output or "").strip() or ("available" if command_ok else "check failed")
-        results.append({"tool": name, "status": status, "message": message})
+        version = _extract_version_line(output) if command_ok else ""
+        entry = {
+            "tool": name,
+            "status": status,
+            "message": message,
+            "command": command_text,
+            "resolved_command": resolved_command,
+            "version": version or "",
+        }
+        results.append(entry)
+        tools[name] = {
+            "status": status,
+            "command": command_text,
+            "resolved_command": resolved_command,
+            "version": version or "",
+            "message": message,
+        }
         ok = ok and command_ok
-    return {"ok": ok, "checks": results}
+    return {"ok": ok, "checks": results, "tools": tools}
 
 
 def _remove_if_exists(path: Path) -> None:
@@ -205,8 +247,20 @@ def main() -> int:
                     "tool": "runtime",
                     "status": "skipped",
                     "message": "scanner tooling preflight skipped due to mock or skip flags",
+                    "command": "",
+                    "resolved_command": "",
+                    "version": "",
                 }
             ],
+            "tools": {
+                "runtime": {
+                    "status": "skipped",
+                    "command": "",
+                    "resolved_command": "",
+                    "version": "",
+                    "message": "scanner tooling preflight skipped due to mock or skip flags",
+                }
+            },
         }
 
     axe_data = None

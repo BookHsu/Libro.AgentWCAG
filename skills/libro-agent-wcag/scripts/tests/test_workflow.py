@@ -119,6 +119,53 @@ class WorkflowTests(unittest.TestCase):
         manual_fix = next(item for item in report["fixes"] if item["finding_id"] == "ISSUE-001")
         self.assertEqual(manual_fix["status"], "planned")
 
+    def test_partial_success_preserves_actionable_findings_when_lighthouse_fails(self) -> None:
+        contract = resolve_contract({"target": "https://example.com", "output_language": "en"})
+        axe_data = {
+            "violations": [
+                {
+                    "id": "image-alt",
+                    "impact": "serious",
+                    "description": "Images must have alternate text",
+                    "nodes": [{"target": ["img.hero"]}],
+                }
+            ]
+        }
+        report = normalize_report(
+            contract,
+            axe_data,
+            None,
+            lighthouse_error="command timed out after 30 seconds",
+        )
+        self.assertTrue(any(item["rule_id"] == "image-alt" for item in report["findings"]))
+        self.assertIn("scanner_failures", report["summary"])
+        lighthouse_failure = next(
+            item for item in report["summary"]["scanner_failures"] if item["tool"] == "lighthouse"
+        )
+        self.assertEqual(lighthouse_failure["classification"], "timeout")
+
+    def test_partial_success_preserves_actionable_findings_when_axe_fails(self) -> None:
+        contract = resolve_contract({"target": "https://example.com", "output_language": "en"})
+        lighthouse_data = {
+            "audits": {
+                "label": {
+                    "score": 0,
+                    "scoreDisplayMode": "binary",
+                    "title": "Form elements have labels",
+                    "details": {"items": [{"node": {"selector": "input#email"}}]},
+                }
+            }
+        }
+        report = normalize_report(
+            contract,
+            None,
+            lighthouse_data,
+            axe_error="command not found: npx",
+        )
+        self.assertTrue(any(item["rule_id"] == "label" for item in report["findings"]))
+        self.assertIn("scanner_failures", report["summary"])
+        axe_failure = next(item for item in report["summary"]["scanner_failures"] if item["tool"] == "axe")
+        self.assertEqual(axe_failure["classification"], "missing-tool")
     def test_citation_url_uses_selected_version(self) -> None:
         self.assertIn("/WCAG20/", build_citation_url("2.0", "1.1.1"))
         self.assertIn("/WCAG21/", build_citation_url("2.1", "1.1.1"))
