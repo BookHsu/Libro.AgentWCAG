@@ -4,9 +4,9 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## Current Execution Order
 
-1. [x] Complete `M20 CI Reporting And Policy Control` to make scanner results first-class in PR and CI workflows.
-2. [x] Backfill release notes and docs examples based on M20 outputs.
-3. [x] Re-run real-scanner validation lanes and verify no regression in `apply-fixes` safety semantics (see `docs/testing/m20-validation-rerun-20260312.md`).
+1. [ ] Complete `M27 Dependency And Supply-Chain Guardrails` to formalize dependency audit and pinned-tooling workflows.
+2. [ ] Complete `M28 Real-Scanner CI Lane Productization` to make optional scanner lanes reusable across repositories.
+3. [ ] Complete `M29 Baseline Debt Lifecycle Governance` to standardize debt triage and retirement evidence.
 
 ## M21 Post-M20 Validation Closure
 
@@ -199,8 +199,26 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [x] Add machine-readable policy config key discovery output (`--list-policy-config-keys`) so automation can validate allowed config surface before generating files.
 - [x] Add effective-policy overlap metadata for include/ignore rule collisions, including deterministic resolution semantics (`ignore-rules-win`) in `run_meta` and summary outputs.
 - [x] Add strict overlap enforcement flag (`--strict-rule-overlap`) so ambiguous include/ignore policy combinations fail fast in CI.
+## M27 Dependency And Supply-Chain Guardrails
+
+- [ ] Add dependency-lock and scanner-tool version capture guidance for Python and Node toolchains used by local and CI runs.
+- [ ] Add a reproducible dependency-audit lane (`pip-audit` and npm audit equivalent) with documented pass/fail policy and remediation workflow.
+- [ ] Add regression tests that verify preflight diagnostics include tool version provenance needed for supply-chain triage.
+
+## M28 Real-Scanner CI Lane Productization
+
+- [ ] Add reusable workflow templates for optional real-scanner execution with clear skip semantics when scanners are unavailable.
+- [ ] Add CI evidence artifact conventions (raw scanner logs, normalized summary, capability negotiation) and doc references for triage handoff.
+- [ ] Add matrix tests that validate fallback behavior and messaging consistency between local runs and CI workflows.
+
+## M29 Baseline Debt Lifecycle Governance
+
+- [ ] Add baseline maintenance playbook for `new`, `accepted`, and `retired` accessibility debt states with approval checkpoints.
+- [ ] Add CLI/report metadata support to tag findings with debt state transitions across baseline updates.
+- [ ] Add release checklist updates to require baseline refresh evidence before publishing significant remediation changes.
 ## Notes
 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
+
