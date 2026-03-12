@@ -70,6 +70,35 @@ python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
 
 This bypasses runtime scanner invocation while keeping contract/report behavior stable.
 
+## Reproducible dependency-audit lane
+
+Run dependency checks before scanner execution to reduce supply-chain drift.
+
+### Local lane
+
+```powershell
+python -m pip install --upgrade pip
+python -m pip install pyyaml pip-audit
+python -m pip-audit --strict --desc
+
+mkdir -p .ci/scanner-toolchain
+npm install --prefix .ci/scanner-toolchain --package-lock-only @axe-core/cli@4.10.2 lighthouse@12.3.0
+npm audit --prefix .ci/scanner-toolchain --audit-level=high --json > out/dependency/npm-audit.json
+```
+
+### CI lane policy (pass/fail)
+
+- `pip-audit --strict` must return exit code `0` to pass.
+- `npm audit --audit-level=high` must return exit code `0` to pass.
+- If either audit fails, stop WCAG scan steps and open remediation ticket with lockfile diff + audit output.
+
+### Remediation workflow
+
+1. Patch vulnerable packages by updating pinned versions in lock artifacts.
+2. Re-run dependency audit lane until both checks pass.
+3. Re-run `--preflight-only` and retain updated `version_provenance` metadata.
+4. Continue WCAG scanner lane only after dependency audit lane is green.
+
 ## CI policy controls
 
 Use policy flags to gate CI outcomes and tune rule scope without code changes:
@@ -157,3 +186,4 @@ Use `run_meta.baseline_diff` and the latest report findings to classify each unr
 - Add acceptance criteria for closure (expected scanner result and artifact paths).
 - After implementation, rerun audit and update baseline snapshot if debt was intentionally accepted.
 - Close handoff only when report status and issue tracker state are aligned.
+
