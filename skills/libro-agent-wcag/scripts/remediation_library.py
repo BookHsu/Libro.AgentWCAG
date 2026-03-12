@@ -163,6 +163,24 @@ RULE_STRATEGIES = {
         "confidence": "high",
         "auto_fix_supported": True,
     },
+    "list": {
+        "summary": "Ensure list containers contain only listitem children.",
+        "priority": "medium",
+        "confidence": "high",
+        "auto_fix_supported": True,
+    },
+    "listitem": {
+        "summary": "Ensure each listitem is nested inside a semantic list container.",
+        "priority": "medium",
+        "confidence": "high",
+        "auto_fix_supported": True,
+    },
+    "table-fake-caption": {
+        "summary": "Convert caption-like header rows into semantic table captions when safe.",
+        "priority": "medium",
+        "confidence": "high",
+        "auto_fix_supported": True,
+    },
     "meta-viewport": {
         "summary": "Allow zoom and avoid viewport settings that block reflow or text resize.",
         "priority": "medium",
@@ -181,3 +199,6 @@ def get_strategy(rule_id: str) -> dict[str, Any]:
         **specific.get("framework_hints", {}),
     }
     return merged
+
+
+
