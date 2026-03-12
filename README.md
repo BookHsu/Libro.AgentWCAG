@@ -121,6 +121,7 @@ Current implementation note:
 - Non-local targets, unsupported local file types, and higher-risk remediation classes remain `suggest-only` or assisted/manual by design. See `docs/release/apply-fixes-scope.md` for the explicit scope matrix and boundaries.
 - Scanner runtime resilience is configurable via `--scanner-retry-attempts` and `--scanner-retry-backoff-seconds`. See `docs/release/resilient-run-patterns.md` for recommended CI patterns.
 - CI policy controls are available via `--report-format (json|sarif)`, `--fail-on`, `--include-rule`, `--ignore-rule`, and `--policy-config` for deterministic gating and per-project rule policy.
+- Baseline diff gating is available via `--baseline-report` and `--fail-on-new-only` to fail only on newly introduced unresolved debt.
 
 Current adapter coverage:
 
@@ -154,7 +155,8 @@ python scripts/validate_skill.py skills/libro-agent-wcag
 - `docs/release/demo-package-walkthrough.md`:  minimal package-style validation walkthrough outside test suite
 - `docs/release/prompt-invocation-templates.md`:  reusable contract and adapter invocation templates
 - `docs/release/troubleshooting-intake.md`:  triage intake checklist for install and remediation problems
-- `docs/release/resilient-run-patterns.md`:  resilient scanner retry/backoff CLI patterns for CI and local automation
+- `docs/release/resilient-run-patterns.md`:  resilient scanner retry/backoff, policy gates, and baseline-diff CLI patterns for CI and local automation
+- `docs/release/github-actions-wcag-ci-sample.yml`:  GitHub Actions sample with artifact retention and SARIF PR annotation
 - `docs/release/release-packaging-extras-placement.md`:  decision record for extras placement
 - `.github/ISSUE_TEMPLATE/installation-failure.yml`:  installation failure intake form
 - `.github/ISSUE_TEMPLATE/remediation-mismatch.yml`:  remediation mismatch intake form

@@ -257,6 +257,22 @@ def _load_policy_config(path: str | None) -> dict[str, Any]:
     return payload
 
 
+def _load_baseline_report(path: str | None) -> dict[str, Any]:
+    if not path:
+        return {}
+    baseline_path = Path(path)
+    if not baseline_path.exists():
+        raise ValueError(f'baseline report file does not exist: {path}')
+    payload = json.loads(baseline_path.read_text(encoding='utf-8'))
+    if not isinstance(payload, dict):
+        raise ValueError('--baseline-report must point to a JSON object')
+    findings = payload.get('findings')
+    if findings is None:
+        payload['findings'] = []
+    elif not isinstance(findings, list):
+        raise ValueError('--baseline-report JSON must include findings as a list')
+    return payload
+
 def _normalize_rule_list(value: Any, name: str) -> list[str]:
     if value is None:
         return []
@@ -321,6 +337,42 @@ def _sarif_level_from_severity(severity: str) -> str:
     if severity == 'moderate':
         return 'warning'
     return 'note'
+
+def _finding_signature(finding: dict[str, Any]) -> str:
+    rule_id = str(finding.get('rule_id', '')).strip()
+    changed_target = str(finding.get('changed_target', '')).strip()
+    return f'{rule_id}|{changed_target}'
+
+
+def _unresolved_finding_signatures(report: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    signatures: dict[str, dict[str, Any]] = {}
+    for finding in report.get('findings', []):
+        if finding.get('status') == 'fixed':
+            continue
+        signatures[_finding_signature(finding)] = finding
+    return signatures
+
+
+def _build_baseline_diff(current_report: dict[str, Any], baseline_report: dict[str, Any]) -> dict[str, Any]:
+    current_findings = _unresolved_finding_signatures(current_report)
+    baseline_findings = _unresolved_finding_signatures(baseline_report)
+    current_keys = set(current_findings)
+    baseline_keys = set(baseline_findings)
+    introduced_keys = sorted(current_keys - baseline_keys)
+    resolved_keys = sorted(baseline_keys - current_keys)
+    persistent_keys = sorted(current_keys & baseline_keys)
+
+    return {
+        'current_unresolved_count': len(current_keys),
+        'baseline_unresolved_count': len(baseline_keys),
+        'introduced_count': len(introduced_keys),
+        'resolved_count': len(resolved_keys),
+        'persistent_count': len(persistent_keys),
+        'introduced_signatures': introduced_keys,
+        'resolved_signatures': resolved_keys,
+        'persistent_signatures': persistent_keys,
+        'introduced_findings': [current_findings[key] for key in introduced_keys],
+    }
 
 def _report_to_sarif(report: dict[str, Any], contract_target: str, local_target: Path | None) -> dict[str, Any]:
     rules: dict[str, dict[str, Any]] = {}
@@ -437,6 +489,15 @@ def parse_args() -> argparse.Namespace:
         help="Optional JSON file with report_format/fail_on/include_rules/ignore_rules.",
     )
     parser.add_argument(
+        "--baseline-report",
+        help="Optional prior JSON report to compare unresolved debt and detect newly introduced findings.",
+    )
+    parser.add_argument(
+        "--fail-on-new-only",
+        action="store_true",
+        help="When used with --fail-on and --baseline-report, fail only on newly introduced debt.",
+    )
+    parser.add_argument(
         "--scanner-retry-attempts",
         type=int,
         default=DEFAULT_SCANNER_RETRY_ATTEMPTS,
@@ -464,6 +525,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     policy_config = _load_policy_config(args.policy_config)
+    baseline_report = _load_baseline_report(args.baseline_report)
     config_report_format = policy_config.get('report_format')
     config_fail_on = policy_config.get('fail_on')
     config_include = _normalize_rule_list(policy_config.get('include_rules'), 'include_rules')
@@ -489,6 +551,10 @@ def main() -> int:
         raise ValueError('--scanner-retry-attempts must be >= 1')
     if args.scanner_retry_backoff_seconds < 0:
         raise ValueError('--scanner-retry-backoff-seconds must be >= 0')
+    if args.fail_on_new_only and not args.fail_on:
+        raise ValueError('--fail-on-new-only requires --fail-on')
+    if args.fail_on_new_only and not args.baseline_report:
+        raise ValueError('--fail-on-new-only requires --baseline-report')
 
     if args.preflight_only:
         preflight = run_preflight_checks(args.timeout)
@@ -647,6 +713,22 @@ def main() -> int:
                 _remove_if_exists(diff_path)
                 _remove_if_exists(snapshot_path)
 
+    baseline_diff: dict[str, Any] | None = None
+    if baseline_report:
+        baseline_diff = _build_baseline_diff(report, baseline_report)
+        report['run_meta']['baseline_diff'] = {
+            **baseline_diff,
+            'baseline_report_path': args.baseline_report,
+        }
+        report['run_meta']['notes'].append(
+            (
+                'Baseline diff: introduced='
+                f"{baseline_diff['introduced_count']}, "
+                f"resolved={baseline_diff['resolved_count']}, "
+                f"persistent={baseline_diff['persistent_count']}."
+            )
+        )
+
     output_json = output_dir / 'wcag-report.json'
     output_md = output_dir / 'wcag-report.md'
     if report_format == 'json':
@@ -663,11 +745,23 @@ def main() -> int:
         machine_output = output_sarif
 
     if fail_on:
-        should_fail, exit_code = _resolve_fail_threshold(report, fail_on)
+        gate_report = report
+        gate_scope = 'all-unresolved'
+        if args.fail_on_new_only:
+            introduced_signatures = set((baseline_diff or {}).get('introduced_signatures', []))
+            gate_report = {
+                **report,
+                'findings': [
+                    item for item in report.get('findings', []) if _finding_signature(item) in introduced_signatures
+                ],
+            }
+            gate_scope = 'introduced-only'
+        should_fail, exit_code = _resolve_fail_threshold(gate_report, fail_on)
         report['run_meta']['policy_gate'] = {
             'fail_on': fail_on,
             'failed': should_fail,
             'exit_code': exit_code if should_fail else 0,
+            'scope': gate_scope,
         }
         if report_format == 'json':
             write_report_files(report, str(output_json), str(output_md))
