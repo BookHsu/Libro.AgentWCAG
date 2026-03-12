@@ -18,6 +18,7 @@ class ReleaseDocsTests(unittest.TestCase):
             self.repo_root / 'docs' / 'release' / 'release-notes-workflow.md',
             self.repo_root / 'docs' / 'release' / 'supported-environments.md',
             self.repo_root / 'docs' / 'release' / 'first-run-smoke.md',
+            self.repo_root / 'docs' / 'release' / 'apply-fixes-scope.md',
         ]
         for file_path in expected_files:
             self.assertTrue(file_path.exists(), f'Missing file: {file_path}')
@@ -38,9 +39,9 @@ class ReleaseDocsTests(unittest.TestCase):
         self.assertIn('## Release readiness', content)
         self.assertIn('docs/release/release-checklist.md', content)
         self.assertIn('docs/release/first-run-smoke.md', content)
+        self.assertIn('docs/release/apply-fixes-scope.md', content)
 
 
 if __name__ == '__main__':
     unittest.main()
-
 

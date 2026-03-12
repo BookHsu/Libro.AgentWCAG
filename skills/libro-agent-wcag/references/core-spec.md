@@ -32,7 +32,7 @@ Validation rules:
 4. Respect `execution_mode`:
    - `audit-only`: do not propose or apply code changes
    - `suggest-only`: propose fixes but do not modify code
-   - `apply-fixes`: apply safe first-pass fixes for supported local HTML targets, then let the calling agent or adapter handle any unsupported or higher-risk changes
+   - `apply-fixes`: apply safe first-pass fixes for supported local targets (`.html`, `.htm`, `.xhtml`, `.jsx`, `.tsx`, `.vue`), then let the calling agent or adapter handle unsupported or higher-risk changes
 5. Map each finding/fix to WCAG SC and citations.
 6. Output Markdown table and JSON report.
 7. If one scanner fails, continue with available scanner and add manual fallback steps.
@@ -131,9 +131,10 @@ Use exactly these columns and order:
 
 Prefix the table with a short summary line that states the execution mode and whether files were modified.
 Support localized summary lines and column headers while keeping JSON keys canonical.
-For `apply-fixes`, `files_modified` may become `true` and `modification_owner` may become `core-workflow` when the target is a supported local HTML file and safe rewrite helpers succeed. Otherwise the workflow should keep `files_modified=false` and leave ownership with `agent-or-adapter`.
+For `apply-fixes`, `files_modified` may become `true` and `modification_owner` may become `core-workflow` when the target is a supported local file (`.html`, `.htm`, `.xhtml`, `.jsx`, `.tsx`, `.vue`) and safe rewrite helpers succeed. Unsupported target types must keep `files_modified=false`, preserve assisted/manual semantics, and leave ownership with `agent-or-adapter`.
 Diff artifacts must be recorded in `run_meta.diff_artifacts[]`, and fix verification should move from `not-run` to `diff-generated` when the core workflow rewrites a supported local target.
 
 Status vocabulary:
 - Findings: `open`, `fixed`, `partial`, `needs-review`
 - Fixes: `planned`, `implemented`, `verified`
+

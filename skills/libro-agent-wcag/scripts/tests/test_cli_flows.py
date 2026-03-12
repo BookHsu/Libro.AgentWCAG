@@ -242,6 +242,112 @@ class CliFlowTests(unittest.TestCase):
             )
             self.assertNotEqual(completed.returncode, 0)
             self.assertIn('--skip-axe cannot be combined with --mock-axe-json', completed.stderr + completed.stdout)
+    def test_run_accessibility_audit_apply_fixes_second_run_cleans_stale_artifacts(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            html_path = Path(tmp) / 'sample.html'
+            output_dir = Path(tmp) / 'out'
+            axe_json = Path(tmp) / 'axe.json'
+            html_path.write_text(
+                '<!doctype html><html><head><title>Fixture</title><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"></head><body><img class="hero" src="hero.png"></body></html>',
+                encoding='utf-8',
+            )
+            axe_json.write_text(
+                json.dumps(
+                    {
+                        'violations': [
+                            {'id': 'image-alt', 'impact': 'serious', 'description': 'Images must have alternate text', 'nodes': [{'target': ['img.hero']}]},
+                            {'id': 'meta-viewport', 'impact': 'moderate', 'description': 'Viewport must allow zoom', 'nodes': [{'target': ['meta[name="viewport"]']}]},
+                        ]
+                    }
+                ),
+                encoding='utf-8',
+            )
+
+            command = [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(output_dir),
+                '--execution-mode',
+                'apply-fixes',
+                '--output-language',
+                'en',
+                '--mock-axe-json',
+                str(axe_json),
+                '--skip-lighthouse',
+            ]
+
+            first = subprocess.run(
+                command,
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(first.returncode, 0, first.stdout + first.stderr)
+            self.assertTrue((output_dir / 'wcag-fixes.diff').exists())
+            self.assertTrue((output_dir / 'wcag-fixed-report.snapshot.json').exists())
+
+            second = subprocess.run(
+                command,
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(second.returncode, 0, second.stdout + second.stderr)
+            payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
+            self.assertFalse((output_dir / 'wcag-fixes.diff').exists())
+            self.assertFalse((output_dir / 'wcag-fixed-report.snapshot.json').exists())
+            self.assertIn('No safe auto-fix changes were applied', ' '.join(payload['run_meta']['notes']))
+
+    def test_run_accessibility_audit_apply_fixes_skips_unsupported_local_extension(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            target_path = Path(tmp) / 'notes.md'
+            output_dir = Path(tmp) / 'out'
+            axe_json = Path(tmp) / 'axe.json'
+            target_path.write_text('# note\n\n![hero](hero.png)\n', encoding='utf-8')
+            axe_json.write_text(
+                json.dumps(
+                    {
+                        'violations': [
+                            {'id': 'image-alt', 'impact': 'serious', 'description': 'Images must have alternate text', 'nodes': [{'target': ['img.hero']}]},
+                        ]
+                    }
+                ),
+                encoding='utf-8',
+            )
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                    '--target',
+                    str(target_path),
+                    '--output-dir',
+                    str(output_dir),
+                    '--execution-mode',
+                    'apply-fixes',
+                    '--output-language',
+                    'en',
+                    '--mock-axe-json',
+                    str(axe_json),
+                    '--skip-lighthouse',
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+            payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
+            self.assertFalse(payload['run_meta']['files_modified'])
+            self.assertIn('apply-fixes skipped: unsupported local target extension ".md".', ' '.join(payload['run_meta']['notes']))
+            self.assertFalse((output_dir / 'wcag-fixes.diff').exists())
+            self.assertFalse((output_dir / 'wcag-fixed-report.snapshot.json').exists())
+
     def test_doctor_reports_broken_install_when_adapter_prompt_is_missing(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             destination = Path(tmp) / 'claude-skill'

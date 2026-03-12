@@ -11,7 +11,13 @@ from typing import Any
 from urllib.parse import urlparse
 from urllib.request import url2pathname
 
-from auto_fix import apply_report_fixes, target_to_local_path, write_diff, write_snapshot
+from auto_fix import (
+    apply_report_fixes,
+    supports_apply_fixes_target,
+    target_to_local_path,
+    write_diff,
+    write_snapshot,
+)
 from wcag_workflow import normalize_report, resolve_contract, write_report_files
 
 DEFAULT_TIMEOUT_SECONDS = 120
@@ -95,6 +101,11 @@ def _resolve_target_for_scanners(target: str) -> str:
     raise ValueError(f"Target must be an existing local file or a valid URL: {target}")
 
 
+
+def _remove_if_exists(path: Path) -> None:
+    if path.exists():
+        path.unlink()
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run WCAG audit with axe+Lighthouse.")
     parser.add_argument("--task-mode", default="modify", choices=["create", "modify"])
@@ -167,15 +178,30 @@ def main() -> int:
         lighthouse_skipped=args.skip_lighthouse,
     )
 
-    if contract.execution_mode == 'apply-fixes' and local_target is not None:
-        report, diff_text = apply_report_fixes(local_target, report)
-        if diff_text:
-            diff_path = output_dir / 'wcag-fixes.diff'
-            write_diff(diff_text, diff_path)
-            report['run_meta'].setdefault('diff_artifacts', []).append({'path': str(diff_path), 'type': 'unified-diff'})
-            report['run_meta']['notes'].append(f'Saved auto-fix diff: {diff_path}')
-            snapshot_path = output_dir / 'wcag-fixed-report.snapshot.json'
-            write_snapshot(report, snapshot_path)
+    if contract.execution_mode == 'apply-fixes':
+        diff_path = output_dir / 'wcag-fixes.diff'
+        snapshot_path = output_dir / 'wcag-fixed-report.snapshot.json'
+
+        if local_target is None:
+            report['run_meta']['notes'].append('apply-fixes skipped: target is not a local file path.')
+            _remove_if_exists(diff_path)
+            _remove_if_exists(snapshot_path)
+        elif not supports_apply_fixes_target(local_target):
+            report['run_meta']['notes'].append(
+                f'apply-fixes skipped: unsupported local target extension "{local_target.suffix or "<none>"}".'
+            )
+            _remove_if_exists(diff_path)
+            _remove_if_exists(snapshot_path)
+        else:
+            report, diff_text = apply_report_fixes(local_target, report)
+            if diff_text:
+                write_diff(diff_text, diff_path)
+                report['run_meta'].setdefault('diff_artifacts', []).append({'path': str(diff_path), 'type': 'unified-diff'})
+                report['run_meta']['notes'].append(f'Saved auto-fix diff: {diff_path}')
+                write_snapshot(report, snapshot_path)
+            else:
+                _remove_if_exists(diff_path)
+                _remove_if_exists(snapshot_path)
 
     output_json = output_dir / "wcag-report.json"
     output_md = output_dir / "wcag-report.md"
@@ -192,3 +218,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
