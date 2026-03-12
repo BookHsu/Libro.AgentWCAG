@@ -627,6 +627,118 @@ class CliFlowTests(unittest.TestCase):
             self.assertTrue(payload['run_meta']['policy_gate']['failed'])
             self.assertEqual(payload['run_meta']['policy_gate']['scope'], 'introduced-only')
 
+    def test_run_accessibility_audit_fail_on_new_only_ignores_persistent_higher_severity(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            html_path = Path(tmp) / 'sample.html'
+            output_dir = Path(tmp) / 'out'
+            axe_json = Path(tmp) / 'axe.json'
+            baseline_json = Path(tmp) / 'baseline.json'
+            html_path.write_text('<!doctype html><html><body><img class="hero" src="hero.png"><button class="icon"></button></body></html>', encoding='utf-8')
+            axe_json.write_text(
+                json.dumps(
+                    {
+                        'violations': [
+                            {'id': 'image-alt', 'impact': 'serious', 'description': 'Image alt missing', 'nodes': [{'target': ['img.hero']}]},
+                            {'id': 'button-name', 'impact': 'moderate', 'description': 'Button name missing', 'nodes': [{'target': ['button.icon']}]},
+                        ]
+                    }
+                ),
+                encoding='utf-8',
+            )
+            baseline_json.write_text(
+                json.dumps(
+                    {
+                        'findings': [
+                            {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'status': 'open'}
+                        ]
+                    }
+                ),
+                encoding='utf-8',
+            )
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                    '--target',
+                    str(html_path),
+                    '--output-dir',
+                    str(output_dir),
+                    '--fail-on',
+                    'serious',
+                    '--fail-on-new-only',
+                    '--baseline-report',
+                    str(baseline_json),
+                    '--mock-axe-json',
+                    str(axe_json),
+                    '--skip-lighthouse',
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+            payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
+            self.assertEqual(payload['run_meta']['baseline_diff']['introduced_count'], 1)
+            self.assertEqual(payload['run_meta']['policy_gate']['evaluated_findings'], 1)
+            self.assertFalse(payload['run_meta']['policy_gate']['failed'])
+
+    def test_run_accessibility_audit_fail_on_new_only_applies_threshold_to_introduced_mix(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            html_path = Path(tmp) / 'sample.html'
+            output_dir = Path(tmp) / 'out'
+            axe_json = Path(tmp) / 'axe.json'
+            baseline_json = Path(tmp) / 'baseline.json'
+            html_path.write_text('<!doctype html><html><body><img class="hero" src="hero.png"><button class="icon"></button></body></html>', encoding='utf-8')
+            axe_json.write_text(
+                json.dumps(
+                    {
+                        'violations': [
+                            {'id': 'image-alt', 'impact': 'serious', 'description': 'Image alt missing', 'nodes': [{'target': ['img.hero']}]},
+                            {'id': 'button-name', 'impact': 'moderate', 'description': 'Button name missing', 'nodes': [{'target': ['button.icon']}]},
+                        ]
+                    }
+                ),
+                encoding='utf-8',
+            )
+            baseline_json.write_text(
+                json.dumps(
+                    {
+                        'findings': [
+                            {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'status': 'open'}
+                        ]
+                    }
+                ),
+                encoding='utf-8',
+            )
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                    '--target',
+                    str(html_path),
+                    '--output-dir',
+                    str(output_dir),
+                    '--fail-on',
+                    'moderate',
+                    '--fail-on-new-only',
+                    '--baseline-report',
+                    str(baseline_json),
+                    '--mock-axe-json',
+                    str(axe_json),
+                    '--skip-lighthouse',
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 44, completed.stdout + completed.stderr)
+            payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
+            self.assertEqual(payload['run_meta']['baseline_diff']['introduced_signatures'], ['button-name|button.icon'])
+            self.assertTrue(payload['run_meta']['policy_gate']['failed'])
+            self.assertEqual(payload['run_meta']['policy_gate']['scope'], 'introduced-only')
+
     def test_run_accessibility_audit_max_findings_caps_sorted_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             html_path = Path(tmp) / 'sample.html'
