@@ -11,7 +11,13 @@ from typing import Any, Callable
 from urllib.parse import urlparse
 from urllib.request import url2pathname
 
-from rewrite_helpers import replace_first
+from rewrite_helpers import (
+    ensure_nextjs_image_alt,
+    ensure_nextjs_layout_lang,
+    ensure_react_img_alt,
+    ensure_vue_img_alt,
+    replace_first,
+)
 
 LANG_PATTERN = re.compile(r'^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$')
 
@@ -74,6 +80,51 @@ def _fix_image_alt(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, A
         'description': 'Added an empty alt attribute to an img element missing alt text.',
     }
 
+
+def _detect_framework(local_target: Path, source: str) -> str:
+    suffix = local_target.suffix.lower()
+    name = local_target.name.lower()
+    if suffix == '.vue' or '<template' in source or 'data-v-app' in source:
+        return 'vue'
+    if 'next' in name or '<Image' in source or '<Html' in source or 'data-nextjs-root' in source:
+        return 'nextjs'
+    if suffix in {'.jsx', '.tsx'} or 'data-reactroot' in source or 'className=' in source:
+        return 'react'
+    return 'html'
+
+
+def _apply_framework_fix(
+    html: str, finding: dict[str, Any], framework: str
+) -> tuple[str, dict[str, Any] | None]:
+    rule_id = finding.get('rule_id', '')
+    if rule_id == 'image-alt':
+        if framework == 'react':
+            updated, changed = ensure_react_img_alt(html)
+        elif framework == 'vue':
+            updated, changed = ensure_vue_img_alt(html)
+        elif framework == 'nextjs':
+            updated, changed = ensure_nextjs_image_alt(html)
+        else:
+            return html, None
+        if not changed:
+            return html, None
+        return updated, {
+            'rule_id': finding['rule_id'],
+            'changed_target': finding['changed_target'],
+            'description': f'Applied framework-aware alt remediation for {framework}.',
+        }
+
+    if rule_id == 'html-has-lang' and framework == 'nextjs':
+        updated, changed = ensure_nextjs_layout_lang(html, lang='en')
+        if not changed:
+            return html, None
+        return updated, {
+            'rule_id': finding['rule_id'],
+            'changed_target': finding['changed_target'],
+            'description': 'Added lang="en" on Next.js Html/html layout root.',
+        }
+
+    return html, None
 
 def _fix_input_image_alt(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
     pattern = re.compile(r"<input\b(?=[^>]*\btype\s*=\s*['\"]image['\"])(?![^>]*\balt\s*=)([^>]*?)(/?)>", flags=re.IGNORECASE)
@@ -370,13 +421,13 @@ def _fix_td_has_header(html: str, finding: dict[str, Any]) -> tuple[str, dict[st
 
 def _fix_th_has_data_cells(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
     pattern = re.compile(r'<th\b(?![^>]*\bscope\s*=)([^>]*)>', flags=re.IGNORECASE)
-    updated, count = pattern.subn(r'<th\1 scope="col">', html, count=1)
+    updated, count = pattern.subn(r'<th\1 scope="col">', html)
     if count == 0:
         return html, None
     return updated, {
         'rule_id': finding['rule_id'],
         'changed_target': finding['changed_target'],
-        'description': 'Added scope="col" to a table header cell missing scope.',
+        'description': 'Added scope="col" to table header cells missing scope.',
     }
 
 
@@ -630,12 +681,16 @@ def apply_report_fixes(local_target: Path, report: dict[str, Any]) -> tuple[dict
     applied_changes: list[dict[str, Any]] = []
     fixes_by_finding = {item['finding_id']: item for item in report.get('fixes', [])}
 
+    framework = _detect_framework(local_target, updated)
+
     for finding in report.get('findings', []):
         helper = FIXERS.get(finding.get('rule_id', ''))
         fix_record = fixes_by_finding.get(finding['id'])
         if helper is None or not fix_record or not fix_record.get('auto_fix_supported'):
             continue
-        updated_candidate, change = helper(updated, finding)
+        updated_candidate, change = _apply_framework_fix(updated, finding, framework)
+        if change is None or updated_candidate == updated:
+            updated_candidate, change = helper(updated, finding)
         if change is None or updated_candidate == updated:
             continue
         updated = updated_candidate
@@ -749,6 +804,8 @@ def write_diff(diff_text: str, diff_path: Path) -> None:
 def write_snapshot(report: dict[str, Any], snapshot_path: Path) -> None:
     snapshot_path.parent.mkdir(parents=True, exist_ok=True)
     snapshot_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
+
+
 
 
 
