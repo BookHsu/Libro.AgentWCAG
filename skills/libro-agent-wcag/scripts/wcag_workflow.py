@@ -260,7 +260,7 @@ def _derive_downgrade_reason(
     if manual_review_required:
         return "manual-review-required"
     if execution_mode == "apply-fixes" and not auto_fix_supported:
-        return "auto-fix-not-supported"
+        return "assisted-remediation-required"
     return None
 
 
@@ -269,7 +269,7 @@ def _derive_fix_blockers(
 ) -> list[str]:
     blockers: list[str] = []
     if execution_mode == "apply-fixes" and not auto_fix_supported:
-        blockers.append("no-safe-auto-fix")
+        blockers.append("assisted-remediation-required")
     if manual_review_required:
         blockers.append("manual-verification-required")
     return blockers
@@ -740,3 +740,4 @@ def write_report_files(report: dict[str, Any], json_path: str, markdown_path: st
     markdown_target.parent.mkdir(parents=True, exist_ok=True)
     json_target.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     markdown_target.write_text(to_markdown_table(report), encoding="utf-8")
+

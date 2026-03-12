@@ -105,6 +105,9 @@ class FixtureCorpusCoverageTests(unittest.TestCase):
             'heading-hierarchy.html': ['<h1>Accessibility report</h1>', '<h3>Skipped level heading</h3>', '<h2></h2>'],
             'landmark-region.html': ['<div class="shell">', '<section>', '<aside>'],
             'table-semantics.html': ['<table>', '<td>Order ID</td>', '<td>Status</td>'],
+            'keyboard-tabindex.html': ['tabindex="3"', 'tabindex="5"', 'role="button" tabindex="5"'],
+            'wcag22-focus.html': ['.nav-link:focus', 'outline: none;', 'sticky-banner'],
+            'create-mode-draft.html': ['data-task-mode="create"', 'data-draft="true"', 'requires manual WCAG verification'],
         }
         for fixture_name, required_tokens in expectations.items():
             with self.subTest(fixture=fixture_name):

@@ -25,9 +25,9 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [x] Add assisted remediation flow for `skip-link`
 - [x] Add assisted remediation flow for `tabindex`
 - [x] Add assisted remediation flow for `presentation-role-conflict`
-- [ ] Add assisted remediation flow for `nested-interactive`
+- [x] Add assisted remediation flow for `nested-interactive`
 - [x] Add verification rules for assisted remediation changes
-- [ ] Add downgrade semantics when assisted remediation cannot be safely applied
+- [x] Add downgrade semantics when assisted remediation cannot be safely applied
 
 ## M7 Report And Verification Model
 
@@ -47,9 +47,9 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [x] Add heading hierarchy fixtures
 - [x] Add landmark and region fixtures
 - [x] Add table semantics fixtures
-- [ ] Add keyboard and tabindex fixtures
-- [ ] Add WCAG 2.2 focus-related fixtures
-- [ ] Add `create` mode draft fixtures
+- [x] Add keyboard and tabindex fixtures
+- [x] Add WCAG 2.2 focus-related fixtures
+- [x] Add `create` mode draft fixtures
 - [ ] Add React-specific fixtures
 - [ ] Add Vue-specific fixtures
 - [ ] Add Next.js-specific fixtures

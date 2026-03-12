@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Keyboard And Tabindex Fixture</title>
+</head>
+<body>
+  <header>
+    <a href="#main" class="skip">Skip to content</a>
+  </header>
+  <main id="main">
+    <div class="toolbar">
+      <button tabindex="3">Late focus button</button>
+      <a href="/next" tabindex="2">Early focus link</a>
+      <div role="button" tabindex="5" aria-label="Open panel"></div>
+    </div>
+    <section>
+      <button>Normal focus button</button>
+      <a href="/help">Help</a>
+    </section>
+  </main>
+</body>
+</html>
