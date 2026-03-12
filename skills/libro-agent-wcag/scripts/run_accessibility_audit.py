@@ -51,6 +51,9 @@ FAIL_ON_EXIT_CODES = {"critical": 42, "serious": 43, "moderate": 44}
 FINDING_SORT_MODES = {"severity", "rule", "target"}
 BASELINE_TARGET_NORMALIZATION_MODES = {"none", "host-path", "path-only"}
 BASELINE_SELECTOR_CANONICALIZATION_MODES = {"none", "basic"}
+DEBT_STATE_NEW = "new"
+DEBT_STATE_ACCEPTED = "accepted"
+DEBT_STATE_RETIRED = "retired"
 REPORT_SCHEMA_NAME = "libro-agent-wcag-report"
 REPORT_SCHEMA_VERSION = "1.0.0"
 REPORT_SCHEMA_FILENAME = f"wcag-report-{REPORT_SCHEMA_VERSION}.schema.json"
@@ -877,6 +880,48 @@ def _build_baseline_diff(
     }
 
 
+def _build_debt_transition_summary(baseline_diff: dict[str, Any]) -> dict[str, Any]:
+    introduced_signatures = list(baseline_diff.get('introduced_signatures', []))
+    persistent_signatures = list(baseline_diff.get('persistent_signatures', []))
+    resolved_signatures = list(baseline_diff.get('resolved_signatures', []))
+    return {
+        DEBT_STATE_NEW: {
+            'count': len(introduced_signatures),
+            'signatures': introduced_signatures,
+        },
+        DEBT_STATE_ACCEPTED: {
+            'count': len(persistent_signatures),
+            'signatures': persistent_signatures,
+        },
+        DEBT_STATE_RETIRED: {
+            'count': len(resolved_signatures),
+            'signatures': resolved_signatures,
+        },
+    }
+
+
+def _tag_findings_with_debt_state(
+    report: dict[str, Any],
+    baseline_diff: dict[str, Any],
+    signature_config: dict[str, Any],
+) -> None:
+    findings = report.get('findings')
+    if not isinstance(findings, list):
+        return
+    report_target = str(report.get('target', {}).get('value', '')).strip()
+    introduced = set(baseline_diff.get('introduced_signatures', []))
+    persistent = set(baseline_diff.get('persistent_signatures', []))
+    resolved = set(baseline_diff.get('resolved_signatures', []))
+    for finding in findings:
+        signature = _finding_signature_with_config(finding, signature_config, report_target)
+        if signature in introduced:
+            finding['debt_state'] = DEBT_STATE_NEW
+        elif signature in persistent:
+            finding['debt_state'] = DEBT_STATE_ACCEPTED
+        elif signature in resolved:
+            finding['debt_state'] = DEBT_STATE_RETIRED
+
+
 def _stage_report_schema_artifact(output_dir: Path) -> tuple[dict[str, Any], Path]:
     if not REPORT_SCHEMA_SOURCE_PATH.exists():
         raise FileNotFoundError(f'report schema file is missing: {REPORT_SCHEMA_SOURCE_PATH}')
@@ -1412,10 +1457,14 @@ def main() -> int:
     baseline_diff: dict[str, Any] | None = None
     if baseline_report:
         baseline_diff = _build_baseline_diff(report, baseline_report, baseline_signature_config)
+        debt_transitions = _build_debt_transition_summary(baseline_diff)
+        _tag_findings_with_debt_state(report, baseline_diff, baseline_signature_config)
         report['run_meta']['baseline_diff'] = {
             **baseline_diff,
             'baseline_report_path': args.baseline_report,
+            'debt_transitions': debt_transitions,
         }
+        report.setdefault('summary', {})['debt_transitions'] = debt_transitions
         report['run_meta']['notes'].append(
             (
                 'Baseline diff: introduced='
