@@ -4,10 +4,9 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## Current Execution Order
 
-1. Complete `M15 Broader Real-World Validation` to prove the current workflow on realistic targets, not only synthetic fixtures.
-2. Complete `M16 Apply-Fixes Productization` to align actual rewrite behavior with the product promise in docs.
-3. Complete `M18 Apply-Fixes Safety And Operability` to add safe preflight, dry-run, and rollback behavior.
-4. Start `M19 Scanner Runtime Resilience` after M18 safety controls are in place.
+1. Complete `M20 CI Reporting And Policy Control` to make scanner results first-class in PR and CI workflows.
+2. Backfill release notes and docs examples based on M20 outputs.
+3. Re-run real-scanner validation lanes and verify no regression in `apply-fixes` safety semantics.
 
 ## M5 Safe Auto-Fix Expansion
 
@@ -154,8 +153,16 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [x] Add retry policy hooks for transient scanner failures (configurable attempts with bounded backoff)
 - [x] Add CLI docs for resilient run patterns, including CI examples for `audit-only`, `suggest-only`, and `apply-fixes`
 
+## M20 CI Reporting And Policy Control
+
+- [ ] Add a structured machine-readable export (`--report-format sarif|json`) so CI can annotate pull requests with precise finding locations
+- [ ] Add severity threshold gates (`--fail-on critical|serious|moderate`) that map normalized findings to deterministic process exit codes
+- [ ] Add rule include/ignore controls (`--include-rule`, `--ignore-rule`, optional config file) for project-level policy tuning without code changes
+- [ ] Add baseline diff mode to compare against a committed prior report and fail only on newly introduced accessibility debt
+- [ ] Add CI integration docs and sample workflows for GitHub Actions, including artifact retention and PR annotation examples
 ## Notes
 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
+
