@@ -1,0 +1,51 @@
+name: Installation failure
+description: Report install or doctor flow failures for Libro.AgentWCAG.
+title: "[install] "
+labels:
+  - bug
+  - installation
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Provide complete command output and environment details.
+  - type: input
+    id: agent
+    attributes:
+      label: Agent target
+      description: codex / claude / gemini / copilot
+      placeholder: codex
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: OS, shell, and Python version
+      placeholder: Windows 11 + PowerShell 7 + Python 3.12
+    validations:
+      required: true
+  - type: input
+    id: command
+    attributes:
+      label: Failing command
+      placeholder: python scripts/install-agent.py --agent codex
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Error output
+      description: Paste full stdout/stderr
+    validations:
+      required: true
+  - type: textarea
+    id: destination
+    attributes:
+      label: Destination and flags
+      description: Include --dest and --force usage if any
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional notes
+      description: Permissions, path-length, or wrapper script context
