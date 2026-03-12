@@ -342,6 +342,46 @@ def _resolve_policy_preset(name: str | None) -> dict[str, Any]:
     }
 
 
+def _policy_presets_payload() -> dict[str, Any]:
+    presets: list[dict[str, Any]] = []
+    for name in sorted(POLICY_PRESETS):
+        resolved = _resolve_policy_preset(name)
+        presets.append(
+            {
+                "name": resolved["name"],
+                "description": resolved["description"],
+                "fail_on": resolved["fail_on"],
+                "include_rules": resolved["include_rules"],
+                "ignore_rules": resolved["ignore_rules"],
+            }
+        )
+    return {"presets": presets}
+
+
+def _build_effective_policy(
+    *,
+    report_format: str,
+    fail_on: str | None,
+    include_rules: list[str],
+    ignore_rules: list[str],
+    policy_preset: dict[str, Any],
+    policy_config_path: str | None,
+    fail_on_new_only: bool,
+    baseline_report_path: str | None,
+    baseline_signature_config: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "report_format": report_format,
+        "fail_on": fail_on,
+        "include_rules": include_rules,
+        "ignore_rules": ignore_rules,
+        "preset": policy_preset.get("name"),
+        "policy_config_path": policy_config_path,
+        "fail_on_new_only": fail_on_new_only,
+        "baseline_report_path": baseline_report_path,
+        "baseline_signature": baseline_signature_config,
+    }
+
 def _merge_rule_list(*groups: list[str]) -> list[str]:
     ordered: list[str] = []
     for group in groups:
@@ -545,6 +585,9 @@ def _build_compact_summary(
     scanner_capabilities = summary.get('scanner_capabilities')
     if scanner_capabilities:
         compact['scanner_capabilities'] = scanner_capabilities
+    effective_policy = report.get('run_meta', {}).get('policy_effective')
+    if effective_policy:
+        compact['policy_effective'] = effective_policy
     return compact
 
 def _apply_rule_policy(
@@ -816,7 +859,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--wcag-version", default="2.1", choices=["2.0", "2.1", "2.2"])
     parser.add_argument("--conformance-level", default="AA", choices=["A", "AA", "AAA"])
-    parser.add_argument("--target", required=True)
+    parser.add_argument("--target")
     parser.add_argument("--output-language", default="zh-TW")
     parser.add_argument("--output-dir", default="out")
     parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT_SECONDS)
@@ -853,6 +896,16 @@ def parse_args() -> argparse.Namespace:
         choices=sorted(POLICY_PRESETS),
         default=None,
         help="Optional policy preset (strict|balanced|legacy) for deterministic fail-on and rule filters.",
+    )
+    parser.add_argument(
+        "--list-policy-presets",
+        action="store_true",
+        help="Print available policy presets and exit.",
+    )
+    parser.add_argument(
+        "--explain-policy",
+        action="store_true",
+        help="Include effective merged policy settings in run metadata and summary output.",
     )
     parser.add_argument(
         "--baseline-report",
@@ -924,6 +977,12 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    if args.list_policy_presets:
+        print(json.dumps(_policy_presets_payload(), ensure_ascii=False, indent=2))
+        return 0
+    if not args.target and not args.preflight_only:
+        raise ValueError('--target is required unless --list-policy-presets is used')
+
     policy_config = _load_policy_config(args.policy_config)
     baseline_report = _load_baseline_report(args.baseline_report)
     policy_preset = _resolve_policy_preset(args.policy_preset)
@@ -980,6 +1039,17 @@ def main() -> int:
     output_dir.mkdir(parents=True, exist_ok=True)
     schema_metadata, staged_schema_path = _stage_report_schema_artifact(output_dir)
     baseline_signature_config = _build_baseline_signature_config(args)
+    effective_policy = _build_effective_policy(
+        report_format=report_format,
+        fail_on=fail_on,
+        include_rules=include_rules,
+        ignore_rules=ignore_rules,
+        policy_preset=policy_preset,
+        policy_config_path=args.policy_config,
+        fail_on_new_only=bool(args.fail_on_new_only),
+        baseline_report_path=args.baseline_report,
+        baseline_signature_config=baseline_signature_config,
+    )
 
     contract = resolve_contract(
         {
@@ -1074,6 +1144,15 @@ def main() -> int:
     }
     if policy_preset:
         report['run_meta']['policy_preset'] = policy_preset
+    if args.explain_policy:
+        report['run_meta']['policy_effective'] = effective_policy
+        report.setdefault('summary', {})['policy_effective'] = {
+            'report_format': effective_policy['report_format'],
+            'fail_on': effective_policy['fail_on'],
+            'preset': effective_policy['preset'],
+            'include_rule_count': len(effective_policy['include_rules']),
+            'ignore_rule_count': len(effective_policy['ignore_rules']),
+        }
     if scanner_retry_runs:
         report['run_meta']['scanner_retries'] = scanner_retry_runs
         retried_tools = [item['tool'] for item in scanner_retry_runs if item.get('retry_count', 0) > 0]
@@ -1258,3 +1337,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
