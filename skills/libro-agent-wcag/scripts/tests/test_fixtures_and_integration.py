@@ -31,7 +31,7 @@ class FixtureAndSnapshotTests(unittest.TestCase):
         contract = resolve_contract({'target': 'fixtures/missing-alt.html', 'output_language': 'en'})
         axe_data = {
             'violations': [
-                {'id': 'image-alt', 'impact': 'serious', 'description': 'Images must have alternate text', 'nodes': [{'target': ['img.hero']}]}
+                {'id': 'image-alt', 'impact': 'serious', 'description': 'Images must have alternate text', 'nodes': [{'target': ['img.hero']}]} 
             ]
         }
         lighthouse_data = {
@@ -115,44 +115,136 @@ class FixtureCorpusCoverageTests(unittest.TestCase):
                 for token in required_tokens:
                     self.assertIn(token, body)
 
+
+class RealScannerSnapshotContractTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.snapshot_path = Path(__file__).parent / 'snapshots' / 'real-scanner-regression.snapshot.json'
+        cls.fixture_root = Path(__file__).parent / 'fixtures'
+
+    def test_real_scanner_regression_snapshot_is_present_and_references_existing_fixtures(self) -> None:
+        snapshot = json.loads(self.snapshot_path.read_text(encoding='utf-8'))
+        self.assertIn('integration_matrix', snapshot)
+        self.assertIn('wcag_version_baseline', snapshot)
+        self.assertIn('apply_fixes_regression', snapshot)
+
+        matrix = snapshot['integration_matrix']
+        self.assertGreaterEqual(len(matrix), 4)
+        for entry in matrix:
+            self.assertTrue((self.fixture_root / entry['fixture']).exists())
+            self.assertIsInstance(entry['expected_rules'], list)
+            self.assertTrue(entry['expected_rules'])
+
+        version_baseline = snapshot['wcag_version_baseline']
+        self.assertTrue((self.fixture_root / version_baseline['fixture']).exists())
+        self.assertIn(version_baseline['rule_id'], {'image-alt', 'label', 'link-name'})
+        self.assertEqual(version_baseline['versions'], ['2.0', '2.1', '2.2'])
+
+        apply_fixes = snapshot['apply_fixes_regression']
+        self.assertTrue((self.fixture_root / apply_fixes['fixture']).exists())
+        self.assertIsInstance(apply_fixes['fixable_rules'], list)
+        self.assertGreaterEqual(len(apply_fixes['fixable_rules']), 3)
+
+
 @unittest.skipUnless(os.environ.get('LIBRO_RUN_REAL_SCANNERS') == '1' and shutil.which('npx'), 'real scanner integration disabled')
 class RealScannerIntegrationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.repo_root = Path(__file__).resolve().parents[4]
         cls.fixture_root = cls.repo_root / 'skills' / 'libro-agent-wcag' / 'scripts' / 'tests' / 'fixtures'
+        snapshot_path = (
+            cls.repo_root
+            / 'skills'
+            / 'libro-agent-wcag'
+            / 'scripts'
+            / 'tests'
+            / 'snapshots'
+            / 'real-scanner-regression.snapshot.json'
+        )
+        cls.snapshot = json.loads(snapshot_path.read_text(encoding='utf-8'))
+
+    def _run_audit(
+        self,
+        fixture_name: str,
+        tmp_dir: str,
+        *,
+        wcag_version: str = '2.1',
+        execution_mode: str = 'suggest-only',
+    ) -> tuple[dict, Path]:
+        source_fixture = self.fixture_root / fixture_name
+        if execution_mode == 'apply-fixes':
+            target_path = Path(tmp_dir) / fixture_name
+            target_path.write_text(source_fixture.read_text(encoding='utf-8'), encoding='utf-8')
+        else:
+            target_path = source_fixture
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(target_path),
+                '--output-dir',
+                tmp_dir,
+                '--output-language',
+                'en',
+                '--execution-mode',
+                execution_mode,
+                '--wcag-version',
+                wcag_version,
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        return json.loads((Path(tmp_dir) / 'wcag-report.json').read_text(encoding='utf-8')), target_path
 
     def test_run_accessibility_audit_executes_real_scanners_on_fixture_matrix(self) -> None:
-        matrix = [
-            ('missing-alt.html', {'image-alt'}),
-            ('empty-link-viewport.html', {'link-name', 'meta-viewport'}),
-        ]
-        for fixture_name, expected_rules in matrix:
+        for item in self.snapshot['integration_matrix']:
+            fixture_name = item['fixture']
+            expected_rules = set(item['expected_rules'])
             with self.subTest(fixture=fixture_name), tempfile.TemporaryDirectory() as tmp:
-                fixture = self.fixture_root / fixture_name
-                completed = subprocess.run(
-                    [
-                        sys.executable,
-                        'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
-                        '--target',
-                        str(fixture),
-                        '--output-dir',
-                        tmp,
-                        '--output-language',
-                        'en',
-                    ],
-                    cwd=self.repo_root,
-                    capture_output=True,
-                    text=True,
-                    check=False,
-                )
-                self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
-                report = json.loads((Path(tmp) / 'wcag-report.json').read_text(encoding='utf-8'))
-                rules = {item['rule_id'] for item in report['findings']}
+                report, _ = self._run_audit(fixture_name, tmp)
+                rules = {entry['rule_id'] for entry in report['findings']}
                 self.assertTrue(expected_rules & rules)
                 self.assertTrue((Path(tmp) / 'wcag-report.md').exists())
+
+    def test_wcag_version_specific_real_scanner_baselines_keep_selected_version_in_citations(self) -> None:
+        baseline = self.snapshot['wcag_version_baseline']
+        fixture_name = baseline['fixture']
+        rule_id = baseline['rule_id']
+        for version in baseline['versions']:
+            with self.subTest(wcag_version=version), tempfile.TemporaryDirectory() as tmp:
+                report, _ = self._run_audit(fixture_name, tmp, wcag_version=version)
+                findings = [entry for entry in report['findings'] if entry['rule_id'] == rule_id]
+                self.assertTrue(findings)
+                expected_token = f'/WCAG{version.replace(".", "")}/'
+                urls = [citation['url'] for citation in findings[0].get('citations', [])]
+                self.assertTrue(any(expected_token in url for url in urls))
+
+    def test_apply_fixes_before_after_real_scanner_comparison_reduces_fixable_rule_coverage(self) -> None:
+        baseline = self.snapshot['apply_fixes_regression']
+        fixture_name = baseline['fixture']
+        fixable_rules = set(baseline['fixable_rules'])
+        with (
+            tempfile.TemporaryDirectory() as before_tmp,
+            tempfile.TemporaryDirectory() as apply_tmp,
+            tempfile.TemporaryDirectory() as after_tmp,
+        ):
+            before_report, _ = self._run_audit(fixture_name, before_tmp, execution_mode='suggest-only')
+            apply_report, applied_target = self._run_audit(fixture_name, apply_tmp, execution_mode='apply-fixes')
+            after_report, _ = self._run_audit(str(applied_target), after_tmp, execution_mode='suggest-only')
+
+            before_rules = {entry['rule_id'] for entry in before_report['findings']} & fixable_rules
+            after_rules = {entry['rule_id'] for entry in after_report['findings']} & fixable_rules
+
+            self.assertTrue(before_rules)
+            self.assertLess(len(after_rules), len(before_rules))
+            self.assertTrue(apply_report['run_meta']['files_modified'])
+            self.assertTrue((Path(apply_tmp) / 'wcag-fixes.diff').exists())
+            self.assertTrue((Path(apply_tmp) / 'wcag-fixed-report.snapshot.json').exists())
 
 
 if __name__ == '__main__':
     unittest.main()
-

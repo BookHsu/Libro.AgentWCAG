@@ -1,0 +1,29 @@
+{
+  "integration_matrix": [
+    {
+      "fixture": "missing-alt.html",
+      "expected_rules": ["image-alt"]
+    },
+    {
+      "fixture": "empty-link-viewport.html",
+      "expected_rules": ["link-name", "meta-viewport"]
+    },
+    {
+      "fixture": "form-errors.html",
+      "expected_rules": ["label", "button-name"]
+    },
+    {
+      "fixture": "keyboard-tabindex.html",
+      "expected_rules": ["tabindex"]
+    }
+  ],
+  "wcag_version_baseline": {
+    "fixture": "missing-alt.html",
+    "rule_id": "image-alt",
+    "versions": ["2.0", "2.1", "2.2"]
+  },
+  "apply_fixes_regression": {
+    "fixture": "list-table-fixes.html",
+    "fixable_rules": ["list", "listitem", "table-fake-caption", "td-has-header", "th-has-data-cells"]
+  }
+}
