@@ -130,10 +130,10 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M17 Release Packaging Extras
 
-- [ ] Add a minimal demo package or walkthrough that can be used to verify the skill outside the test suite
-- [ ] Add reusable templates for common audit prompts or adapter invocation flows
-- [ ] Add issue templates or troubleshooting intake docs for installation failures and remediation mismatches
-- [ ] Decide whether release packaging extras belong inside this repo or in a companion examples repo
+- [x] Add a minimal demo package or walkthrough that can be used to verify the skill outside the test suite
+- [x] Add reusable templates for common audit prompts or adapter invocation flows
+- [x] Add issue templates or troubleshooting intake docs for installation failures and remediation mismatches
+- [x] Decide whether release packaging extras belong inside this repo or in a companion examples repo
 
 ## M18 Apply-Fixes Safety And Operability
 
@@ -147,4 +147,4 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
-- Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.`r`n
+- Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
