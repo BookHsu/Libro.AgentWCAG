@@ -4,8 +4,8 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M5 Safe Auto-Fix Expansion
 
-- [ ] Add safe auto-fix support for `aria-valid-attr-value`
-- [ ] Add safe auto-fix support for `aria-required-attr`
+- [x] Add safe auto-fix support for `aria-valid-attr-value`
+- [x] Add safe auto-fix support for `aria-required-attr`
 - [x] Add safe auto-fix support for `aria-toggle-field-name`
 - [x] Add safe auto-fix support for `aria-tooltip-name`
 - [x] Add safe auto-fix support for `aria-progressbar-name`
@@ -14,8 +14,8 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [ ] Add safe auto-fix support for `list`
 - [ ] Add safe auto-fix support for `listitem`
 - [ ] Add safe auto-fix support for `table-fake-caption`
-- [ ] Add safe auto-fix support for `td-has-header`
-- [ ] Add safe auto-fix support for `th-has-data-cells`
+- [x] Add safe auto-fix support for `td-has-header`
+- [x] Add safe auto-fix support for `th-has-data-cells`
 
 ## M6 Assisted Remediation
 
@@ -31,11 +31,11 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M7 Report And Verification Model
 
-- [ ] Add `auto_fixed_count` to report summary
-- [ ] Add `manual_required_count` to report summary
-- [ ] Add `verification_evidence` fields to fixes or run metadata
-- [ ] Add `before_after_targets` evidence for modified findings
-- [ ] Add `rule_family` classification to findings and fixes
+- [x] Add `auto_fixed_count` to report summary
+- [x] Add `manual_required_count` to report summary
+- [x] Add `verification_evidence` fields to fixes or run metadata
+- [x] Add `before_after_targets` evidence for modified findings
+- [x] Add `rule_family` classification to findings and fixes
 - [x] Add `risk_level` classification to findings and fixes
 - [x] Add `downgrade_reason` reporting when fixes fall back to suggest-only or manual review
 - [x] Add `fix_blockers` reporting for unsupported remediation cases
@@ -93,3 +93,5 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
+
+

@@ -187,6 +187,199 @@ def _fix_aria_meter_name(html: str, finding: dict[str, Any]) -> tuple[str, dict[
     return _fix_role_name(html, finding, 'meter', 'Meter')
 
 
+def _inject_attribute(tag: str, attribute: str, value: str) -> tuple[str, bool]:
+    if re.search(rf'\b{re.escape(attribute)}\s*=', tag, flags=re.IGNORECASE):
+        return tag, False
+    if tag.endswith('/>'):
+        return f'{tag[:-2]} {attribute}="{value}"/>', True
+    return f'{tag[:-1]} {attribute}="{value}">', True
+
+
+ROLE_REQUIRED_ATTRIBUTES: dict[str, list[tuple[str, str]]] = {
+    'checkbox': [('aria-checked', 'false')],
+    'radio': [('aria-checked', 'false')],
+    'switch': [('aria-checked', 'false')],
+    'combobox': [('aria-expanded', 'false')],
+    'slider': [('aria-valuemin', '0'), ('aria-valuemax', '100'), ('aria-valuenow', '0')],
+    'spinbutton': [('aria-valuemin', '0'), ('aria-valuemax', '100'), ('aria-valuenow', '0')],
+    'progressbar': [('aria-valuemin', '0'), ('aria-valuemax', '100'), ('aria-valuenow', '0')],
+}
+
+
+def _fix_aria_required_attr(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    pattern = re.compile(
+        r'<([a-z0-9:-]+)\b([^>]*)\brole\s*=\s*["\']([^"\']+)["\']([^>]*)>',
+        flags=re.IGNORECASE,
+    )
+    for match in pattern.finditer(html):
+        role = match.group(3).strip().lower()
+        required = ROLE_REQUIRED_ATTRIBUTES.get(role)
+        if not required:
+            continue
+        tag = match.group(0)
+        for attribute, default in required:
+            if re.search(rf'\b{re.escape(attribute)}\s*=', tag, flags=re.IGNORECASE):
+                continue
+            replacement, changed = _inject_attribute(tag, attribute, default)
+            if not changed:
+                continue
+            updated = html[: match.start()] + replacement + html[match.end() :]
+            return updated, {
+                'rule_id': finding['rule_id'],
+                'changed_target': finding['changed_target'],
+                'description': f'Added required ARIA attribute {attribute}="{default}" for role "{role}".',
+            }
+    return html, None
+
+
+ARIA_BOOLEAN_ATTRIBUTES = {
+    'aria-checked',
+    'aria-expanded',
+    'aria-hidden',
+    'aria-pressed',
+    'aria-required',
+    'aria-selected',
+}
+
+ARIA_TRUTHY = {'true', '1', 'yes', 'on'}
+ARIA_FALSY = {'false', '0', 'no', 'off'}
+
+
+def _normalize_aria_value(attribute: str, value: str) -> str | None:
+    normalized = value.strip().lower()
+    if attribute in ARIA_BOOLEAN_ATTRIBUTES:
+        if normalized in ARIA_TRUTHY:
+            return 'true'
+        if normalized in ARIA_FALSY:
+            return 'false'
+        return 'false'
+    if attribute == 'aria-invalid':
+        if normalized in {'grammar', 'spelling', 'true', 'false'}:
+            return normalized
+        if normalized in ARIA_TRUTHY:
+            return 'true'
+        if normalized in ARIA_FALSY:
+            return 'false'
+        return 'false'
+    if attribute == 'aria-current':
+        if normalized in {'false', 'true', 'page', 'step', 'location', 'date', 'time'}:
+            return normalized
+        if normalized in ARIA_TRUTHY:
+            return 'true'
+        if normalized in ARIA_FALSY:
+            return 'false'
+        return 'false'
+    if attribute == 'aria-sort':
+        if normalized in {'none', 'ascending', 'descending', 'other'}:
+            return normalized
+        return 'none'
+    return None
+
+
+def _fix_aria_valid_attr_value(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    supported = sorted(ARIA_BOOLEAN_ATTRIBUTES | {'aria-invalid', 'aria-current', 'aria-sort'})
+    pattern = re.compile(
+        rf'(\b({"|".join(supported)})\s*=\s*["\'])([^"\']+)(["\'])',
+        flags=re.IGNORECASE,
+    )
+    for match in pattern.finditer(html):
+        attribute = match.group(2).lower()
+        current = match.group(3)
+        normalized = _normalize_aria_value(attribute, current)
+        if normalized is None or normalized == current.strip().lower():
+            continue
+        replacement = f'{match.group(1)}{normalized}{match.group(4)}'
+        updated = html[: match.start()] + replacement + html[match.end() :]
+        return updated, {
+            'rule_id': finding['rule_id'],
+            'changed_target': finding['changed_target'],
+            'description': f'Normalized invalid {attribute} value to "{normalized}".',
+        }
+    return html, None
+
+
+def _fix_td_has_header(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    table_pattern = re.compile(r'<table\b[^>]*>.*?</table>', flags=re.IGNORECASE | re.DOTALL)
+    row_pattern = re.compile(r'<tr\b[^>]*>.*?</tr>', flags=re.IGNORECASE | re.DOTALL)
+    th_pattern = re.compile(r'<th\b([^>]*)>', flags=re.IGNORECASE)
+    td_pattern = re.compile(r'<td\b([^>]*)>', flags=re.IGNORECASE)
+
+    for table_match in table_pattern.finditer(html):
+        table_html = table_match.group(0)
+        if '<th' not in table_html.lower() or '<td' not in table_html.lower():
+            continue
+        rows = list(row_pattern.finditer(table_html))
+        header_row_index = next((idx for idx, row in enumerate(rows) if '<th' in row.group(0).lower()), None)
+        if header_row_index is None:
+            continue
+        header_row = rows[header_row_index].group(0)
+        header_ids: list[str] = []
+        header_count = 0
+
+        def replace_th(match: re.Match[str]) -> str:
+            nonlocal header_count
+            attrs = match.group(1)
+            id_match = re.search(r'\bid\s*=\s*["\']([^"\']+)["\']', attrs, flags=re.IGNORECASE)
+            if id_match:
+                header_ids.append(id_match.group(1))
+                return match.group(0)
+            header_count += 1
+            header_id = f'col-{header_count}'
+            header_ids.append(header_id)
+            return f'<th{attrs} id="{header_id}">'
+
+        updated_header_row = th_pattern.sub(replace_th, header_row)
+        updated_table = table_html.replace(header_row, updated_header_row, 1)
+        if not header_ids:
+            continue
+
+        changed_td = False
+        updated_rows: list[str] = []
+        for idx, row in enumerate(row_pattern.finditer(updated_table)):
+            row_html = row.group(0)
+            if idx <= header_row_index or '<td' not in row_html.lower():
+                updated_rows.append(row_html)
+                continue
+
+            cell_index = 0
+
+            def replace_td(match: re.Match[str]) -> str:
+                nonlocal cell_index, changed_td
+                attrs = match.group(1)
+                if re.search(r'\bheaders\s*=', attrs, flags=re.IGNORECASE):
+                    cell_index += 1
+                    return match.group(0)
+                header_id = header_ids[min(cell_index, len(header_ids) - 1)]
+                cell_index += 1
+                changed_td = True
+                return f'<td{attrs} headers="{header_id}">'
+
+            updated_rows.append(td_pattern.sub(replace_td, row_html))
+
+        if not changed_td:
+            continue
+        rebuilt_table = row_pattern.sub(lambda _: updated_rows.pop(0), updated_table)
+        updated_html = html[: table_match.start()] + rebuilt_table + html[table_match.end() :]
+        return updated_html, {
+            'rule_id': finding['rule_id'],
+            'changed_target': finding['changed_target'],
+            'description': 'Added table header ids and linked data cells with headers attributes.',
+        }
+    return html, None
+
+
+def _fix_th_has_data_cells(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+    pattern = re.compile(r'<th\b(?![^>]*\bscope\s*=)([^>]*)>', flags=re.IGNORECASE)
+    updated, count = pattern.subn(r'<th\1 scope="col">', html, count=1)
+    if count == 0:
+        return html, None
+    return updated, {
+        'rule_id': finding['rule_id'],
+        'changed_target': finding['changed_target'],
+        'description': 'Added scope="col" to a table header cell missing scope.',
+    }
+
+
 def _fix_document_title(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
     title_match = re.search(r'<title\b[^>]*>(.*?)</title>', html, flags=re.IGNORECASE | re.DOTALL)
     replacement_text = 'Document'
@@ -350,6 +543,8 @@ FIXERS: dict[str, Callable[[str, dict[str, Any]], tuple[str, dict[str, Any] | No
     'aria-tooltip-name': _fix_aria_tooltip_name,
     'aria-progressbar-name': _fix_aria_progressbar_name,
     'aria-meter-name': _fix_aria_meter_name,
+    'aria-required-attr': _fix_aria_required_attr,
+    'aria-valid-attr-value': _fix_aria_valid_attr_value,
     'link-name': _fix_link_name,
     'label': _fix_label,
     'select-name': _fix_label,
@@ -358,6 +553,8 @@ FIXERS: dict[str, Callable[[str, dict[str, Any]], tuple[str, dict[str, Any] | No
     'html-xml-lang-mismatch': _fix_html_xml_lang_mismatch,
     'valid-lang': _fix_valid_lang,
     'document-title': _fix_document_title,
+    'td-has-header': _fix_td_has_header,
+    'th-has-data-cells': _fix_th_has_data_cells,
 }
 
 
@@ -377,14 +574,28 @@ def apply_report_fixes(local_target: Path, report: dict[str, Any]) -> tuple[dict
             continue
         updated = updated_candidate
         applied_changes.append(change)
+        before_after = {
+            'target': finding['changed_target'],
+            'before_status': 'open',
+            'after_status': 'fixed',
+        }
+        evidence = {
+            'type': 'diff-generated',
+            'status': 'implemented',
+            'target': finding['changed_target'],
+        }
         finding['status'] = 'fixed'
         finding['manual_review_required'] = False
         finding['verification_status'] = 'diff-generated'
         finding['downgrade_reason'] = None
+        finding['before_after_targets'] = [before_after]
         fix_record['status'] = 'implemented'
         fix_record['verification_status'] = 'diff-generated'
         fix_record['downgrade_reason'] = None
         fix_record['fix_blockers'] = []
+        fix_record['before_after_targets'] = [before_after]
+        fix_record.setdefault('verification_evidence', [])
+        fix_record['verification_evidence'].append(evidence)
 
     if updated == original:
         report['run_meta']['notes'].append('No safe auto-fix changes were applied by the core workflow.')
@@ -404,11 +615,24 @@ def apply_report_fixes(local_target: Path, report: dict[str, Any]) -> tuple[dict
     report['run_meta'].setdefault('diff_artifacts', []).append({'path': str(local_target), 'type': 'modified-file'})
     report['run_meta']['notes'].append(f'Applied {len(applied_changes)} safe auto-fix change(s) to the local target.')
     report['summary']['fixed_findings'] = sum(1 for item in report['findings'] if item['status'] == 'fixed')
+    report['summary']['auto_fixed_count'] = report['summary']['fixed_findings']
     report['summary']['needs_manual_review'] = sum(
         1 for item in report['findings'] if item.get('manual_review_required')
     )
+    report['summary']['manual_required_count'] = report['summary']['needs_manual_review']
     report['summary'].setdefault('diff_summary', [])
     report['summary']['diff_summary'].extend(applied_changes)
+    report['summary'].setdefault('before_after_targets', [])
+    report['summary']['before_after_targets'].extend(
+        {
+            'finding_id': finding['id'],
+            'target': finding['changed_target'],
+            'before_status': 'open',
+            'after_status': finding['status'],
+        }
+        for finding in report['findings']
+        if finding['status'] == 'fixed'
+    )
     report['summary']['fix_blockers'] = [
         item
         for item in report['summary'].get('fix_blockers', [])
@@ -434,6 +658,18 @@ def apply_report_fixes(local_target: Path, report: dict[str, Any]) -> tuple[dict
         for index, change in enumerate(applied_changes)
     )
     report['run_meta']['applied_changes'] = applied_changes
+    report['run_meta'].setdefault('verification_evidence', [])
+    report['run_meta']['verification_evidence'].extend(
+        {
+            'finding_id': fix['finding_id'],
+            'fix_id': fix['id'],
+            'type': 'diff-generated',
+            'status': fix['verification_status'],
+            'target': fix['changed_target'],
+        }
+        for fix in report['fixes']
+        if fix.get('status') == 'implemented'
+    )
     return report, diff
 
 

@@ -241,6 +241,71 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("change_summary", report["summary"])
 
 
+    def test_rule_family_and_summary_counts_are_populated(self) -> None:
+        contract = resolve_contract({'target': 'https://example.com'})
+        axe_data = {
+            'violations': [
+                {
+                    'id': 'aria-valid-attr-value',
+                    'impact': 'serious',
+                    'description': 'Invalid aria attribute value',
+                    'nodes': [{'target': ['div[role="button"]']}],
+                }
+            ]
+        }
+        report = normalize_report(contract, axe_data, {'audits': {}}, None, None)
+        finding = report['findings'][0]
+        fix = report['fixes'][0]
+        self.assertEqual(finding['rule_family'], 'aria')
+        self.assertEqual(fix['rule_family'], 'aria')
+        self.assertEqual(report['summary']['auto_fixed_count'], 0)
+        self.assertEqual(report['summary']['manual_required_count'], 0)
+
+
+    def test_new_m5_rules_are_marked_auto_fix_supported(self) -> None:
+        contract = resolve_contract({'target': 'https://example.com', 'execution_mode': 'apply-fixes'})
+        axe_data = {
+            'violations': [
+                {
+                    'id': 'aria-required-attr',
+                    'impact': 'serious',
+                    'description': 'missing required aria attrs',
+                    'nodes': [{'target': ['.acceptance']}],
+                },
+                {
+                    'id': 'aria-valid-attr-value',
+                    'impact': 'moderate',
+                    'description': 'invalid aria attr values',
+                    'nodes': [{'target': ['.status']}],
+                },
+                {
+                    'id': 'td-has-header',
+                    'impact': 'moderate',
+                    'description': 'td needs headers',
+                    'nodes': [{'target': ['table td']}],
+                },
+            ]
+        }
+        lighthouse_data = {
+            'audits': {
+                'th-has-data-cells': {
+                    'score': 0,
+                    'scoreDisplayMode': 'binary',
+                    'title': 'th should map to data cells',
+                    'details': {'items': [{'node': {'selector': 'table th'}}]},
+                }
+            }
+        }
+        report = normalize_report(contract, axe_data, lighthouse_data, None, None)
+        finding_to_rule = {item['id']: item['rule_id'] for item in report['findings']}
+        by_rule = {finding_to_rule[item['finding_id']]: item for item in report['fixes']}
+        self.assertTrue(by_rule['aria-required-attr']['auto_fix_supported'])
+        self.assertTrue(by_rule['aria-valid-attr-value']['auto_fix_supported'])
+        self.assertTrue(by_rule['td-has-header']['auto_fix_supported'])
+        self.assertTrue(by_rule['th-has-data-cells']['auto_fix_supported'])
+        self.assertEqual(by_rule['td-has-header']['fixability'], 'auto-fix')
+        self.assertEqual(by_rule['th-has-data-cells']['fixability'], 'auto-fix')
+
     def test_report_contract_includes_fixability_verification_and_diff_fields(self) -> None:
         contract = resolve_contract({"target": "https://example.com"})
         axe_data = {
@@ -265,11 +330,20 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("remediation_lifecycle", report["summary"])
         self.assertIn("diff_artifacts", report["run_meta"])
         self.assertIn("risk_level", finding)
+        self.assertIn("rule_family", finding)
         self.assertIn("downgrade_reason", finding)
+        self.assertIn("before_after_targets", finding)
         self.assertIn("risk_level", fix)
+        self.assertIn("rule_family", fix)
         self.assertIn("downgrade_reason", fix)
         self.assertIn("fix_blockers", fix)
+        self.assertIn("verification_evidence", fix)
+        self.assertIn("before_after_targets", fix)
         self.assertIn("fix_blockers", report["summary"])
+        self.assertIn("auto_fixed_count", report["summary"])
+        self.assertIn("manual_required_count", report["summary"])
+        self.assertIn("before_after_targets", report["summary"])
+        self.assertIn("verification_evidence", report["run_meta"])
 
     def test_manual_review_items_are_flagged_in_contract(self) -> None:
         contract = resolve_contract({"target": "https://example.com", "wcag_version": "2.2"})
