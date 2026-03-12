@@ -27,3 +27,26 @@ python .\scripts\doctor-agent.py --agent gemini
 
 - Confirm tool statuses use `ok`, `skipped`, or `error`.
 - Confirm WCAG 2.2 manual-review findings remain visible when needed.
+
+## First-Run Output Example
+
+```markdown
+### Summary
+- Mode: audit-only
+- Findings: 4
+- Manual review required: true
+```
+
+```json
+{
+  "summary": {
+    "total_findings": 4,
+    "manual_required_count": 2,
+    "remediation_lifecycle": {
+      "implemented": 0,
+      "planned": 2,
+      "manual_review_required": 2
+    }
+  }
+}
+```
