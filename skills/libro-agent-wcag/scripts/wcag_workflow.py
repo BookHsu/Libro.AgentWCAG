@@ -495,6 +495,26 @@ def _manual_review_findings_for_wcag_22(contract: Contract, existing_sc: set[str
     return findings
 
 
+def _classify_scanner_error(error_message: str | None) -> str:
+    text = (error_message or "").lower()
+    if "timed out" in text:
+        return "timeout"
+    if "not available in path" in text or "command not found" in text:
+        return "missing-tool"
+    if any(
+        token in text
+        for token in (
+            "unsupported target scheme",
+            "unsupported file target host",
+            "target must be an existing local file or a valid url",
+            "target file does not exist",
+            "invalid url",
+        )
+    ):
+        return "bad-target"
+    return "runtime-error"
+
+
 def normalize_report(
     contract: Contract,
     axe_data: dict[str, Any] | None,
@@ -515,12 +535,29 @@ def normalize_report(
         ),
     }
 
+    scanner_failures: list[dict[str, str]] = []
     if tools["axe"] == "error":
-        notes.append(f"axe failed: {axe_error or 'unknown error'}")
+        message = axe_error or "unknown error"
+        notes.append(f"axe failed: {message}")
         findings.append(_manual_fallback_finding("axe"))
+        scanner_failures.append(
+            {
+                "tool": "axe",
+                "classification": _classify_scanner_error(message),
+                "message": message,
+            }
+        )
     if tools["lighthouse"] == "error":
-        notes.append(f"lighthouse failed: {lighthouse_error or 'unknown error'}")
+        message = lighthouse_error or "unknown error"
+        notes.append(f"lighthouse failed: {message}")
         findings.append(_manual_fallback_finding("lighthouse"))
+        scanner_failures.append(
+            {
+                "tool": "lighthouse",
+                "classification": _classify_scanner_error(message),
+                "message": message,
+            }
+        )
 
     deduped_findings = _dedupe_findings(findings)
     known_sc = {sc for finding in deduped_findings for sc in finding.get("sc", [])}
@@ -652,20 +689,26 @@ def normalize_report(
         },
         "fix_blockers": fix_blockers_summary,
     }
+    if scanner_failures:
+        summary["scanner_failures"] = scanner_failures
+
+    run_meta = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "workflow_version": WORKFLOW_VERSION,
+        "execution_mode": contract.execution_mode,
+        "output_language": contract.output_language,
+        "files_modified": False,
+        "modification_owner": "agent-or-adapter",
+        "diff_artifacts": [],
+        "verification_evidence": [],
+        "tools": tools,
+        "notes": notes,
+    }
+    if scanner_failures:
+        run_meta["scanner_failures"] = scanner_failures
 
     return {
-        "run_meta": {
-            "generated_at": datetime.now(timezone.utc).isoformat(),
-            "workflow_version": WORKFLOW_VERSION,
-            "execution_mode": contract.execution_mode,
-            "output_language": contract.output_language,
-            "files_modified": False,
-            "modification_owner": "agent-or-adapter",
-            "diff_artifacts": [],
-            "verification_evidence": [],
-            "tools": tools,
-            "notes": notes,
-        },
+        "run_meta": run_meta,
         "target": {
             "value": contract.target,
             "task_mode": contract.task_mode,

@@ -148,9 +148,9 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M19 Scanner Runtime Resilience
 
-- [ ] Add scanner preflight diagnostics output (`tools`, `versions`, `resolved command`) to `run_meta` for easier environment debugging
-- [ ] Add explicit error classification for scanner failures (`timeout`, `missing-tool`, `bad-target`, `runtime-error`) and expose them in report summary
-- [ ] Add partial-success contract tests to ensure single-scanner results stay actionable when `axe` or `lighthouse` individually fail
+- [x] Add scanner preflight diagnostics output (`tools`, `versions`, `resolved command`) to `run_meta` for easier environment debugging
+- [x] Add explicit error classification for scanner failures (`timeout`, `missing-tool`, `bad-target`, `runtime-error`) and expose them in report summary
+- [x] Add partial-success contract tests to ensure single-scanner results stay actionable when `axe` or `lighthouse` individually fail
 - [ ] Add retry policy hooks for transient scanner failures (configurable attempts with bounded backoff)
 - [ ] Add CLI docs for resilient run patterns, including CI examples for `audit-only`, `suggest-only`, and `apply-fixes`
 
