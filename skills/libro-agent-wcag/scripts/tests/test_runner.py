@@ -102,6 +102,25 @@ class RunnerTests(unittest.TestCase):
         self.assertTrue(args.dry_run)
         self.assertTrue(args.preflight_only)
 
+    def test_cli_accepts_baseline_diff_flags(self) -> None:
+        original = sys.argv
+        sys.argv = [
+            "run_accessibility_audit.py",
+            "--target",
+            "https://example.com",
+            "--fail-on",
+            "serious",
+            "--baseline-report",
+            "baseline.json",
+            "--fail-on-new-only",
+        ]
+        try:
+            args = parse_args()
+        finally:
+            sys.argv = original
+        self.assertEqual(args.baseline_report, "baseline.json")
+        self.assertTrue(args.fail_on_new_only)
+
     @patch("run_accessibility_audit.subprocess.run")
     def test_run_command_returns_stdout_on_success(self, mock_run) -> None:
         mock_run.return_value = type("Result", (), {"returncode": 0, "stdout": "ok", "stderr": ""})()
@@ -291,6 +310,26 @@ class RunnerPolicyTests(unittest.TestCase):
         sarif = runner._report_to_sarif(report, 'https://example.com', None)
         self.assertEqual(sarif['runs'][0]['results'][0]['ruleId'], 'image-alt')
         self.assertIn('selector: img.hero', sarif['runs'][0]['results'][0]['message']['text'])
+
+    def test_build_baseline_diff_returns_introduced_and_resolved(self) -> None:
+        current = {
+            'findings': [
+                {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'status': 'open'},
+                {'rule_id': 'button-name', 'changed_target': 'button.icon', 'status': 'open'},
+            ]
+        }
+        baseline = {
+            'findings': [
+                {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'status': 'open'},
+                {'rule_id': 'label', 'changed_target': 'input#email', 'status': 'open'},
+            ]
+        }
+
+        diff = runner._build_baseline_diff(current, baseline)
+        self.assertEqual(diff['introduced_count'], 1)
+        self.assertEqual(diff['resolved_count'], 1)
+        self.assertEqual(diff['persistent_count'], 1)
+        self.assertEqual(diff['introduced_signatures'], ['button-name|button.icon'])
 
 if __name__ == "__main__":
     unittest.main()

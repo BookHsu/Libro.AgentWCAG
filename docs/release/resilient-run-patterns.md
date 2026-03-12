@@ -101,3 +101,35 @@ python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
 }
 ```
 
+
+## Baseline diff mode
+
+Use baseline diff mode to gate only newly introduced accessibility debt while allowing pre-existing debt to be tracked separately.
+
+- `--baseline-report <wcag-report.json>`: load a prior committed report as baseline.
+- `--fail-on-new-only`: with `--fail-on`, evaluate only newly introduced unresolved findings compared to baseline.
+
+### Example: fail only on new serious debt
+
+```powershell
+python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
+  --target docs/testing/realistic-sample/mixed-findings.html \
+  --execution-mode suggest-only \
+  --output-dir out/baseline-gate \
+  --fail-on serious \
+  --baseline-report .ci/wcag-baseline.json \
+  --fail-on-new-only
+```
+
+The output report includes `run_meta.baseline_diff` with introduced/resolved/persistent counts.
+
+## GitHub Actions integration (artifacts + PR annotation)
+
+A reusable workflow example is available at `docs/release/github-actions-wcag-ci-sample.yml`.
+
+Key integration points:
+
+- Upload `wcag-report.json`, `wcag-report.md`, and `wcag-report.sarif` as build artifacts.
+- Set `retention-days` for report retention policy.
+- Use SARIF upload to annotate pull requests in GitHub code scanning UI.
+
