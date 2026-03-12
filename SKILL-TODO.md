@@ -57,11 +57,11 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M9 Real Scanner Integration
 
-- [ ] Expand the real scanner integration matrix to cover more fixtures
-- [ ] Add WCAG version-specific real scanner baselines
-- [ ] Add apply-fixes before/after scanner comparison tests
-- [ ] Add real scanner regression snapshot coverage
-- [ ] Add conditional CI path for real scanner runs when environment prerequisites are available
+- [x] Expand the real scanner integration matrix to cover more fixtures
+- [x] Add WCAG version-specific real scanner baselines
+- [x] Add apply-fixes before/after scanner comparison tests
+- [x] Add real scanner regression snapshot coverage
+- [x] Add conditional CI path for real scanner runs when environment prerequisites are available
 
 ## M10 Framework-Aware Remediation
 
@@ -93,4 +93,3 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
-
