@@ -1,0 +1,12 @@
+[
+  {
+    "rule_id": "image-alt",
+    "changed_target": "Image",
+    "description": "Applied framework-aware alt remediation for nextjs."
+  },
+  {
+    "rule_id": "html-has-lang",
+    "changed_target": "Html",
+    "description": "Added lang=\"en\" on Next.js Html/html layout root."
+  }
+]
