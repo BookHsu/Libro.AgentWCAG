@@ -75,6 +75,7 @@ POLICY_PRESETS: dict[str, dict[str, Any]] = {
         "description": "Back-compat profile that ignores noisy viewport policy findings.",
     },
 }
+ALLOWED_POLICY_CONFIG_KEYS = {"report_format", "fail_on", "include_rules", "ignore_rules"}
 
 
 def _extract_version_line(output: str) -> str | None:
@@ -299,6 +300,12 @@ def _load_policy_config(path: str | None) -> dict[str, Any]:
     payload = json.loads(config_path.read_text(encoding='utf-8'))
     if not isinstance(payload, dict):
         raise ValueError('--policy-config must point to a JSON object')
+    unknown_keys = sorted(set(payload) - ALLOWED_POLICY_CONFIG_KEYS)
+    if unknown_keys:
+        allowed = ", ".join(sorted(ALLOWED_POLICY_CONFIG_KEYS))
+        raise ValueError(
+            f'--policy-config contains unsupported keys: {", ".join(unknown_keys)} (allowed: {allowed})'
+        )
     return payload
 
 
@@ -366,6 +373,7 @@ def _build_effective_policy(
     ignore_rules: list[str],
     policy_preset: dict[str, Any],
     policy_config_path: str | None,
+    policy_sources: dict[str, Any],
     fail_on_new_only: bool,
     baseline_report_path: str | None,
     baseline_signature_config: dict[str, Any],
@@ -377,10 +385,48 @@ def _build_effective_policy(
         "ignore_rules": ignore_rules,
         "preset": policy_preset.get("name"),
         "policy_config_path": policy_config_path,
+        "sources": policy_sources,
         "fail_on_new_only": fail_on_new_only,
         "baseline_report_path": baseline_report_path,
         "baseline_signature": baseline_signature_config,
     }
+
+
+def _policy_value_source(cli_value: Any, config_value: Any, preset_value: Any, default_label: str) -> str:
+    if cli_value is not None:
+        return "cli"
+    if config_value is not None:
+        return "policy-config"
+    if preset_value is not None:
+        return "policy-preset"
+    return default_label
+
+
+def _build_rule_sources(
+    preset_rules: list[str],
+    config_rules: list[str],
+    cli_rules: list[str],
+) -> dict[str, str]:
+    sources: dict[str, str] = {}
+    for rule in preset_rules:
+        if rule not in sources:
+            sources[rule] = "policy-preset"
+    for rule in config_rules:
+        if rule not in sources:
+            sources[rule] = "policy-config"
+    for rule in cli_rules:
+        if rule not in sources:
+            sources[rule] = "cli"
+    return sources
+
+
+def _resolve_effective_policy_path(path_value: str | None, output_dir: Path) -> Path | None:
+    if path_value is None:
+        return None
+    if path_value == "AUTO":
+        return output_dir / "wcag-effective-policy.json"
+    return Path(path_value)
+
 
 def _merge_rule_list(*groups: list[str]) -> list[str]:
     ordered: list[str] = []
@@ -908,6 +954,13 @@ def parse_args() -> argparse.Namespace:
         help="Include effective merged policy settings in run metadata and summary output.",
     )
     parser.add_argument(
+        "--write-effective-policy",
+        nargs="?",
+        const="AUTO",
+        default=None,
+        help="Write effective merged policy JSON (optional path; defaults to <output-dir>/wcag-effective-policy.json).",
+    )
+    parser.add_argument(
         "--baseline-report",
         help="Optional prior JSON report to compare unresolved debt and detect newly introduced findings.",
     )
@@ -1000,18 +1053,27 @@ def main() -> int:
     preset_include = _normalize_rule_list(policy_preset.get('include_rules'), 'preset.include_rules')
     preset_ignore = _normalize_rule_list(policy_preset.get('ignore_rules'), 'preset.ignore_rules')
 
+    cli_include_rules = [item.strip() for item in args.include_rule if item.strip()]
+    cli_ignore_rules = [item.strip() for item in args.ignore_rule if item.strip()]
+
     report_format = args.report_format or config_report_format or 'json'
     fail_on = args.fail_on or config_fail_on or preset_fail_on
     include_rules = _merge_rule_list(
         preset_include,
         config_include,
-        [item.strip() for item in args.include_rule if item.strip()],
+        cli_include_rules,
     )
     ignore_rules = _merge_rule_list(
         preset_ignore,
         config_ignore,
-        [item.strip() for item in args.ignore_rule if item.strip()],
+        cli_ignore_rules,
     )
+    policy_sources = {
+        'report_format': _policy_value_source(args.report_format, config_report_format, None, 'default'),
+        'fail_on': _policy_value_source(args.fail_on, config_fail_on, preset_fail_on, 'unset'),
+        'include_rules': _build_rule_sources(preset_include, config_include, cli_include_rules),
+        'ignore_rules': _build_rule_sources(preset_ignore, config_ignore, cli_ignore_rules),
+    }
 
     if args.skip_axe and args.mock_axe_json:
         raise ValueError('--skip-axe cannot be combined with --mock-axe-json')
@@ -1037,6 +1099,7 @@ def main() -> int:
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+    effective_policy_output = _resolve_effective_policy_path(args.write_effective_policy, output_dir)
     schema_metadata, staged_schema_path = _stage_report_schema_artifact(output_dir)
     baseline_signature_config = _build_baseline_signature_config(args)
     effective_policy = _build_effective_policy(
@@ -1046,6 +1109,7 @@ def main() -> int:
         ignore_rules=ignore_rules,
         policy_preset=policy_preset,
         policy_config_path=args.policy_config,
+        policy_sources=policy_sources,
         fail_on_new_only=bool(args.fail_on_new_only),
         baseline_report_path=args.baseline_report,
         baseline_signature_config=baseline_signature_config,
@@ -1153,6 +1217,13 @@ def main() -> int:
             'include_rule_count': len(effective_policy['include_rules']),
             'ignore_rule_count': len(effective_policy['ignore_rules']),
         }
+    if effective_policy_output is not None:
+        effective_policy_output.parent.mkdir(parents=True, exist_ok=True)
+        effective_policy_output.write_text(json.dumps(effective_policy, ensure_ascii=False, indent=2), encoding='utf-8')
+        report['run_meta']['effective_policy_artifact'] = str(effective_policy_output)
+        report['run_meta']['notes'].append(
+            f'Saved effective policy artifact: {effective_policy_output}'
+        )
     if scanner_retry_runs:
         report['run_meta']['scanner_retries'] = scanner_retry_runs
         retried_tools = [item['tool'] for item in scanner_retry_runs if item.get('retry_count', 0) > 0]
@@ -1337,4 +1408,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
