@@ -902,5 +902,78 @@ class CliFlowTests(unittest.TestCase):
         self.assertTrue((output_dir / 'schemas' / 'wcag-report-1.0.0.schema.json').exists())
         self.assertIn('machine_output', compact)
 
+    def test_run_accessibility_audit_lists_policy_presets_without_target(self) -> None:
+        test_dir = self.repo_root / 'automation-work' / 'm24-policy-presets-test'
+        if test_dir.exists():
+            shutil.rmtree(test_dir, ignore_errors=True)
+        test_dir.mkdir(parents=True, exist_ok=True)
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--list-policy-presets',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        payload = json.loads(completed.stdout)
+        names = [item['name'] for item in payload['presets']]
+        self.assertIn('strict', names)
+        self.assertIn('legacy', names)
+
+    def test_run_accessibility_audit_summary_only_includes_policy_effective_when_requested(self) -> None:
+        test_dir = self.repo_root / 'automation-work' / 'm24-explain-policy-test'
+        if test_dir.exists():
+            shutil.rmtree(test_dir, ignore_errors=True)
+        test_dir.mkdir(parents=True, exist_ok=True)
+
+        html_path = test_dir / 'sample.html'
+        output_dir = test_dir / 'out'
+        axe_json = test_dir / 'axe.json'
+        html_path.write_text('<!doctype html><html><body><img class="hero" src="hero.png"></body></html>', encoding='utf-8')
+        axe_json.write_text(
+            json.dumps(
+                {
+                    'violations': [
+                        {'id': 'image-alt', 'impact': 'serious', 'description': 'Image alt missing', 'nodes': [{'target': ['img.hero']}]},
+                    ]
+                }
+            ),
+            encoding='utf-8',
+        )
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(output_dir),
+                '--summary-only',
+                '--explain-policy',
+                '--policy-preset',
+                'legacy',
+                '--mock-axe-json',
+                str(axe_json),
+                '--skip-lighthouse',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 43, completed.stdout + completed.stderr)
+        compact = json.loads(completed.stdout.strip())
+        self.assertIn('policy_effective', compact)
+        self.assertEqual(compact['policy_effective']['preset'], 'legacy')
+        self.assertEqual(compact['policy_effective']['fail_on'], 'serious')
+        payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
+        self.assertIn('policy_effective', payload['run_meta'])
+
 if __name__ == '__main__':
     unittest.main()
+
