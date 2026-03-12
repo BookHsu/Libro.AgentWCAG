@@ -1,0 +1,8 @@
+export default function Component() {
+  return (
+    <main>
+      <button className="icon-only" aria-label="Button"></button>
+      <img className="hero" src="/hero.png"  alt="" />
+    </main>
+  );
+}

@@ -1,0 +1,6 @@
+<template>
+  <main>
+    <button class="icon-only"></button>
+    <img class="hero" src="/hero.png"  alt="" />
+  </main>
+</template>
