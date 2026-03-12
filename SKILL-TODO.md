@@ -31,11 +31,11 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M7 Report And Verification Model
 
-- [ ] Add `auto_fixed_count` to report summary
-- [ ] Add `manual_required_count` to report summary
-- [ ] Add `verification_evidence` fields to fixes or run metadata
-- [ ] Add `before_after_targets` evidence for modified findings
-- [ ] Add `rule_family` classification to findings and fixes
+- [x] Add `auto_fixed_count` to report summary
+- [x] Add `manual_required_count` to report summary
+- [x] Add `verification_evidence` fields to fixes or run metadata
+- [x] Add `before_after_targets` evidence for modified findings
+- [x] Add `rule_family` classification to findings and fixes
 - [ ] Add `risk_level` classification to findings and fixes
 - [ ] Add `downgrade_reason` reporting when fixes fall back to suggest-only or manual review
 - [ ] Add `fix_blockers` reporting for unsupported remediation cases
@@ -93,3 +93,4 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
+

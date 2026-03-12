@@ -245,6 +245,35 @@ class Contract:
     target: str
     output_language: str
 
+def _rule_family(rule_id: str) -> str:
+    lowered = rule_id.lower()
+    if lowered.startswith("aria-") or lowered in {"button-name", "link-name", "label", "select-name"}:
+        return "aria-and-name"
+    if lowered.startswith("html-") or "lang" in lowered or lowered == "document-title":
+        return "document-language"
+    if lowered.startswith("landmark-") or lowered in {"region", "skip-link", "heading-order", "empty-heading"}:
+        return "navigation-structure"
+    if lowered in {"table-fake-caption", "td-has-header", "th-has-data-cells", "td-headers-attr"}:
+        return "table-semantics"
+    if lowered in {"list", "listitem", "definition-list", "dlitem"}:
+        return "list-semantics"
+    if lowered in {"meta-refresh", "meta-viewport", "tabindex", "nested-interactive"}:
+        return "interaction-and-focus"
+    if lowered in {"image-alt", "input-image-alt", "object-alt", "area-alt", "svg-img-alt"}:
+        return "non-text-content"
+    return "general"
+
+
+def _risk_level(severity: str, status: str) -> str:
+    if status == "needs-review":
+        return "medium"
+    if severity in {"critical", "serious"}:
+        return "high"
+    if severity == "moderate":
+        return "medium"
+    if severity == "minor":
+        return "low"
+    return "info"
 
 def build_citation_url(wcag_version: str, sc: str) -> str:
     slug = WCAG_UNDERSTANDING_PATHS.get(sc)
@@ -487,6 +516,8 @@ def normalize_report(
         fix_id = f"FIX-{index:03d}"
         sc_values = raw.get("sc") or []
         strategy = get_strategy(raw["rule_id"])
+        rule_family = _rule_family(raw["rule_id"])
+        risk_level = _risk_level(raw["severity"], raw["status"])
         fixability = (
             "auto-fix"
             if strategy["auto_fix_supported"]
@@ -510,9 +541,15 @@ def normalize_report(
                 "current": raw["current"],
                 "changed_target": raw["changed_target"],
                 "status": raw["status"],
+                "rule_family": rule_family,
+                "risk_level": risk_level,
                 "fixability": fixability,
                 "verification_status": verification_status,
                 "manual_review_required": manual_review_required,
+                "before_after_targets": {
+                    "before_target": raw["changed_target"],
+                    "after_target": None,
+                },
             }
         )
         fixes.append(
@@ -525,9 +562,20 @@ def normalize_report(
                 "remediation_priority": strategy["priority"],
                 "confidence": strategy["confidence"],
                 "auto_fix_supported": strategy["auto_fix_supported"],
+                "rule_family": rule_family,
+                "risk_level": risk_level,
                 "fixability": fixability,
                 "verification_status": verification_status,
                 "manual_review_required": manual_review_required,
+                "before_after_targets": {
+                    "before_target": raw["changed_target"],
+                    "after_target": None,
+                },
+                "verification_evidence": {
+                    "status": verification_status,
+                    "method": "manual-review" if manual_review_required else "not-run",
+                    "artifacts": [],
+                },
                 "framework_hints": strategy["framework_hints"],
             }
         )
@@ -548,9 +596,11 @@ def normalize_report(
     summary = {
         "total_findings": len(normalized_findings),
         "fixed_findings": sum(1 for item in normalized_findings if item["status"] == "fixed"),
+        "auto_fixed_count": sum(1 for item in normalized_findings if item["status"] == "fixed"),
         "needs_manual_review": sum(
             1 for item in normalized_findings if item["status"] == "needs-review"
         ),
+        "manual_required_count": sum(1 for item in normalized_findings if item["manual_review_required"]),
         "change_summary": change_summary,
         "diff_summary": [],
         "remediation_lifecycle": {
@@ -570,6 +620,7 @@ def normalize_report(
             "files_modified": False,
             "modification_owner": "agent-or-adapter",
             "diff_artifacts": [],
+            "verification_evidence": [],
             "tools": tools,
             "notes": notes,
         },
@@ -647,3 +698,4 @@ def write_report_files(report: dict[str, Any], json_path: str, markdown_path: st
     markdown_target.parent.mkdir(parents=True, exist_ok=True)
     json_target.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     markdown_target.write_text(to_markdown_table(report), encoding="utf-8")
+

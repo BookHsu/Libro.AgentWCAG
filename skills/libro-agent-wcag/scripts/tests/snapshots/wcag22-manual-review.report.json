@@ -7,6 +7,7 @@
     "files_modified": false,
     "modification_owner": "agent-or-adapter",
     "diff_artifacts": [],
+    "verification_evidence": [],
     "tools": {
       "axe": "ok",
       "lighthouse": "ok"
@@ -37,9 +38,15 @@
       "current": "Review whether focused elements remain at least partially visible.",
       "changed_target": "manual-review",
       "status": "needs-review",
+      "rule_family": "general",
+      "risk_level": "medium",
       "fixability": "manual",
       "verification_status": "manual-review",
-      "manual_review_required": true
+      "manual_review_required": true,
+      "before_after_targets": {
+        "before_target": "manual-review",
+        "after_target": null
+      }
     },
     {
       "id": "ISSUE-002",
@@ -56,9 +63,15 @@
       "current": "Review whether focused elements remain fully unobscured in enhanced scenarios.",
       "changed_target": "manual-review",
       "status": "needs-review",
+      "rule_family": "general",
+      "risk_level": "medium",
       "fixability": "manual",
       "verification_status": "manual-review",
-      "manual_review_required": true
+      "manual_review_required": true,
+      "before_after_targets": {
+        "before_target": "manual-review",
+        "after_target": null
+      }
     },
     {
       "id": "ISSUE-003",
@@ -75,9 +88,15 @@
       "current": "Review whether focus appearance meets WCAG 2.2 requirements.",
       "changed_target": "manual-review",
       "status": "needs-review",
+      "rule_family": "general",
+      "risk_level": "medium",
       "fixability": "manual",
       "verification_status": "manual-review",
-      "manual_review_required": true
+      "manual_review_required": true,
+      "before_after_targets": {
+        "before_target": "manual-review",
+        "after_target": null
+      }
     },
     {
       "id": "ISSUE-004",
@@ -94,9 +113,15 @@
       "current": "Review whether dragging interactions have a single-pointer alternative.",
       "changed_target": "manual-review",
       "status": "needs-review",
+      "rule_family": "general",
+      "risk_level": "medium",
       "fixability": "manual",
       "verification_status": "manual-review",
-      "manual_review_required": true
+      "manual_review_required": true,
+      "before_after_targets": {
+        "before_target": "manual-review",
+        "after_target": null
+      }
     },
     {
       "id": "ISSUE-005",
@@ -113,9 +138,15 @@
       "current": "Review whether targets meet minimum target size requirements.",
       "changed_target": "manual-review",
       "status": "needs-review",
+      "rule_family": "general",
+      "risk_level": "medium",
       "fixability": "manual",
       "verification_status": "manual-review",
-      "manual_review_required": true
+      "manual_review_required": true,
+      "before_after_targets": {
+        "before_target": "manual-review",
+        "after_target": null
+      }
     },
     {
       "id": "ISSUE-006",
@@ -132,9 +163,15 @@
       "current": "Review whether help mechanisms remain consistent across pages.",
       "changed_target": "manual-review",
       "status": "needs-review",
+      "rule_family": "general",
+      "risk_level": "medium",
       "fixability": "manual",
       "verification_status": "manual-review",
-      "manual_review_required": true
+      "manual_review_required": true,
+      "before_after_targets": {
+        "before_target": "manual-review",
+        "after_target": null
+      }
     },
     {
       "id": "ISSUE-007",
@@ -151,9 +188,15 @@
       "current": "Review whether redundant-entry protections are provided where needed.",
       "changed_target": "manual-review",
       "status": "needs-review",
+      "rule_family": "general",
+      "risk_level": "medium",
       "fixability": "manual",
       "verification_status": "manual-review",
-      "manual_review_required": true
+      "manual_review_required": true,
+      "before_after_targets": {
+        "before_target": "manual-review",
+        "after_target": null
+      }
     },
     {
       "id": "ISSUE-008",
@@ -170,9 +213,15 @@
       "current": "Review accessible authentication without cognitive function tests.",
       "changed_target": "manual-review",
       "status": "needs-review",
+      "rule_family": "general",
+      "risk_level": "medium",
       "fixability": "manual",
       "verification_status": "manual-review",
-      "manual_review_required": true
+      "manual_review_required": true,
+      "before_after_targets": {
+        "before_target": "manual-review",
+        "after_target": null
+      }
     },
     {
       "id": "ISSUE-009",
@@ -189,9 +238,15 @@
       "current": "Review enhanced accessible authentication support.",
       "changed_target": "manual-review",
       "status": "needs-review",
+      "rule_family": "general",
+      "risk_level": "medium",
       "fixability": "manual",
       "verification_status": "manual-review",
-      "manual_review_required": true
+      "manual_review_required": true,
+      "before_after_targets": {
+        "before_target": "manual-review",
+        "after_target": null
+      }
     }
   ],
   "fixes": [
@@ -204,9 +259,20 @@
       "remediation_priority": "medium",
       "confidence": "medium",
       "auto_fix_supported": false,
+      "rule_family": "general",
+      "risk_level": "medium",
       "fixability": "manual",
       "verification_status": "manual-review",
       "manual_review_required": true,
+      "before_after_targets": {
+        "before_target": "manual-review",
+        "after_target": null
+      },
+      "verification_evidence": {
+        "status": "manual-review",
+        "method": "manual-review",
+        "artifacts": []
+      },
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
         "react": "Prefer semantic JSX and explicit aria/label props.",
@@ -223,9 +289,20 @@
       "remediation_priority": "medium",
       "confidence": "medium",
       "auto_fix_supported": false,
+      "rule_family": "general",
+      "risk_level": "medium",
       "fixability": "manual",
       "verification_status": "manual-review",
       "manual_review_required": true,
+      "before_after_targets": {
+        "before_target": "manual-review",
+        "after_target": null
+      },
+      "verification_evidence": {
+        "status": "manual-review",
+        "method": "manual-review",
+        "artifacts": []
+      },
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
         "react": "Prefer semantic JSX and explicit aria/label props.",
@@ -242,9 +319,20 @@
       "remediation_priority": "medium",
       "confidence": "medium",
       "auto_fix_supported": false,
+      "rule_family": "general",
+      "risk_level": "medium",
       "fixability": "manual",
       "verification_status": "manual-review",
       "manual_review_required": true,
+      "before_after_targets": {
+        "before_target": "manual-review",
+        "after_target": null
+      },
+      "verification_evidence": {
+        "status": "manual-review",
+        "method": "manual-review",
+        "artifacts": []
+      },
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
         "react": "Prefer semantic JSX and explicit aria/label props.",
@@ -261,9 +349,20 @@
       "remediation_priority": "medium",
       "confidence": "medium",
       "auto_fix_supported": false,
+      "rule_family": "general",
+      "risk_level": "medium",
       "fixability": "manual",
       "verification_status": "manual-review",
       "manual_review_required": true,
+      "before_after_targets": {
+        "before_target": "manual-review",
+        "after_target": null
+      },
+      "verification_evidence": {
+        "status": "manual-review",
+        "method": "manual-review",
+        "artifacts": []
+      },
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
         "react": "Prefer semantic JSX and explicit aria/label props.",
@@ -280,9 +379,20 @@
       "remediation_priority": "medium",
       "confidence": "medium",
       "auto_fix_supported": false,
+      "rule_family": "general",
+      "risk_level": "medium",
       "fixability": "manual",
       "verification_status": "manual-review",
       "manual_review_required": true,
+      "before_after_targets": {
+        "before_target": "manual-review",
+        "after_target": null
+      },
+      "verification_evidence": {
+        "status": "manual-review",
+        "method": "manual-review",
+        "artifacts": []
+      },
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
         "react": "Prefer semantic JSX and explicit aria/label props.",
@@ -299,9 +409,20 @@
       "remediation_priority": "medium",
       "confidence": "medium",
       "auto_fix_supported": false,
+      "rule_family": "general",
+      "risk_level": "medium",
       "fixability": "manual",
       "verification_status": "manual-review",
       "manual_review_required": true,
+      "before_after_targets": {
+        "before_target": "manual-review",
+        "after_target": null
+      },
+      "verification_evidence": {
+        "status": "manual-review",
+        "method": "manual-review",
+        "artifacts": []
+      },
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
         "react": "Prefer semantic JSX and explicit aria/label props.",
@@ -318,9 +439,20 @@
       "remediation_priority": "medium",
       "confidence": "medium",
       "auto_fix_supported": false,
+      "rule_family": "general",
+      "risk_level": "medium",
       "fixability": "manual",
       "verification_status": "manual-review",
       "manual_review_required": true,
+      "before_after_targets": {
+        "before_target": "manual-review",
+        "after_target": null
+      },
+      "verification_evidence": {
+        "status": "manual-review",
+        "method": "manual-review",
+        "artifacts": []
+      },
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
         "react": "Prefer semantic JSX and explicit aria/label props.",
@@ -337,9 +469,20 @@
       "remediation_priority": "medium",
       "confidence": "medium",
       "auto_fix_supported": false,
+      "rule_family": "general",
+      "risk_level": "medium",
       "fixability": "manual",
       "verification_status": "manual-review",
       "manual_review_required": true,
+      "before_after_targets": {
+        "before_target": "manual-review",
+        "after_target": null
+      },
+      "verification_evidence": {
+        "status": "manual-review",
+        "method": "manual-review",
+        "artifacts": []
+      },
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
         "react": "Prefer semantic JSX and explicit aria/label props.",
@@ -356,9 +499,20 @@
       "remediation_priority": "medium",
       "confidence": "medium",
       "auto_fix_supported": false,
+      "rule_family": "general",
+      "risk_level": "medium",
       "fixability": "manual",
       "verification_status": "manual-review",
       "manual_review_required": true,
+      "before_after_targets": {
+        "before_target": "manual-review",
+        "after_target": null
+      },
+      "verification_evidence": {
+        "status": "manual-review",
+        "method": "manual-review",
+        "artifacts": []
+      },
       "framework_hints": {
         "html": "Use semantic HTML and explicit accessible names.",
         "react": "Prefer semantic JSX and explicit aria/label props.",
@@ -417,7 +571,9 @@
   "summary": {
     "total_findings": 9,
     "fixed_findings": 0,
+    "auto_fixed_count": 0,
     "needs_manual_review": 9,
+    "manual_required_count": 9,
     "change_summary": [
       {
         "finding_id": "ISSUE-001",
