@@ -234,6 +234,24 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("auto_fix_supported", fix)
         self.assertIn("framework_hints", fix)
         self.assertTrue(fix["auto_fix_supported"])
+    def test_assisted_rule_contains_assisted_steps_and_verification_rules(self) -> None:
+        contract = resolve_contract({"target": "https://example.com"})
+        axe_data = {
+            "violations": [
+                {
+                    "id": "skip-link",
+                    "impact": "serious",
+                    "description": "Page should contain a skip link",
+                    "nodes": [{"target": ["body"]}],
+                }
+            ]
+        }
+        report = normalize_report(contract, axe_data, {"audits": {}}, None, None)
+        fix = report["fixes"][0]
+        self.assertEqual(fix["fixability"], "assisted")
+        self.assertFalse(fix["auto_fix_supported"])
+        self.assertGreaterEqual(len(fix["assisted_steps"]), 2)
+        self.assertGreaterEqual(len(fix["verification_rules"]), 2)
 
     def test_summary_includes_change_summary(self) -> None:
         contract = resolve_contract({"target": "https://example.com"})
@@ -498,3 +516,4 @@ class WorkflowTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

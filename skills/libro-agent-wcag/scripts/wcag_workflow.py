@@ -603,6 +603,8 @@ def normalize_report(
                 "downgrade_reason": downgrade_reason,
                 "before_after_targets": [],
                 "fix_blockers": fix_blockers,
+                "assisted_steps": strategy["assisted_steps"],
+                "verification_rules": strategy["verification_rules"],
                 "verification_evidence": verification_evidence,
                 "framework_hints": strategy["framework_hints"],
             }

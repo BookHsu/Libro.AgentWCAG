@@ -21,9 +21,9 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 - [ ] Add assisted remediation flow for `duplicate-id-aria`
 - [ ] Add assisted remediation flow for `heading-order`
-- [ ] Add assisted remediation flow for `region`
-- [ ] Add assisted remediation flow for `skip-link`
-- [ ] Add assisted remediation flow for `tabindex`
+- [x] Add assisted remediation flow for `region`
+- [x] Add assisted remediation flow for `skip-link`
+- [x] Add assisted remediation flow for `tabindex`
 - [ ] Add assisted remediation flow for `presentation-role-conflict`
 - [ ] Add assisted remediation flow for `nested-interactive`
 - [ ] Add verification rules for assisted remediation changes
