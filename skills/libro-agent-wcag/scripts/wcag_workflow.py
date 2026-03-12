@@ -570,6 +570,8 @@ def normalize_report(
                 "risk_level": risk_level,
                 "downgrade_reason": downgrade_reason,
                 "fix_blockers": fix_blockers,
+                "assisted_steps": strategy["assisted_steps"],
+                "verification_rules": strategy["verification_rules"],
                 "framework_hints": strategy["framework_hints"],
             }
         )
@@ -698,3 +700,5 @@ def write_report_files(report: dict[str, Any], json_path: str, markdown_path: st
     markdown_target.parent.mkdir(parents=True, exist_ok=True)
     json_target.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     markdown_target.write_text(to_markdown_table(report), encoding="utf-8")
+
+

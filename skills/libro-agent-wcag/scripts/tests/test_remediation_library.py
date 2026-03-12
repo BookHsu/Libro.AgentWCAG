@@ -20,16 +20,36 @@ class RemediationLibraryTests(unittest.TestCase):
         self.assertTrue(strategy["auto_fix_supported"])
 
     def test_new_safe_rules_are_marked_auto_fix_supported(self) -> None:
-        for rule_id in ('area-alt', 'meta-refresh', 'html-xml-lang-mismatch', 'valid-lang', 'aria-toggle-field-name', 'aria-tooltip-name', 'aria-progressbar-name', 'aria-meter-name', 'document-title'):
+        for rule_id in (
+            "area-alt",
+            "meta-refresh",
+            "html-xml-lang-mismatch",
+            "valid-lang",
+            "aria-toggle-field-name",
+            "aria-tooltip-name",
+            "aria-progressbar-name",
+            "aria-meter-name",
+            "document-title",
+        ):
             with self.subTest(rule_id=rule_id):
                 strategy = get_strategy(rule_id)
-                self.assertTrue(strategy['auto_fix_supported'])
-                self.assertEqual(strategy['confidence'], 'high')
+                self.assertTrue(strategy["auto_fix_supported"])
+                self.assertEqual(strategy["confidence"], "high")
+
+    def test_assisted_remediation_rules_define_steps_and_verification_rules(self) -> None:
+        for rule_id in ("duplicate-id-aria", "heading-order", "presentation-role-conflict"):
+            with self.subTest(rule_id=rule_id):
+                strategy = get_strategy(rule_id)
+                self.assertFalse(strategy["auto_fix_supported"])
+                self.assertGreater(len(strategy["assisted_steps"]), 0)
+                self.assertGreater(len(strategy["verification_rules"]), 0)
 
     def test_unknown_rule_uses_default_strategy(self) -> None:
         strategy = get_strategy("unknown-rule")
         self.assertEqual(strategy["confidence"], "medium")
         self.assertFalse(strategy["auto_fix_supported"])
+        self.assertEqual(strategy["assisted_steps"], [])
+        self.assertEqual(strategy["verification_rules"], [])
         self.assertIn("react", strategy["framework_hints"])
 
 
