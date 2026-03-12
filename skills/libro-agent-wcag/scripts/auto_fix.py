@@ -380,8 +380,21 @@ def apply_report_fixes(local_target: Path, report: dict[str, Any]) -> tuple[dict
         finding['status'] = 'fixed'
         finding['manual_review_required'] = False
         finding['verification_status'] = 'diff-generated'
+        finding['before_after_targets'] = {
+            'before_target': finding.get('changed_target'),
+            'after_target': finding.get('changed_target'),
+        }
         fix_record['status'] = 'implemented'
         fix_record['verification_status'] = 'diff-generated'
+        fix_record['before_after_targets'] = {
+            'before_target': finding.get('changed_target'),
+            'after_target': finding.get('changed_target'),
+        }
+        fix_record['verification_evidence'] = {
+            'status': 'diff-generated',
+            'method': 'unified-diff',
+            'artifacts': [{'type': 'modified-file', 'path': str(local_target)}],
+        }
 
     if updated == original:
         report['run_meta']['notes'].append('No safe auto-fix changes were applied by the core workflow.')
@@ -399,11 +412,28 @@ def apply_report_fixes(local_target: Path, report: dict[str, Any]) -> tuple[dict
     report['run_meta']['files_modified'] = True
     report['run_meta']['modification_owner'] = 'core-workflow'
     report['run_meta'].setdefault('diff_artifacts', []).append({'path': str(local_target), 'type': 'modified-file'})
+    report['run_meta'].setdefault('verification_evidence', []).append(
+        {
+            'status': 'diff-generated',
+            'method': 'unified-diff',
+            'artifact': {'type': 'modified-file', 'path': str(local_target)},
+            'before_after_targets': [
+                {
+                    'rule_id': change['rule_id'],
+                    'before_target': change['changed_target'],
+                    'after_target': change['changed_target'],
+                }
+                for change in applied_changes
+            ],
+        }
+    )
     report['run_meta']['notes'].append(f'Applied {len(applied_changes)} safe auto-fix change(s) to the local target.')
     report['summary']['fixed_findings'] = sum(1 for item in report['findings'] if item['status'] == 'fixed')
+    report['summary']['auto_fixed_count'] = report['summary']['fixed_findings']
     report['summary']['needs_manual_review'] = sum(
         1 for item in report['findings'] if item.get('manual_review_required')
     )
+    report['summary']['manual_required_count'] = report['summary']['needs_manual_review']
     report['summary'].setdefault('diff_summary', [])
     report['summary']['diff_summary'].extend(applied_changes)
     report['summary'].setdefault('remediation_lifecycle', {})
@@ -439,4 +469,5 @@ def write_diff(diff_text: str, diff_path: Path) -> None:
 def write_snapshot(report: dict[str, Any], snapshot_path: Path) -> None:
     snapshot_path.parent.mkdir(parents=True, exist_ok=True)
     snapshot_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
+
 

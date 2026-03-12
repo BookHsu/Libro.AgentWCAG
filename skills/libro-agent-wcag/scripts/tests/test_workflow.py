@@ -259,11 +259,21 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(finding["fixability"], "auto-fix")
         self.assertEqual(finding["verification_status"], "not-run")
         self.assertFalse(finding["manual_review_required"])
+        self.assertIn("rule_family", finding)
+        self.assertIn("risk_level", finding)
+        self.assertIn("before_after_targets", finding)
         self.assertEqual(fix["fixability"], "auto-fix")
         self.assertEqual(fix["verification_status"], "not-run")
+        self.assertIn("rule_family", fix)
+        self.assertIn("risk_level", fix)
+        self.assertIn("before_after_targets", fix)
+        self.assertIn("verification_evidence", fix)
         self.assertIn("diff_summary", report["summary"])
         self.assertIn("remediation_lifecycle", report["summary"])
+        self.assertIn("auto_fixed_count", report["summary"])
+        self.assertIn("manual_required_count", report["summary"])
         self.assertIn("diff_artifacts", report["run_meta"])
+        self.assertIn("verification_evidence", report["run_meta"])
 
     def test_manual_review_items_are_flagged_in_contract(self) -> None:
         contract = resolve_contract({"target": "https://example.com", "wcag_version": "2.2"})
@@ -392,3 +402,4 @@ class WorkflowTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
