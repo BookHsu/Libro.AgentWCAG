@@ -142,7 +142,7 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [x] Add a `--dry-run` mode to `run_accessibility_audit.py` for `apply-fixes` that emits projected diff metadata without mutating files
 - [x] Add atomic write plus rollback safeguards for `apply_report_fixes` to prevent partial writes on interruption or I/O failure
 - [x] Add rule-level mutation telemetry in `run_meta` (changed file path, rule id, and mutation count) for every successful auto-fix
-- [ ] Add regression fixtures for malformed HTML and edge encodings to verify regex-based rewrites do not corrupt source structure
+- [x] Add regression fixtures for malformed HTML and edge encodings to verify regex-based rewrites do not corrupt source structure
 
 
 
@@ -151,12 +151,11 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [x] Add scanner preflight diagnostics output (`tools`, `versions`, `resolved command`) to `run_meta` for easier environment debugging
 - [x] Add explicit error classification for scanner failures (`timeout`, `missing-tool`, `bad-target`, `runtime-error`) and expose them in report summary
 - [x] Add partial-success contract tests to ensure single-scanner results stay actionable when `axe` or `lighthouse` individually fail
-- [ ] Add retry policy hooks for transient scanner failures (configurable attempts with bounded backoff)
-- [ ] Add CLI docs for resilient run patterns, including CI examples for `audit-only`, `suggest-only`, and `apply-fixes`
+- [x] Add retry policy hooks for transient scanner failures (configurable attempts with bounded backoff)
+- [x] Add CLI docs for resilient run patterns, including CI examples for `audit-only`, `suggest-only`, and `apply-fixes`
 
 ## Notes
 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
-

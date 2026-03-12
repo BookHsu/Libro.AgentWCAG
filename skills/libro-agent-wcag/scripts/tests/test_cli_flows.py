@@ -261,6 +261,7 @@ class CliFlowTests(unittest.TestCase):
             self.assertEqual(html_path.read_text(encoding='utf-8'), original)
             self.assertTrue((output_dir / 'wcag-fixes.dry-run.diff').exists())
             self.assertIn('projected_mutation_telemetry', payload['run_meta'])
+            self.assertIn('retry_policy', payload['run_meta'])
             self.assertIn('--dry-run', ' '.join(payload['run_meta']['notes']))
     def test_run_accessibility_audit_rejects_conflicting_mock_and_skip_flags(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -434,4 +435,3 @@ class CliFlowTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
