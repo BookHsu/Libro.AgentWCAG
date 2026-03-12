@@ -5,7 +5,7 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 ## Current Execution Order
 
 1. [x] Complete `M27 Dependency And Supply-Chain Guardrails` to formalize dependency audit and pinned-tooling workflows.
-2. [ ] Complete `M28 Real-Scanner CI Lane Productization` to make optional scanner lanes reusable across repositories.
+2. [x] Complete `M28 Real-Scanner CI Lane Productization` to make optional scanner lanes reusable across repositories.
 3. [ ] Complete `M29 Baseline Debt Lifecycle Governance` to standardize debt triage and retirement evidence.
 
 ## M21 Post-M20 Validation Closure
@@ -207,9 +207,9 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M28 Real-Scanner CI Lane Productization
 
-- [ ] Add reusable workflow templates for optional real-scanner execution with clear skip semantics when scanners are unavailable.
-- [ ] Add CI evidence artifact conventions (raw scanner logs, normalized summary, capability negotiation) and doc references for triage handoff.
-- [ ] Add matrix tests that validate fallback behavior and messaging consistency between local runs and CI workflows.
+- [x] Add reusable workflow templates for optional real-scanner execution with clear skip semantics when scanners are unavailable.
+- [x] Add CI evidence artifact conventions (raw scanner logs, normalized summary, capability negotiation) and doc references for triage handoff.
+- [x] Add matrix tests that validate fallback behavior and messaging consistency between local runs and CI workflows.
 
 ## M29 Baseline Debt Lifecycle Governance
 
@@ -221,4 +221,5 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
+
 

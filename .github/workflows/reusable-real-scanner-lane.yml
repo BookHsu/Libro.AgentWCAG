@@ -1,0 +1,142 @@
+name: Reusable Real Scanner Lane
+
+on:
+  workflow_call:
+    inputs:
+      enabled:
+        required: false
+        type: boolean
+        default: false
+      target:
+        required: false
+        type: string
+        default: docs/testing/realistic-sample/mixed-findings.html
+      output-dir:
+        required: false
+        type: string
+        default: out/real-scanner
+      python-version:
+        required: false
+        type: string
+        default: "3.12"
+      node-version:
+        required: false
+        type: string
+        default: "20"
+
+jobs:
+  real-scanner-lane:
+    if: ${{ inputs.enabled }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        lane-mode: [live, fallback]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml
+
+      - name: Prepare artifact folders
+        run: |
+          mkdir -p "${{ inputs.output-dir }}/raw"
+          mkdir -p "${{ inputs.output-dir }}/live"
+          mkdir -p "${{ inputs.output-dir }}/fallback"
+
+      - name: Detect scanner availability
+        id: detect
+        shell: bash
+        run: |
+          set +e
+          npx --yes @axe-core/cli --version > "${{ inputs.output-dir }}/raw/axe.version.log" 2>&1
+          axe_status=$?
+          npx --yes lighthouse --version > "${{ inputs.output-dir }}/raw/lighthouse.version.log" 2>&1
+          lighthouse_status=$?
+          set -e
+          if [ "$axe_status" -eq 0 ] && [ "$lighthouse_status" -eq 0 ]; then
+            echo "scanners_available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "scanners_available=false" >> "$GITHUB_OUTPUT"
+            echo "real scanners unavailable; fallback lane will run with mock payloads." > "${{ inputs.output-dir }}/raw/scanner-unavailable.log"
+          fi
+
+      - name: Run live scanner lane
+        if: matrix.lane-mode == 'live' && steps.detect.outputs.scanners_available == 'true'
+        run: |
+          python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
+            --target "${{ inputs.target }}" \
+            --execution-mode suggest-only \
+            --output-language en \
+            --output-dir "${{ inputs.output-dir }}/live" \
+            --summary-only > "${{ inputs.output-dir }}/normalized-summary.live.json"
+
+      - name: Run fallback scanner lane
+        if: matrix.lane-mode == 'fallback' || (matrix.lane-mode == 'live' && steps.detect.outputs.scanners_available != 'true')
+        run: |
+          python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
+            --target "${{ inputs.target }}" \
+            --execution-mode suggest-only \
+            --output-language en \
+            --output-dir "${{ inputs.output-dir }}/fallback" \
+            --mock-axe-json docs/testing/realistic-sample/scanner-fixtures/axe.mock.json \
+            --mock-lighthouse-json docs/testing/realistic-sample/scanner-fixtures/lighthouse.mock.json \
+            --summary-only > "${{ inputs.output-dir }}/normalized-summary.fallback.json"
+
+      - name: Write capability negotiation artifact
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          output_dir = Path("${{ inputs.output-dir }}")
+          available = "${{ steps.detect.outputs.scanners_available }}" == "true"
+          lane_mode = "live" if available else "fallback"
+          payload = {
+              "lane_mode": lane_mode,
+              "scanners_available": available,
+              "matrix_modes": ["live", "fallback"],
+              "summary_artifacts": {
+                  "live": str(output_dir / "normalized-summary.live.json"),
+                  "fallback": str(output_dir / "normalized-summary.fallback.json"),
+              },
+              "raw_scanner_logs": [
+                  str(output_dir / "raw" / "axe.version.log"),
+                  str(output_dir / "raw" / "lighthouse.version.log"),
+                  str(output_dir / "raw" / "scanner-unavailable.log"),
+              ],
+          }
+          (output_dir / "capability-negotiation.json").write_text(
+              json.dumps(payload, ensure_ascii=False, indent=2),
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Upload real scanner evidence artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-scanner-evidence
+          path: |
+            ${{ inputs.output-dir }}/raw
+            ${{ inputs.output-dir }}/live
+            ${{ inputs.output-dir }}/fallback
+            ${{ inputs.output-dir }}/normalized-summary.live.json
+            ${{ inputs.output-dir }}/normalized-summary.fallback.json
+            ${{ inputs.output-dir }}/capability-negotiation.json
+          retention-days: 14
