@@ -217,6 +217,51 @@ class CliFlowTests(unittest.TestCase):
             self.assertTrue((output_dir / 'wcag-fixes.diff').exists())
             self.assertTrue((output_dir / 'wcag-fixed-report.snapshot.json').exists())
 
+    def test_run_accessibility_audit_apply_fixes_dry_run_keeps_target_unmodified(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            html_path = Path(tmp) / 'sample.html'
+            output_dir = Path(tmp) / 'out'
+            axe_json = Path(tmp) / 'axe.json'
+            original = '<!doctype html><html><head><title>Fixture</title></head><body><img class="hero" src="hero.png"></body></html>'
+            html_path.write_text(original, encoding='utf-8')
+            axe_json.write_text(
+                json.dumps(
+                    {
+                        'violations': [
+                            {'id': 'image-alt', 'impact': 'serious', 'description': 'Images must have alternate text', 'nodes': [{'target': ['img.hero']}]},
+                        ]
+                    }
+                ),
+                encoding='utf-8',
+            )
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                    '--target',
+                    str(html_path),
+                    '--output-dir',
+                    str(output_dir),
+                    '--execution-mode',
+                    'apply-fixes',
+                    '--dry-run',
+                    '--output-language',
+                    'en',
+                    '--mock-axe-json',
+                    str(axe_json),
+                    '--skip-lighthouse',
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+            payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
+            self.assertEqual(html_path.read_text(encoding='utf-8'), original)
+            self.assertTrue((output_dir / 'wcag-fixes.dry-run.diff').exists())
+            self.assertIn('projected_mutation_telemetry', payload['run_meta'])
+            self.assertIn('--dry-run', ' '.join(payload['run_meta']['notes']))
     def test_run_accessibility_audit_rejects_conflicting_mock_and_skip_flags(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             html_path = Path(tmp) / 'sample.html'
