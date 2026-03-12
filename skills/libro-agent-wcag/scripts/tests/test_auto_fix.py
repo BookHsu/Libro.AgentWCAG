@@ -395,6 +395,33 @@ class AutoFixTests(unittest.TestCase):
             self.assertEqual(updated_report['run_meta']['diff_artifacts'], [])
             self.assertIn('No safe auto-fix changes were applied', ' '.join(updated_report['run_meta']['notes']))
 
+    def test_apply_report_fixes_mixed_supported_and_unsupported_findings_only_changes_supported(self) -> None:
+        fixture = Path(__file__).parent / 'fixtures' / 'missing-alt.html'
+        with tempfile.TemporaryDirectory() as tmp:
+            working = Path(tmp) / fixture.name
+            original = fixture.read_text(encoding='utf-8')
+            working.write_text(original, encoding='utf-8')
+            contract = resolve_contract({'target': str(working), 'execution_mode': 'apply-fixes'})
+            axe_data = {
+                'violations': [
+                    {'id': 'image-alt', 'impact': 'serious', 'description': 'Images need alt', 'nodes': [{'target': ['img.hero']}]},
+                    {'id': 'color-contrast', 'impact': 'serious', 'description': 'Contrast issue', 'nodes': [{'target': ['.hero']}]},
+                ]
+            }
+
+            report = normalize_report(contract, axe_data, {'audits': {}}, None, None)
+            updated_report, diff_text = apply_report_fixes(working, report)
+            updated_text = working.read_text(encoding='utf-8')
+
+            self.assertNotEqual(updated_text, original)
+            self.assertIn('alt=""', updated_text)
+            self.assertEqual(updated_report['summary']['auto_fixed_count'], 1)
+            self.assertIn('image-alt', [item['rule_id'] for item in updated_report['summary']['diff_summary']])
+            color_contrast_finding = next(item for item in updated_report['findings'] if item['rule_id'] == 'color-contrast')
+            self.assertEqual(color_contrast_finding['status'], 'open')
+            self.assertNotIn('color-contrast', [item['rule_id'] for item in updated_report['summary']['diff_summary']])
+            self.assertIn('image-alt', diff_text)
+
     def test_repeated_normalize_and_apply_fixes_runs_remain_stable(self) -> None:
         fixture = Path(__file__).parent / 'fixtures' / 'empty-link-viewport.html'
         with tempfile.TemporaryDirectory() as tmp:
@@ -555,3 +582,4 @@ class FrameworkSnapshotBaselineTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

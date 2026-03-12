@@ -121,12 +121,12 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M16 Apply-Fixes Productization
 
-- [ ] Audit `skills/libro-agent-wcag/scripts/auto_fix.py` and `run_accessibility_audit.py` behavior against README wording for `apply-fixes`
-- [ ] Define the supported `apply-fixes` scope explicitly by rule family, file type, and safety level
-- [ ] Close the highest-value gaps between safe rewrite support and documented `apply-fixes` capabilities
-- [ ] Add regression coverage for repeated `apply-fixes` runs on the same target and verify idempotent artifacts remain stable
-- [ ] Add regression coverage for mixed supported-plus-unsupported findings so unsupported rules never cause overreach
-- [ ] Clarify in docs which remediation classes remain intentionally `suggest-only` or assisted-only
+- [x] Audit `skills/libro-agent-wcag/scripts/auto_fix.py` and `run_accessibility_audit.py` behavior against README wording for `apply-fixes`
+- [x] Define the supported `apply-fixes` scope explicitly by rule family, file type, and safety level
+- [x] Close the highest-value gaps between safe rewrite support and documented `apply-fixes` capabilities
+- [x] Add regression coverage for repeated `apply-fixes` runs on the same target and verify idempotent artifacts remain stable
+- [x] Add regression coverage for mixed supported-plus-unsupported findings so unsupported rules never cause overreach
+- [x] Clarify in docs which remediation classes remain intentionally `suggest-only` or assisted-only
 
 ## M17 Release Packaging Extras
 
@@ -139,5 +139,4 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
-
 
