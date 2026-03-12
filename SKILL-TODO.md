@@ -187,9 +187,14 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [x] Add CLI preset discovery output (`--list-policy-presets`) so automation can inspect available policy profiles without requiring `--target`.
 - [x] Add effective-policy explain mode (`--explain-policy`) that emits merged policy controls into `run_meta` and compact summary output.
 - [x] Add regression coverage for preset discovery and explain-policy output contracts, plus README usage notes.
+## M25 Policy Auditability And Governance
+
+- [x] Add strict `--policy-config` key validation so unsupported keys fail fast with actionable errors.
+- [x] Add effective-policy source provenance (`cli`, `policy-config`, `policy-preset`, default) for deterministic audit trails.
+- [x] Add `--write-effective-policy` artifact export plus regression tests and README usage notes.
+
 ## Notes
 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
-
