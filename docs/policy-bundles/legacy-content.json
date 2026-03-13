@@ -1,0 +1,10 @@
+{
+  "name": "legacy-content",
+  "description": "Legacy content profile with deterministic ignore defaults for noisy debt.",
+  "fail_on": "serious",
+  "include_rules": [],
+  "ignore_rules": [
+    "meta-viewport",
+    "color-contrast"
+  ]
+}

@@ -1096,6 +1096,44 @@ class CliFlowTests(unittest.TestCase):
         payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
         self.assertIn('policy_effective', payload['run_meta'])
 
+    def test_run_accessibility_audit_policy_bundle_is_reflected_in_effective_policy(self) -> None:
+        test_dir = self.repo_root / 'automation-work' / 'm30-policy-bundle-effective-test'
+        if test_dir.exists():
+            shutil.rmtree(test_dir, ignore_errors=True)
+        test_dir.mkdir(parents=True, exist_ok=True)
+
+        html_path = test_dir / 'sample.html'
+        output_dir = test_dir / 'out'
+        html_path.write_text('<!doctype html><html><body></body></html>', encoding='utf-8')
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(output_dir),
+                '--summary-only',
+                '--explain-policy',
+                '--policy-bundle',
+                'legacy-content',
+                '--skip-axe',
+                '--skip-lighthouse',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        compact = json.loads(completed.stdout.strip())
+        self.assertEqual(compact['policy_effective']['bundle'], 'legacy-content')
+        self.assertEqual(compact['policy_effective']['sources']['fail_on'], 'policy-bundle')
+        self.assertEqual(compact['policy_effective']['sources']['ignore_rules']['color-contrast'], 'policy-bundle')
+        payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
+        self.assertEqual(payload['run_meta']['policy_bundle']['name'], 'legacy-content')
+
     def test_run_accessibility_audit_policy_config_rejects_unknown_keys(self) -> None:
         test_dir = self.repo_root / 'automation-work' / 'm25-policy-config-validation-test'
         if test_dir.exists():
