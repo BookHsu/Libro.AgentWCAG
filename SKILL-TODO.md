@@ -6,6 +6,7 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 1. [ ] Complete `M32 Baseline Debt Waiver Expiry Automation` to prevent stale accepted debt from silently persisting.
 2. [ ] Complete `M33 Multi-Agent Install Manifest Integrity` to guarantee installed skill bundles remain adapter-correct and tamper-evident across agents.
+3. [ ] Complete `M34 Policy Bundle Governance And Drift Detection` to keep shipped policy bundles audited, explainable, and release-gated against silent drift.
 
 ## M21 Post-M20 Validation Closure
 
@@ -238,6 +239,12 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [ ] Add manifest integrity verification mode to `scripts/doctor-agent.py` that checks adapter entrypoint hashes and required companion files (`usage-example`, `failure-guide`, `e2e-example`).
 - [ ] Add installer/uninstaller regression tests for cross-agent matrix (`codex`, `claude`, `gemini`, `copilot`) including custom `--dest` layouts and reinstall idempotency.
 - [ ] Add release docs for post-install integrity verification workflow and failure remediation playbook for corrupted or partial installations.
+
+## M34 Policy Bundle Governance And Drift Detection
+
+- [ ] Add bundle lock metadata (`bundle_version`, `bundle_hash`, `updated_at`) to each `docs/policy-bundles/*.json` artifact and fail validation when metadata is missing or stale.
+- [ ] Add `--validate-policy-bundles` CLI/CI check in `scripts/validate_skill.py` to verify bundle schema, deterministic key ordering, and compatibility with `--explain-policy` output.
+- [ ] Add release checklist gate requiring policy-bundle drift evidence (baseline hash diff + reviewer sign-off) before merging policy preset or bundle changes.
 ## Notes
 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
