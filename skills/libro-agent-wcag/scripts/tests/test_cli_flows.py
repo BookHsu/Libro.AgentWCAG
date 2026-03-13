@@ -1782,6 +1782,147 @@ class CliFlowTests(unittest.TestCase):
         notes = ' '.join(payload['run_meta'].get('notes', []))
         self.assertIn('Risk calibration downgraded', notes)
 
+
+    def test_run_accessibility_audit_replay_verification_fails_on_high_severity_regression(self) -> None:
+        test_dir = self.repo_root / 'automation-work' / 'm37-replay-regression-fail'
+        if test_dir.exists():
+            shutil.rmtree(test_dir, ignore_errors=True)
+        test_dir.mkdir(parents=True, exist_ok=True)
+
+        html_path = test_dir / 'sample.html'
+        output_dir = test_dir / 'out'
+        replay_dir = test_dir / 'replay-source'
+        axe_json = test_dir / 'axe.json'
+        html_path.write_text('<!doctype html><html><body><img class="hero" src="hero.png"><button class="icon"></button></body></html>', encoding='utf-8')
+        replay_dir.mkdir(parents=True, exist_ok=True)
+        (replay_dir / 'wcag-report.json').write_text(
+            json.dumps(
+                {
+                    'target': {'value': str(html_path)},
+                    'run_meta': {
+                        'scanner_capabilities': {
+                            'scanners': {
+                                'axe': {'available': True},
+                                'lighthouse': {'available': False},
+                            }
+                        }
+                    },
+                    'findings': [
+                        {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'severity': 'serious', 'status': 'open'},
+                    ],
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding='utf-8',
+        )
+        axe_json.write_text(
+            json.dumps(
+                {
+                    'violations': [
+                        {'id': 'image-alt', 'impact': 'serious', 'description': 'Image alt missing', 'nodes': [{'target': ['img.hero']}]},
+                        {'id': 'button-name', 'impact': 'serious', 'description': 'Button name missing', 'nodes': [{'target': ['button.icon']}]},
+                    ]
+                }
+            ),
+            encoding='utf-8',
+        )
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(output_dir),
+                '--replay-verify-from',
+                str(replay_dir),
+                '--mock-axe-json',
+                str(axe_json),
+                '--skip-lighthouse',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 47, completed.stdout + completed.stderr)
+        self.assertTrue((output_dir / 'replay-summary.json').exists())
+        self.assertTrue((output_dir / 'replay-diff.md').exists())
+        payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
+        self.assertTrue(payload['run_meta']['replay_verification']['gate']['failed'])
+
+    def test_run_accessibility_audit_replay_verification_downgrades_on_scanner_drift(self) -> None:
+        test_dir = self.repo_root / 'automation-work' / 'm37-replay-scanner-drift'
+        if test_dir.exists():
+            shutil.rmtree(test_dir, ignore_errors=True)
+        test_dir.mkdir(parents=True, exist_ok=True)
+
+        html_path = test_dir / 'sample.html'
+        output_dir = test_dir / 'out'
+        replay_dir = test_dir / 'replay-source'
+        axe_json = test_dir / 'axe.json'
+        html_path.write_text('<!doctype html><html><body><img class="hero" src="hero.png"><button class="icon"></button></body></html>', encoding='utf-8')
+        replay_dir.mkdir(parents=True, exist_ok=True)
+        (replay_dir / 'wcag-report.json').write_text(
+            json.dumps(
+                {
+                    'target': {'value': str(html_path)},
+                    'run_meta': {
+                        'scanner_capabilities': {
+                            'scanners': {
+                                'axe': {'available': True},
+                                'lighthouse': {'available': True},
+                            }
+                        }
+                    },
+                    'findings': [
+                        {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'severity': 'serious', 'status': 'open'},
+                    ],
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding='utf-8',
+        )
+        axe_json.write_text(
+            json.dumps(
+                {
+                    'violations': [
+                        {'id': 'image-alt', 'impact': 'serious', 'description': 'Image alt missing', 'nodes': [{'target': ['img.hero']}]},
+                        {'id': 'button-name', 'impact': 'serious', 'description': 'Button name missing', 'nodes': [{'target': ['button.icon']}]},
+                    ]
+                }
+            ),
+            encoding='utf-8',
+        )
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(output_dir),
+                '--replay-verify-from',
+                str(replay_dir),
+                '--mock-axe-json',
+                str(axe_json),
+                '--skip-lighthouse',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        replay_summary = json.loads((output_dir / 'replay-summary.json').read_text(encoding='utf-8'))
+        self.assertEqual(replay_summary['status_counts']['regressed'], 0)
+        self.assertGreaterEqual(replay_summary['status_counts']['non-deterministic'], 1)
+        self.assertFalse(replay_summary['gate']['failed'])
+
 if __name__ == '__main__':
     unittest.main()
 
