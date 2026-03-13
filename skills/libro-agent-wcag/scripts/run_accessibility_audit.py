@@ -4,12 +4,14 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
 import shutil
 import subprocess
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import urlparse
@@ -51,6 +53,7 @@ FAIL_ON_EXIT_CODES = {"critical": 42, "serious": 43, "moderate": 44}
 FINDING_SORT_MODES = {"severity", "rule", "target"}
 BASELINE_TARGET_NORMALIZATION_MODES = {"none", "host-path", "path-only"}
 BASELINE_SELECTOR_CANONICALIZATION_MODES = {"none", "basic"}
+BASELINE_EVIDENCE_MODES = {"none", "hash", "hash-chain"}
 DEBT_STATE_NEW = "new"
 DEBT_STATE_ACCEPTED = "accepted"
 DEBT_STATE_RETIRED = "retired"
@@ -367,6 +370,160 @@ def _remove_if_exists(path: Path) -> None:
         path.unlink()
 
 
+def _utc_timestamp() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
+
+
+def _sha256_text(value: str) -> str:
+    return hashlib.sha256(value.encode('utf-8')).hexdigest()
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open('rb') as handle:
+        for chunk in iter(lambda: handle.read(8192), b''):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _build_baseline_evidence_material(
+    report: dict[str, Any],
+    signature_config: dict[str, Any],
+) -> dict[str, Any]:
+    signatures = sorted(_unresolved_finding_signatures(report, signature_config))
+    target = str(report.get('target', {}).get('value', '')).strip()
+    return {
+        'target': target,
+        'signature_config': signature_config,
+        'unresolved_signatures': signatures,
+    }
+
+
+def _compute_report_evidence_hash(
+    report: dict[str, Any],
+    signature_config: dict[str, Any],
+) -> tuple[str, dict[str, Any]]:
+    material = _build_baseline_evidence_material(report, signature_config)
+    canonical = json.dumps(material, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+    return _sha256_text(canonical), material
+
+
+def _verify_baseline_report_evidence(
+    baseline_report: dict[str, Any],
+    signature_config: dict[str, Any],
+) -> dict[str, Any]:
+    baseline_hash, _ = _compute_report_evidence_hash(baseline_report, signature_config)
+    evidence = baseline_report.get('run_meta', {}).get('baseline_evidence', {})
+    declared_hash = str(evidence.get('report_hash', '')).strip() if isinstance(evidence, dict) else ''
+    declared_chain = str(evidence.get('chain_hash', '')).strip() if isinstance(evidence, dict) else ''
+    declared_parent_hash = str(evidence.get('baseline_report_hash', '')).strip() if isinstance(evidence, dict) else ''
+
+    if declared_hash and declared_hash != baseline_hash:
+        raise ValueError('baseline evidence verification failed: declared report_hash does not match baseline report content')
+
+    if declared_chain:
+        expected_chain = _sha256_text(f'{declared_parent_hash}:{baseline_hash}') if declared_parent_hash else baseline_hash
+        if declared_chain != expected_chain:
+            raise ValueError('baseline evidence verification failed: declared chain_hash does not match baseline report lineage')
+
+    return {
+        'declared': bool(declared_hash),
+        'verified': not declared_hash or declared_hash == baseline_hash,
+        'baseline_report_hash': baseline_hash,
+        'baseline_chain_hash': declared_chain,
+    }
+
+
+def _build_run_baseline_evidence(
+    *,
+    report: dict[str, Any],
+    baseline_report: dict[str, Any],
+    signature_config: dict[str, Any],
+    evidence_mode: str,
+) -> dict[str, Any]:
+    current_hash, material = _compute_report_evidence_hash(report, signature_config)
+    baseline_verification = {
+        'declared': False,
+        'verified': False,
+        'baseline_report_hash': '',
+        'baseline_chain_hash': '',
+    }
+    if baseline_report:
+        baseline_verification = _verify_baseline_report_evidence(baseline_report, signature_config)
+
+    evidence: dict[str, Any] = {
+        'mode': evidence_mode,
+        'generated_at': _utc_timestamp(),
+        'report_hash': current_hash,
+        'signature_count': len(material.get('unresolved_signatures', [])),
+        'signature_config': signature_config,
+    }
+    if evidence_mode == 'hash-chain':
+        parent_hash = (
+            baseline_verification.get('baseline_chain_hash')
+            or baseline_verification.get('baseline_report_hash')
+            or ''
+        )
+        evidence['baseline_report_hash'] = baseline_verification.get('baseline_report_hash', '')
+        evidence['baseline_chain_parent'] = parent_hash
+        evidence['chain_hash'] = _sha256_text(f'{parent_hash}:{current_hash}') if parent_hash else current_hash
+    elif baseline_verification.get('baseline_report_hash'):
+        evidence['baseline_report_hash'] = baseline_verification.get('baseline_report_hash', '')
+
+    evidence['baseline_verification'] = {
+        'declared': baseline_verification.get('declared', False),
+        'verified': baseline_verification.get('verified', False),
+    }
+    return evidence
+
+
+def _build_artifact_manifest(
+    *,
+    output_dir: Path,
+    report_format: str,
+    target: str,
+    artifact_paths: dict[str, Path],
+    baseline_evidence: dict[str, Any] | None,
+) -> tuple[dict[str, Any], Path]:
+    artifacts: list[dict[str, Any]] = []
+    for kind in sorted(artifact_paths):
+        path = artifact_paths[kind]
+        if not path.exists() or not path.is_file():
+            continue
+        artifacts.append(
+            {
+                'kind': kind,
+                'path': str(path),
+                'size_bytes': path.stat().st_size,
+                'sha256': _sha256_file(path),
+            }
+        )
+
+    manifest: dict[str, Any] = {
+        'generated_at': _utc_timestamp(),
+        'generator': {
+            'name': 'run_accessibility_audit.py',
+            'version': REPORT_SCHEMA_VERSION,
+        },
+        'target': target,
+        'report_format': report_format,
+        'artifact_count': len(artifacts),
+        'artifacts': artifacts,
+    }
+    if baseline_evidence:
+        manifest['baseline_evidence'] = {
+            'mode': baseline_evidence.get('mode'),
+            'report_hash': baseline_evidence.get('report_hash'),
+            'chain_hash': baseline_evidence.get('chain_hash'),
+            'baseline_report_hash': baseline_evidence.get('baseline_report_hash'),
+            'baseline_verification': baseline_evidence.get('baseline_verification', {}),
+        }
+
+    manifest_path = output_dir / 'artifact-manifest.json'
+    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
+    return manifest, manifest_path
+
+
 def _load_policy_config(path: str | None) -> dict[str, Any]:
     if not path:
         return {}
@@ -484,6 +641,7 @@ def _build_effective_policy(
     fail_on_new_only: bool,
     baseline_report_path: str | None,
     baseline_signature_config: dict[str, Any],
+    baseline_evidence_mode: str,
     overlapping_rules: list[str],
 ) -> dict[str, Any]:
     return {
@@ -498,6 +656,7 @@ def _build_effective_policy(
         "fail_on_new_only": fail_on_new_only,
         "baseline_report_path": baseline_report_path,
         "baseline_signature": baseline_signature_config,
+        "baseline_evidence_mode": baseline_evidence_mode,
         "overlapping_rules": overlapping_rules,
         "rule_overlap_resolution": "ignore-rules-win",
     }
@@ -766,6 +925,15 @@ def _build_compact_summary(
     policy_rule_overlap = report.get('run_meta', {}).get('policy_rule_overlap')
     if policy_rule_overlap:
         compact['policy_rule_overlap'] = policy_rule_overlap
+    baseline_evidence = report.get('run_meta', {}).get('baseline_evidence')
+    if baseline_evidence:
+        compact['baseline_evidence'] = {
+            'mode': baseline_evidence.get('mode'),
+            'baseline_verification': baseline_evidence.get('baseline_verification', {}),
+        }
+    artifact_manifest = report.get('run_meta', {}).get('artifact_manifest')
+    if artifact_manifest:
+        compact['artifact_manifest'] = artifact_manifest
     return compact
 
 def _apply_rule_policy(
@@ -1172,6 +1340,12 @@ def parse_args() -> argparse.Namespace:
         help="Selector canonicalization mode used when building baseline signatures.",
     )
     parser.add_argument(
+        "--baseline-evidence-mode",
+        choices=sorted(BASELINE_EVIDENCE_MODES),
+        default="none",
+        help="Baseline evidence integrity mode (none|hash|hash-chain) for tamper/staleness checks.",
+    )
+    parser.add_argument(
         "--fail-on-new-only",
         action="store_true",
         help="When used with --fail-on and --baseline-report, fail only on newly introduced debt.",
@@ -1320,6 +1494,7 @@ def main() -> int:
         fail_on_new_only=bool(args.fail_on_new_only),
         baseline_report_path=args.baseline_report,
         baseline_signature_config=baseline_signature_config,
+        baseline_evidence_mode=args.baseline_evidence_mode,
         overlapping_rules=overlapping_rules,
     )
 
@@ -1484,6 +1659,8 @@ def main() -> int:
             'Rule policy overlap detected (ignore-rules-win): ' + ", ".join(overlapping_rules)
         )
 
+    diff_path: Path | None = None
+    snapshot_path: Path | None = None
     if contract.execution_mode == 'apply-fixes':
         if args.dry_run:
             diff_path = output_dir / 'wcag-fixes.dry-run.diff'
@@ -1540,6 +1717,26 @@ def main() -> int:
                 f"persistent={baseline_diff['persistent_count']}."
             )
         )
+
+    baseline_evidence: dict[str, Any] | None = None
+    if args.baseline_evidence_mode != 'none':
+        baseline_evidence = _build_run_baseline_evidence(
+            report=report,
+            baseline_report=baseline_report,
+            signature_config=baseline_signature_config,
+            evidence_mode=args.baseline_evidence_mode,
+        )
+        report['run_meta']['baseline_evidence'] = baseline_evidence
+        report.setdefault('summary', {})['baseline_evidence'] = {
+            'mode': baseline_evidence.get('mode'),
+            'baseline_verification': baseline_evidence.get('baseline_verification', {}),
+        }
+        if baseline_report:
+            report['run_meta']['notes'].append(
+                'Baseline evidence verification: '
+                + ('passed' if baseline_evidence['baseline_verification'].get('verified') else 'missing declaration')
+                + f" (mode={args.baseline_evidence_mode})."
+            )
 
     _sort_report_findings(report, args.sort_findings)
     report['run_meta']['sorting'] = {
@@ -1620,6 +1817,51 @@ def main() -> int:
     else:
         should_fail, exit_code = False, 0
 
+    artifact_manifest_path = output_dir / 'artifact-manifest.json'
+    report['run_meta']['artifact_manifest'] = {
+        'path': str(artifact_manifest_path),
+        'algorithm': 'sha256',
+    }
+    if report_format == 'json':
+        write_report_files(report, str(output_json), str(output_md))
+    elif machine_output.suffix == '.sarif':
+        output_sarif = machine_output
+        output_sarif.write_text(
+            json.dumps(_report_to_sarif(report, contract.target, local_target), ensure_ascii=False, indent=2),
+            encoding='utf-8',
+        )
+        output_md.write_text(to_markdown_table(report), encoding='utf-8')
+
+    artifact_paths: dict[str, Path] = {
+        'markdown-report': output_md,
+        'report-schema': staged_schema_path,
+    }
+    if report_format == 'json':
+        artifact_paths['machine-report-json'] = output_json
+    else:
+        artifact_paths['machine-report-sarif'] = machine_output
+
+    if effective_policy_output is not None:
+        artifact_paths['effective-policy'] = effective_policy_output
+    if diff_path is not None:
+        artifact_paths['fixes-diff'] = diff_path
+    if snapshot_path is not None:
+        artifact_paths['fixes-snapshot'] = snapshot_path
+
+    axe_raw = output_dir / 'axe.raw.json'
+    lighthouse_raw = output_dir / 'lighthouse.raw.json'
+    artifact_paths['axe-raw'] = axe_raw
+    artifact_paths['lighthouse-raw'] = lighthouse_raw
+
+    _, manifest_path = _build_artifact_manifest(
+        output_dir=output_dir,
+        report_format=report_format,
+        target=contract.target,
+        artifact_paths=artifact_paths,
+        baseline_evidence=baseline_evidence,
+    )
+    report['run_meta']['artifact_manifest']['path'] = str(manifest_path)
+
     if args.summary_only:
         compact_summary = _build_compact_summary(
             report=report,
@@ -1647,4 +1889,14 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+
+
+
+
+
+
+
+
 

@@ -18,6 +18,9 @@ import run_accessibility_audit as runner
 from run_accessibility_audit import (
     DEFAULT_SCANNER_RETRY_ATTEMPTS,
     DEFAULT_TIMEOUT_SECONDS,
+    _build_artifact_manifest,
+    _build_run_baseline_evidence,
+    _compute_report_evidence_hash,
     _extract_version_line,
     _find_rule_policy_overlaps,
     _is_transient_scanner_error,
@@ -131,6 +134,21 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(args.baseline_target_normalization, "host-path")
         self.assertEqual(args.baseline_selector_canonicalization, "basic")
         self.assertTrue(args.fail_on_new_only)
+
+    def test_cli_accepts_baseline_evidence_mode_flag(self) -> None:
+        original = sys.argv
+        sys.argv = [
+            "run_accessibility_audit.py",
+            "--target",
+            "https://example.com",
+            "--baseline-evidence-mode",
+            "hash-chain",
+        ]
+        try:
+            args = parse_args()
+        finally:
+            sys.argv = original
+        self.assertEqual(args.baseline_evidence_mode, "hash-chain")
 
     def test_cli_accepts_findings_controls_flags(self) -> None:
         original = sys.argv
@@ -257,12 +275,14 @@ class RunnerTests(unittest.TestCase):
                 'target_normalization': 'host-path',
                 'selector_canonicalization': 'basic',
             },
+            baseline_evidence_mode='hash-chain',
             overlapping_rules=['meta-viewport'],
         )
         self.assertEqual(policy['bundle'], 'legacy-content')
         self.assertEqual(policy['preset'], 'legacy')
         self.assertTrue(policy['fail_on_new_only'])
         self.assertEqual(policy['baseline_signature']['selector_canonicalization'], 'basic')
+        self.assertEqual(policy['baseline_evidence_mode'], 'hash-chain')
         self.assertEqual(policy['overlapping_rules'], ['meta-viewport'])
 
     def test_build_scanner_capabilities_reports_mocked_rule_catalog(self) -> None:
@@ -293,6 +313,83 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(capabilities['available_rule_count'], 2)
         self.assertEqual(capabilities['available_rules'], ['button-name', 'image-alt'])
 
+    def test_compute_report_evidence_hash_is_deterministic(self) -> None:
+        report = {
+            'target': {'value': 'https://example.com'},
+            'findings': [
+                {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'status': 'open'},
+                {'rule_id': 'button-name', 'changed_target': 'button.icon', 'status': 'open'},
+            ],
+        }
+        signature_config = {
+            'include_target_in_signature': False,
+            'target_normalization': 'none',
+            'selector_canonicalization': 'none',
+        }
+        first_hash, first_material = _compute_report_evidence_hash(report, signature_config)
+        second_hash, second_material = _compute_report_evidence_hash(report, signature_config)
+        self.assertEqual(first_hash, second_hash)
+        self.assertEqual(first_material['unresolved_signatures'], second_material['unresolved_signatures'])
+
+    def test_build_run_baseline_evidence_in_hash_chain_mode(self) -> None:
+        signature_config = {
+            'include_target_in_signature': False,
+            'target_normalization': 'none',
+            'selector_canonicalization': 'none',
+        }
+        baseline_report = {
+            'target': {'value': 'https://example.com'},
+            'findings': [
+                {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'status': 'open'},
+            ],
+        }
+        baseline_hash, _ = _compute_report_evidence_hash(baseline_report, signature_config)
+        baseline_report['run_meta'] = {
+            'baseline_evidence': {
+                'mode': 'hash',
+                'report_hash': baseline_hash,
+            }
+        }
+        report = {
+            'target': {'value': 'https://example.com'},
+            'findings': [
+                {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'status': 'open'},
+                {'rule_id': 'button-name', 'changed_target': 'button.icon', 'status': 'open'},
+            ],
+        }
+        evidence = _build_run_baseline_evidence(
+            report=report,
+            baseline_report=baseline_report,
+            signature_config=signature_config,
+            evidence_mode='hash-chain',
+        )
+        self.assertEqual(evidence['mode'], 'hash-chain')
+        self.assertTrue(evidence['baseline_verification']['verified'])
+        self.assertTrue(bool(evidence['chain_hash']))
+
+    def test_build_artifact_manifest_includes_sha256_and_size(self) -> None:
+        workspace = Path(__file__).resolve().parents[4] / 'automation-work' / 'm31-runner-manifest-test'
+        if workspace.exists():
+            import shutil
+
+            shutil.rmtree(workspace, ignore_errors=True)
+        output_dir = workspace / 'out'
+        output_dir.mkdir(parents=True, exist_ok=True)
+        report_path = output_dir / 'wcag-report.json'
+        report_path.write_text('{"ok":true}', encoding='utf-8')
+        manifest, manifest_path = _build_artifact_manifest(
+            output_dir=output_dir,
+            report_format='json',
+            target='https://example.com',
+            artifact_paths={'machine-report-json': report_path},
+            baseline_evidence=None,
+        )
+        self.assertTrue(manifest_path.exists())
+        self.assertEqual(manifest['artifact_count'], 1)
+        artifact = manifest['artifacts'][0]
+        self.assertEqual(artifact['kind'], 'machine-report-json')
+        self.assertGreater(artifact['size_bytes'], 0)
+        self.assertEqual(len(artifact['sha256']), 64)
     @patch("run_accessibility_audit.subprocess.run")
     def test_run_command_returns_stdout_on_success(self, mock_run) -> None:
         mock_run.return_value = type("Result", (), {"returncode": 0, "stdout": "ok", "stderr": ""})()
@@ -641,4 +738,11 @@ class RunnerPolicyTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+
+
+
+
+
 
