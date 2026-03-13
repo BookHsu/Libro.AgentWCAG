@@ -1,0 +1,14 @@
+{
+  "name": "marketing-site",
+  "description": "Marketing funnel profile focused on key content and navigation accessibility checks.",
+  "fail_on": "serious",
+  "include_rules": [
+    "image-alt",
+    "heading-order",
+    "link-name",
+    "button-name"
+  ],
+  "ignore_rules": [
+    "meta-viewport"
+  ]
+}
