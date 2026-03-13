@@ -60,6 +60,7 @@ After installation, check `install-manifest.json` inside the installed folder. I
 
 ```powershell
 python .\scripts\doctor-agent.py --agent codex
+python .\scripts\doctor-agent.py --agent codex --verify-manifest-integrity
 python .\scripts\doctor-agent.py --agent all
 ```
 
@@ -161,6 +162,7 @@ python scripts/validate_skill.py skills/libro-agent-wcag
 - `docs/release/real-scanner-ci-lane.md`:  reusable optional real-scanner CI lane, evidence artifact conventions, and triage handoff contract
 - `docs/release/baseline-debt-lifecycle.md`:  baseline debt state governance (`new`/`accepted`/`retired`) and approval checkpoints
 - `docs/release/provenance-verification.md`:  baseline evidence/hash-chain verification and artifact-manifest CI workflow
+- `docs/release/install-integrity-verification.md`:  post-install manifest integrity verification and corruption remediation playbook
 - `docs/policy-bundles/*.json`:  reusable policy-bundle templates (`strict-web-app`, `legacy-content`, `marketing-site`) for multi-repo adoption
 - `docs/release/release-packaging-extras-placement.md`:  decision record for extras placement
 - `.github/ISSUE_TEMPLATE/installation-failure.yml`:  installation failure intake form
@@ -177,4 +179,7 @@ python scripts/validate_skill.py skills/libro-agent-wcag
 
 - Use `docs/automations/test-plan-automation.md` as the execution spec for scheduled Codex test-development automation. This lane focuses only on test development, testing-plan updates, commits, and pushes.
 - Use `docs/automations/test-plan-review-policy.md` as the review policy before accepting automation-generated changes.
+
+
+
 
