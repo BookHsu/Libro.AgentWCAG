@@ -218,9 +218,9 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [x] Add release checklist updates to require baseline refresh evidence before publishing significant remediation changes.
 ## M30 Policy Bundle Templates And Validation
 
-- [ ] Add a `docs/policy-bundles/` template set (`strict-web-app`, `legacy-content`, `marketing-site`) with deterministic include/ignore/fail-on defaults.
-- [ ] Add `--policy-bundle <name>` support that composes bundle defaults with existing CLI and `--policy-config` override precedence.
-- [ ] Add bundle validation and contract tests to ensure every shipped bundle resolves to a fully explainable effective policy and stable summary output.
+- [x] Add a `docs/policy-bundles/` template set (`strict-web-app`, `legacy-content`, `marketing-site`) with deterministic include/ignore/fail-on defaults.
+- [x] Add `--policy-bundle <name>` support that composes bundle defaults with existing CLI and `--policy-config` override precedence.
+- [x] Add bundle validation and contract tests to ensure every shipped bundle resolves to a fully explainable effective policy and stable summary output.
 
 ## M31 Scanner Evidence Integrity And Provenance
 

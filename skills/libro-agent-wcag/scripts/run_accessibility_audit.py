@@ -78,6 +78,26 @@ POLICY_PRESETS: dict[str, dict[str, Any]] = {
         "description": "Back-compat profile that ignores noisy viewport policy findings.",
     },
 }
+POLICY_BUNDLES: dict[str, dict[str, Any]] = {
+    "strict-web-app": {
+        "fail_on": "moderate",
+        "include_rules": [],
+        "ignore_rules": [],
+        "description": "Strict default for modern web apps with full rule coverage.",
+    },
+    "legacy-content": {
+        "fail_on": "serious",
+        "include_rules": [],
+        "ignore_rules": ["meta-viewport", "color-contrast"],
+        "description": "Legacy content profile with deterministic ignore defaults for noisy debt.",
+    },
+    "marketing-site": {
+        "fail_on": "serious",
+        "include_rules": ["image-alt", "heading-order", "link-name", "button-name"],
+        "ignore_rules": ["meta-viewport"],
+        "description": "Marketing funnel profile focused on core content and navigation accessibility rules.",
+    },
+}
 ALLOWED_POLICY_CONFIG_KEYS = {"report_format", "fail_on", "include_rules", "ignore_rules"}
 POLICY_CONFIG_KEY_SPECS: dict[str, dict[str, Any]] = {
     "report_format": {
@@ -405,6 +425,21 @@ def _resolve_policy_preset(name: str | None) -> dict[str, Any]:
     }
 
 
+def _resolve_policy_bundle(name: str | None) -> dict[str, Any]:
+    if not name:
+        return {}
+    bundle = POLICY_BUNDLES.get(name)
+    if not bundle:
+        raise ValueError(f"unknown policy bundle: {name}")
+    return {
+        "name": name,
+        "fail_on": bundle["fail_on"],
+        "include_rules": list(bundle["include_rules"]),
+        "ignore_rules": list(bundle["ignore_rules"]),
+        "description": bundle["description"],
+    }
+
+
 def _policy_presets_payload() -> dict[str, Any]:
     presets: list[dict[str, Any]] = []
     for name in sorted(POLICY_PRESETS):
@@ -442,6 +477,7 @@ def _build_effective_policy(
     fail_on: str | None,
     include_rules: list[str],
     ignore_rules: list[str],
+    policy_bundle: dict[str, Any],
     policy_preset: dict[str, Any],
     policy_config_path: str | None,
     policy_sources: dict[str, Any],
@@ -455,6 +491,7 @@ def _build_effective_policy(
         "fail_on": fail_on,
         "include_rules": include_rules,
         "ignore_rules": ignore_rules,
+        "bundle": policy_bundle.get("name"),
         "preset": policy_preset.get("name"),
         "policy_config_path": policy_config_path,
         "sources": policy_sources,
@@ -466,22 +503,34 @@ def _build_effective_policy(
     }
 
 
-def _policy_value_source(cli_value: Any, config_value: Any, preset_value: Any, default_label: str) -> str:
+def _policy_value_source(
+    cli_value: Any,
+    config_value: Any,
+    preset_value: Any,
+    bundle_value: Any,
+    default_label: str,
+) -> str:
     if cli_value is not None:
         return "cli"
     if config_value is not None:
         return "policy-config"
     if preset_value is not None:
         return "policy-preset"
+    if bundle_value is not None:
+        return "policy-bundle"
     return default_label
 
 
 def _build_rule_sources(
+    bundle_rules: list[str],
     preset_rules: list[str],
     config_rules: list[str],
     cli_rules: list[str],
 ) -> dict[str, str]:
     sources: dict[str, str] = {}
+    for rule in bundle_rules:
+        if rule not in sources:
+            sources[rule] = "policy-bundle"
     for rule in preset_rules:
         if rule not in sources:
             sources[rule] = "policy-preset"
@@ -1069,6 +1118,12 @@ def parse_args() -> argparse.Namespace:
         help="Optional policy preset (strict|balanced|legacy) for deterministic fail-on and rule filters.",
     )
     parser.add_argument(
+        "--policy-bundle",
+        choices=sorted(POLICY_BUNDLES),
+        default=None,
+        help="Optional policy bundle template (strict-web-app|legacy-content|marketing-site).",
+    )
+    parser.add_argument(
         "--list-policy-presets",
         action="store_true",
         help="Print available policy presets and exit.",
@@ -1176,6 +1231,7 @@ def main() -> int:
 
     policy_config = _load_policy_config(args.policy_config)
     baseline_report = _load_baseline_report(args.baseline_report)
+    policy_bundle = _resolve_policy_bundle(args.policy_bundle)
     policy_preset = _resolve_policy_preset(args.policy_preset)
     config_report_format = policy_config.get('report_format')
     config_fail_on = policy_config.get('fail_on')
@@ -1187,6 +1243,10 @@ def main() -> int:
     if config_fail_on and config_fail_on not in {'critical', 'serious', 'moderate'}:
         raise ValueError('policy-config fail_on must be one of: critical, serious, moderate')
 
+    bundle_fail_on = policy_bundle.get('fail_on')
+    bundle_include = _normalize_rule_list(policy_bundle.get('include_rules'), 'bundle.include_rules')
+    bundle_ignore = _normalize_rule_list(policy_bundle.get('ignore_rules'), 'bundle.ignore_rules')
+
     preset_fail_on = policy_preset.get('fail_on')
     preset_include = _normalize_rule_list(policy_preset.get('include_rules'), 'preset.include_rules')
     preset_ignore = _normalize_rule_list(policy_preset.get('ignore_rules'), 'preset.ignore_rules')
@@ -1195,13 +1255,15 @@ def main() -> int:
     cli_ignore_rules = [item.strip() for item in args.ignore_rule if item.strip()]
 
     report_format = args.report_format or config_report_format or 'json'
-    fail_on = args.fail_on or config_fail_on or preset_fail_on
+    fail_on = args.fail_on or config_fail_on or preset_fail_on or bundle_fail_on
     include_rules = _merge_rule_list(
+        bundle_include,
         preset_include,
         config_include,
         cli_include_rules,
     )
     ignore_rules = _merge_rule_list(
+        bundle_ignore,
         preset_ignore,
         config_ignore,
         cli_ignore_rules,
@@ -1213,10 +1275,10 @@ def main() -> int:
             + ", ".join(overlapping_rules)
         )
     policy_sources = {
-        'report_format': _policy_value_source(args.report_format, config_report_format, None, 'default'),
-        'fail_on': _policy_value_source(args.fail_on, config_fail_on, preset_fail_on, 'unset'),
-        'include_rules': _build_rule_sources(preset_include, config_include, cli_include_rules),
-        'ignore_rules': _build_rule_sources(preset_ignore, config_ignore, cli_ignore_rules),
+        'report_format': _policy_value_source(args.report_format, config_report_format, None, None, 'default'),
+        'fail_on': _policy_value_source(args.fail_on, config_fail_on, preset_fail_on, bundle_fail_on, 'unset'),
+        'include_rules': _build_rule_sources(bundle_include, preset_include, config_include, cli_include_rules),
+        'ignore_rules': _build_rule_sources(bundle_ignore, preset_ignore, config_ignore, cli_ignore_rules),
     }
 
     if args.skip_axe and args.mock_axe_json:
@@ -1251,6 +1313,7 @@ def main() -> int:
         fail_on=fail_on,
         include_rules=include_rules,
         ignore_rules=ignore_rules,
+        policy_bundle=policy_bundle,
         policy_preset=policy_preset,
         policy_config_path=args.policy_config,
         policy_sources=policy_sources,
@@ -1365,11 +1428,14 @@ def main() -> int:
     }
     if policy_preset:
         report['run_meta']['policy_preset'] = policy_preset
+    if policy_bundle:
+        report['run_meta']['policy_bundle'] = policy_bundle
     if args.explain_policy:
         report['run_meta']['policy_effective'] = effective_policy
         report.setdefault('summary', {})['policy_effective'] = {
             'report_format': effective_policy['report_format'],
             'fail_on': effective_policy['fail_on'],
+            'bundle': effective_policy['bundle'],
             'preset': effective_policy['preset'],
             'include_rule_count': len(effective_policy['include_rules']),
             'ignore_rule_count': len(effective_policy['ignore_rules']),
@@ -1397,6 +1463,7 @@ def main() -> int:
     before_policy_count, after_policy_count = _apply_rule_policy(report, include_rules, ignore_rules)
     if include_rules or ignore_rules:
         report['run_meta']['policy'] = {
+            'bundle': policy_bundle.get('name'),
             'preset': policy_preset.get('name'),
             'include_rules': include_rules,
             'ignore_rules': ignore_rules,
