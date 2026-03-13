@@ -1,0 +1,7 @@
+{
+  "name": "strict-web-app",
+  "description": "Strict default for modern web apps with full WCAG rule coverage.",
+  "fail_on": "moderate",
+  "include_rules": [],
+  "ignore_rules": []
+}
