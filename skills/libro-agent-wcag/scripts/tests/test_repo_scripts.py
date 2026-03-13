@@ -43,6 +43,23 @@ class RepoScriptTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         self.assertIn('Skill is valid!', completed.stdout)
 
+    def test_validate_skill_cli_validates_policy_bundles_when_flag_enabled(self) -> None:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'scripts/validate_skill.py',
+                'skills/libro-agent-wcag',
+                '--validate-policy-bundles',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        self.assertIn('Skill is valid!', completed.stdout)
+        self.assertIn('Policy bundles are valid!', completed.stdout)
+
     def test_validate_skill_cli_rejects_missing_directory(self) -> None:
         completed = subprocess.run(
             [
