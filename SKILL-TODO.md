@@ -9,7 +9,7 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 3. [x] Complete `M34 Policy Bundle Governance And Drift Detection` to keep shipped policy bundles audited, explainable, and release-gated against silent drift.
 4. [x] Complete `M35 Accessibility Debt Trend Intelligence` to expose actionable debt trends and release risk signals across repeated baseline runs.
 5. [x] Complete `M36 Rule-Risk Evidence Calibration` to align deterministic risk scoring with observed remediation outcomes and reduce triage noise.
-6. [ ] Complete `M37 Remediation Verification Replay Lane` to prove applied fixes remain stable across re-scan cycles and framework render variance.
+6. [x] Complete `M37 Remediation Verification Replay Lane` to prove applied fixes remain stable across re-scan cycles and framework render variance.
 
 ## M21 Post-M20 Validation Closure
 
@@ -262,12 +262,13 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M37 Remediation Verification Replay Lane
 
-- [ ] Add a replay mode (`--replay-verify-from <report-dir>`) that reapplies stored fix intents against a clean target copy and re-runs scanners to verify no high-severity regressions were introduced.
-- [ ] Emit replay verification artifacts (`replay-summary.json`, `replay-diff.md`) with per-finding status (`resolved`, `unchanged`, `regressed`, `non-deterministic`) and include them under `run_meta.replay_verification`.
-- [ ] Add docs and regression tests for replay gate behavior in CI, including deterministic handling for framework render drift and scanner capability differences.
+- [x] Add a replay mode (`--replay-verify-from <report-dir>`) that reapplies stored fix intents against a clean target copy and re-runs scanners to verify no high-severity regressions were introduced.
+- [x] Emit replay verification artifacts (`replay-summary.json`, `replay-diff.md`) with per-finding status (`resolved`, `unchanged`, `regressed`, `non-deterministic`) and include them under `run_meta.replay_verification`.
+- [x] Add docs and regression tests for replay gate behavior in CI, including deterministic handling for framework render drift and scanner capability differences.
 ## Notes
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
+
 
 
