@@ -1215,6 +1215,189 @@ class CliFlowTests(unittest.TestCase):
         payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
         self.assertEqual(payload['run_meta']['effective_policy_artifact'], str(artifact_path))
 
+    def test_run_accessibility_audit_emits_artifact_manifest_with_checksums(self) -> None:
+        test_dir = self.repo_root / 'automation-work' / 'm31-artifact-manifest-test'
+        if test_dir.exists():
+            shutil.rmtree(test_dir, ignore_errors=True)
+        test_dir.mkdir(parents=True, exist_ok=True)
+
+        html_path = test_dir / 'sample.html'
+        output_dir = test_dir / 'out'
+        html_path.write_text('<!doctype html><html><body><img src="hero.png"></body></html>', encoding='utf-8')
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(output_dir),
+                '--skip-axe',
+                '--skip-lighthouse',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        manifest = json.loads((output_dir / 'artifact-manifest.json').read_text(encoding='utf-8'))
+        self.assertEqual(manifest['generator']['name'], 'run_accessibility_audit.py')
+        self.assertGreaterEqual(manifest['artifact_count'], 3)
+        kinds = [item['kind'] for item in manifest['artifacts']]
+        self.assertIn('machine-report-json', kinds)
+        self.assertIn('markdown-report', kinds)
+        for item in manifest['artifacts']:
+            self.assertEqual(len(item['sha256']), 64)
+            self.assertGreaterEqual(item['size_bytes'], 1)
+
+    def test_run_accessibility_audit_baseline_hash_chain_verification_passes(self) -> None:
+        test_dir = self.repo_root / 'automation-work' / 'm31-baseline-hash-chain-pass'
+        if test_dir.exists():
+            shutil.rmtree(test_dir, ignore_errors=True)
+        test_dir.mkdir(parents=True, exist_ok=True)
+
+        html_path = test_dir / 'sample.html'
+        baseline_out = test_dir / 'baseline-out'
+        compare_out = test_dir / 'compare-out'
+        axe_json = test_dir / 'axe.json'
+        html_path.write_text('<!doctype html><html><body><img class="hero" src="hero.png"></body></html>', encoding='utf-8')
+        axe_json.write_text(
+            json.dumps(
+                {
+                    'violations': [
+                        {'id': 'image-alt', 'impact': 'serious', 'description': 'Image alt missing', 'nodes': [{'target': ['img.hero']}]},
+                    ]
+                }
+            ),
+            encoding='utf-8',
+        )
+
+        baseline = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(baseline_out),
+                '--baseline-evidence-mode',
+                'hash',
+                '--mock-axe-json',
+                str(axe_json),
+                '--skip-lighthouse',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(baseline.returncode, 0, baseline.stdout + baseline.stderr)
+
+        verify = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(compare_out),
+                '--baseline-report',
+                str(baseline_out / 'wcag-report.json'),
+                '--baseline-evidence-mode',
+                'hash-chain',
+                '--mock-axe-json',
+                str(axe_json),
+                '--skip-lighthouse',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(verify.returncode, 0, verify.stdout + verify.stderr)
+        payload = json.loads((compare_out / 'wcag-report.json').read_text(encoding='utf-8'))
+        self.assertEqual(payload['run_meta']['baseline_evidence']['mode'], 'hash-chain')
+        self.assertTrue(payload['run_meta']['baseline_evidence']['baseline_verification']['verified'])
+        self.assertIn('chain_hash', payload['run_meta']['baseline_evidence'])
+
+    def test_run_accessibility_audit_baseline_hash_verification_rejects_tampered_report(self) -> None:
+        test_dir = self.repo_root / 'automation-work' / 'm31-baseline-hash-fail'
+        if test_dir.exists():
+            shutil.rmtree(test_dir, ignore_errors=True)
+        test_dir.mkdir(parents=True, exist_ok=True)
+
+        html_path = test_dir / 'sample.html'
+        baseline_out = test_dir / 'baseline-out'
+        compare_out = test_dir / 'compare-out'
+        axe_json = test_dir / 'axe.json'
+        html_path.write_text('<!doctype html><html><body><img class="hero" src="hero.png"></body></html>', encoding='utf-8')
+        axe_json.write_text(
+            json.dumps(
+                {
+                    'violations': [
+                        {'id': 'image-alt', 'impact': 'serious', 'description': 'Image alt missing', 'nodes': [{'target': ['img.hero']}]},
+                    ]
+                }
+            ),
+            encoding='utf-8',
+        )
+
+        baseline = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(baseline_out),
+                '--baseline-evidence-mode',
+                'hash',
+                '--mock-axe-json',
+                str(axe_json),
+                '--skip-lighthouse',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(baseline.returncode, 0, baseline.stdout + baseline.stderr)
+
+        tampered_path = baseline_out / 'wcag-report.json'
+        tampered_payload = json.loads(tampered_path.read_text(encoding='utf-8'))
+        tampered_payload['findings'].append(
+            {'rule_id': 'button-name', 'changed_target': 'button.icon', 'status': 'open'}
+        )
+        tampered_path.write_text(json.dumps(tampered_payload, ensure_ascii=False, indent=2), encoding='utf-8')
+
+        verify = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(compare_out),
+                '--baseline-report',
+                str(tampered_path),
+                '--baseline-evidence-mode',
+                'hash',
+                '--mock-axe-json',
+                str(axe_json),
+                '--skip-lighthouse',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertNotEqual(verify.returncode, 0)
+        self.assertIn('baseline evidence verification failed', verify.stdout + verify.stderr)
+
 if __name__ == '__main__':
     unittest.main()
+
+
 

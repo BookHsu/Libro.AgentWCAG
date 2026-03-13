@@ -17,6 +17,7 @@ Use this checklist before publishing a new version of `libro-agent-wcag`.
   - `python scripts/validate_skill.py skills/libro-agent-wcag`
 - [ ] Run dependency-audit lane (`pip-audit --strict` and `npm audit --audit-level=high`) with archived logs.
 - [ ] Capture and archive `--preflight-only` output (including `version_provenance`) for release traceability.
+- [ ] Verify `artifact-manifest.json` is generated for the release candidate and includes checksums for machine + markdown outputs.
 - [ ] Run first-run smoke sequence from `docs/release/first-run-smoke.md`.
 - [ ] Verify release notes and changelog entries match the tested behavior.
 
@@ -26,5 +27,5 @@ Use this checklist before publishing a new version of `libro-agent-wcag`.
 - [ ] Ensure `CHANGELOG.md` has a dated version section with highlights and known limits.
 - [ ] Confirm all blocking defects are closed or explicitly listed as known limitations.
 - [ ] For significant remediation changes, attach baseline refresh evidence (`run_meta.baseline_diff.debt_transitions`, baseline artifact path, approver).
+- [ ] Run baseline provenance verification mode (`--baseline-evidence-mode hash` or `hash-chain`) and archive verification evidence per `docs/release/provenance-verification.md`.
 - [ ] Push `master` and create release artifacts/tags per project policy.
-
