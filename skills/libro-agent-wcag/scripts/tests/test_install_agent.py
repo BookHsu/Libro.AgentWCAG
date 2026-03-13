@@ -34,6 +34,8 @@ class InstallAgentTests(unittest.TestCase):
             self.assertEqual(manifest['agent'], 'claude')
             self.assertEqual(manifest['adapter_prompt'], 'adapters/claude/prompt-template.md')
             self.assertIn('doctor-agent.py', manifest['doctor_command'])
+            self.assertEqual(manifest['manifest_integrity']['algorithm'], 'sha256')
+            self.assertIn('adapter_prompt', manifest['manifest_integrity']['entrypoint_hashes'])
 
     def test_installer_can_install_all_agents(self) -> None:
         repo_root = Path(__file__).resolve().parents[4]
@@ -149,6 +151,90 @@ class InstallAgentTests(unittest.TestCase):
             )
             self.assertEqual(uninstall.returncode, 0, uninstall.stdout + uninstall.stderr)
             self.assertFalse(destination.exists())
+
+    def test_cross_agent_custom_dest_reinstall_and_uninstall_matrix(self) -> None:
+        repo_root = Path(__file__).resolve().parents[4]
+        agents = ('codex', 'claude', 'gemini', 'copilot')
+        with tempfile.TemporaryDirectory() as tmp:
+            workspace = Path(tmp)
+            for agent in agents:
+                with self.subTest(agent=agent):
+                    destination = workspace / 'matrix-layout' / agent / 'bundle' / 'libro-agent-wcag'
+
+                    initial = subprocess.run(
+                        [
+                            sys.executable,
+                            'scripts/install-agent.py',
+                            '--agent',
+                            agent,
+                            '--dest',
+                            str(destination),
+                        ],
+                        cwd=repo_root,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                    )
+                    self.assertEqual(initial.returncode, 0, initial.stdout + initial.stderr)
+
+                    manifest_before = json.loads((destination / 'install-manifest.json').read_text(encoding='utf-8'))
+                    hash_before = manifest_before['manifest_integrity']['entrypoint_hashes']['adapter_prompt']
+
+                    doctor_ok = subprocess.run(
+                        [
+                            sys.executable,
+                            'scripts/doctor-agent.py',
+                            '--agent',
+                            agent,
+                            '--dest',
+                            str(destination),
+                            '--verify-manifest-integrity',
+                        ],
+                        cwd=repo_root,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                    )
+                    self.assertEqual(doctor_ok.returncode, 0, doctor_ok.stdout + doctor_ok.stderr)
+                    doctor_payload = json.loads(doctor_ok.stdout)
+                    self.assertTrue(doctor_payload['manifest_integrity']['verified'])
+
+                    reinstall = subprocess.run(
+                        [
+                            sys.executable,
+                            'scripts/install-agent.py',
+                            '--agent',
+                            agent,
+                            '--dest',
+                            str(destination),
+                            '--force',
+                        ],
+                        cwd=repo_root,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                    )
+                    self.assertEqual(reinstall.returncode, 0, reinstall.stdout + reinstall.stderr)
+                    manifest_after = json.loads((destination / 'install-manifest.json').read_text(encoding='utf-8'))
+                    hash_after = manifest_after['manifest_integrity']['entrypoint_hashes']['adapter_prompt']
+                    self.assertEqual(hash_before, hash_after)
+
+                    uninstall = subprocess.run(
+                        [
+                            sys.executable,
+                            'scripts/uninstall-agent.py',
+                            '--agent',
+                            agent,
+                            '--dest',
+                            str(destination),
+                        ],
+                        cwd=repo_root,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                    )
+                    self.assertEqual(uninstall.returncode, 0, uninstall.stdout + uninstall.stderr)
+                    self.assertFalse(destination.exists())
 
 
 if __name__ == '__main__':

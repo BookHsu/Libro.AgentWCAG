@@ -19,6 +19,7 @@ Use this checklist before publishing a new version of `libro-agent-wcag`.
 - [ ] Capture and archive `--preflight-only` output (including `version_provenance`) for release traceability.
 - [ ] Verify `artifact-manifest.json` is generated for the release candidate and includes checksums for machine + markdown outputs.
 - [ ] Run first-run smoke sequence from `docs/release/first-run-smoke.md`.
+- [ ] Run post-install integrity verification (`--verify-manifest-integrity`) and archive outputs per `docs/release/install-integrity-verification.md`.
 - [ ] Verify release notes and changelog entries match the tested behavior.
 
 ## 3. Publish readiness

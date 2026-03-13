@@ -94,6 +94,42 @@ class RepoScriptTests(unittest.TestCase):
             self.assertEqual([item['agent'] for item in payloads], ['codex', 'claude', 'gemini', 'copilot'])
             self.assertTrue(all(item['ok'] for item in payloads))
 
+    def test_doctor_all_with_manifest_integrity_mode_reports_verified(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            install = subprocess.run(
+                [
+                    sys.executable,
+                    'scripts/install-agent.py',
+                    '--agent',
+                    'all',
+                    '--dest',
+                    tmp,
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(install.returncode, 0, install.stdout + install.stderr)
+            doctor = subprocess.run(
+                [
+                    sys.executable,
+                    'scripts/doctor-agent.py',
+                    '--agent',
+                    'all',
+                    '--dest',
+                    tmp,
+                    '--verify-manifest-integrity',
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(doctor.returncode, 0, doctor.stdout + doctor.stderr)
+            payloads = self._decode_json_stream(doctor.stdout)
+            self.assertTrue(all(item['manifest_integrity']['verified'] for item in payloads))
+
     def test_force_reinstall_replaces_existing_installation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             destination = Path(tmp) / 'codex-skill'
