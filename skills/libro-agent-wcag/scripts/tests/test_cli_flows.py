@@ -1679,6 +1679,109 @@ class CliFlowTests(unittest.TestCase):
         self.assertNotEqual(verify.returncode, 0)
         self.assertIn('baseline evidence verification failed', verify.stdout + verify.stderr)
 
+
+    def test_run_accessibility_audit_risk_calibration_strict_fails_on_unstable_high_severity_rules(self) -> None:
+        test_dir = self.repo_root / 'automation-work' / 'm36-risk-calibration-strict-fail'
+        if test_dir.exists():
+            shutil.rmtree(test_dir, ignore_errors=True)
+        test_dir.mkdir(parents=True, exist_ok=True)
+
+        html_path = test_dir / 'sample.html'
+        output_dir = test_dir / 'out'
+        axe_json = test_dir / 'axe.json'
+        calibration_json = test_dir / 'risk-calibration.json'
+        html_path.write_text('<!doctype html><html><body><img class="hero" src="hero.png"></body></html>', encoding='utf-8')
+        axe_json.write_text(
+            json.dumps(
+                {
+                    'violations': [
+                        {'id': 'image-alt', 'impact': 'serious', 'description': 'Image alt missing', 'nodes': [{'target': ['img.hero']}]},
+                    ]
+                }
+            ),
+            encoding='utf-8',
+        )
+        calibration_json.write_text(
+            json.dumps(
+                {
+                    'schema_version': '1.0.0',
+                    'rules': [
+                        {
+                            'rule_id': 'image-alt',
+                            'observations': 10,
+                            'actionable_count': 7,
+                            'high_severity_observations': 6,
+                            'high_severity_actionable_count': 2,
+                        }
+                    ],
+                }
+            ),
+            encoding='utf-8',
+        )
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(output_dir),
+                '--risk-calibration-source',
+                str(calibration_json),
+                '--risk-calibration-mode',
+                'strict',
+                '--mock-axe-json',
+                str(axe_json),
+                '--skip-lighthouse',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 46, completed.stdout + completed.stderr)
+        payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
+        self.assertTrue(payload['run_meta']['risk_calibration']['gate']['failed'])
+        self.assertIn('image-alt', payload['run_meta']['risk_calibration']['unstable_high_severity_rules'])
+
+    def test_run_accessibility_audit_risk_calibration_warn_downgrades_on_missing_evidence(self) -> None:
+        test_dir = self.repo_root / 'automation-work' / 'm36-risk-calibration-warn-downgrade'
+        if test_dir.exists():
+            shutil.rmtree(test_dir, ignore_errors=True)
+        test_dir.mkdir(parents=True, exist_ok=True)
+
+        html_path = test_dir / 'sample.html'
+        output_dir = test_dir / 'out'
+        html_path.write_text('<!doctype html><html><body></body></html>', encoding='utf-8')
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(output_dir),
+                '--risk-calibration-source',
+                str(test_dir / 'missing.json'),
+                '--risk-calibration-mode',
+                'warn',
+                '--skip-axe',
+                '--skip-lighthouse',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
+        self.assertEqual(payload['run_meta']['risk_calibration']['downgrade_reason'], 'missing-evidence')
+        self.assertFalse(payload['run_meta']['risk_calibration']['applied'])
+        notes = ' '.join(payload['run_meta'].get('notes', []))
+        self.assertIn('Risk calibration downgraded', notes)
+
 if __name__ == '__main__':
     unittest.main()
 
