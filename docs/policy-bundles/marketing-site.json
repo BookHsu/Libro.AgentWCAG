@@ -1,6 +1,8 @@
 {
   "name": "marketing-site",
   "description": "Marketing funnel profile focused on key content and navigation accessibility checks.",
+  "bundle_version": "1.0.0",
+  "updated_at": "2026-03-13T03:19:02Z",
   "fail_on": "serious",
   "include_rules": [
     "image-alt",
@@ -10,5 +12,6 @@
   ],
   "ignore_rules": [
     "meta-viewport"
-  ]
+  ],
+  "bundle_hash": "a1146d0f54f4a117c328465d2d8ef82807a0d242e56edbd83b762774b5ace26c"
 }

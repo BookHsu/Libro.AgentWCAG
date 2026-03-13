@@ -1,10 +1,13 @@
 {
   "name": "legacy-content",
   "description": "Legacy content profile with deterministic ignore defaults for noisy debt.",
+  "bundle_version": "1.0.0",
+  "updated_at": "2026-03-13T03:19:02Z",
   "fail_on": "serious",
   "include_rules": [],
   "ignore_rules": [
     "meta-viewport",
     "color-contrast"
-  ]
+  ],
+  "bundle_hash": "f1924055f6c9e6aae1f0280a9db486d94b72cbf8b9814837ec25dd051110c877"
 }
