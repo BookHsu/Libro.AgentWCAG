@@ -4,9 +4,8 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## Current Execution Order
 
-1. [x] Complete `M30 Policy Bundle Templates And Validation` to standardize reusable policy presets for multi-repo adoption.
-2. [x] Complete `M31 Scanner Evidence Integrity And Provenance` to harden tamper-evident report and artifact handoff contracts.
-3. [ ] Complete `M32 Baseline Debt Waiver Expiry Automation` to prevent stale accepted debt from silently persisting.
+1. [ ] Complete `M32 Baseline Debt Waiver Expiry Automation` to prevent stale accepted debt from silently persisting.
+2. [ ] Complete `M33 Multi-Agent Install Manifest Integrity` to guarantee installed skill bundles remain adapter-correct and tamper-evident across agents.
 
 ## M21 Post-M20 Validation Closure
 
@@ -233,10 +232,17 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [ ] Add baseline debt waiver fields (`owner`, `approved_at`, `expires_at`, `reason`) with strict schema validation.
 - [ ] Add CLI warning/fail modes for expired waivers to enforce explicit debt renewal or retirement before release gating.
 - [ ] Add release checklist and triage workflow updates that require waiver-expiry review evidence for accepted debt states.
+
+## M33 Multi-Agent Install Manifest Integrity
+
+- [ ] Add manifest integrity verification mode to `scripts/doctor-agent.py` that checks adapter entrypoint hashes and required companion files (`usage-example`, `failure-guide`, `e2e-example`).
+- [ ] Add installer/uninstaller regression tests for cross-agent matrix (`codex`, `claude`, `gemini`, `copilot`) including custom `--dest` layouts and reinstall idempotency.
+- [ ] Add release docs for post-install integrity verification workflow and failure remediation playbook for corrupted or partial installations.
 ## Notes
 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
+
 
 
