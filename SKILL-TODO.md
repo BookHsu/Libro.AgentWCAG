@@ -4,8 +4,8 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## Current Execution Order
 
-1. [ ] Complete `M30 Policy Bundle Templates And Validation` to standardize reusable policy presets for multi-repo adoption.
-2. [ ] Complete `M31 Scanner Evidence Integrity And Provenance` to harden tamper-evident report and artifact handoff contracts.
+1. [x] Complete `M30 Policy Bundle Templates And Validation` to standardize reusable policy presets for multi-repo adoption.
+2. [x] Complete `M31 Scanner Evidence Integrity And Provenance` to harden tamper-evident report and artifact handoff contracts.
 3. [ ] Complete `M32 Baseline Debt Waiver Expiry Automation` to prevent stale accepted debt from silently persisting.
 
 ## M21 Post-M20 Validation Closure
@@ -224,9 +224,9 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M31 Scanner Evidence Integrity And Provenance
 
-- [ ] Add run artifact manifest output (`artifact-manifest.json`) with file checksums, generator version, and timestamp metadata for every report run.
-- [ ] Add optional signature/hash-chain mode for baseline reports so CI can detect tampered or stale evidence before applying debt transitions.
-- [ ] Add docs and regression tests for provenance verification workflow in CI and release readiness checks.
+- [x] Add run artifact manifest output (`artifact-manifest.json`) with file checksums, generator version, and timestamp metadata for every report run.
+- [x] Add optional signature/hash-chain mode for baseline reports so CI can detect tampered or stale evidence before applying debt transitions.
+- [x] Add docs and regression tests for provenance verification workflow in CI and release readiness checks.
 
 ## M32 Baseline Debt Waiver Expiry Automation
 
@@ -238,4 +238,5 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
+
 
