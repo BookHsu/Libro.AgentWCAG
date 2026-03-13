@@ -28,6 +28,7 @@ class ReleaseDocsTests(unittest.TestCase):
             self.repo_root / 'docs' / 'release' / 'release-packaging-extras-placement.md',
             self.repo_root / 'docs' / 'release' / 'real-scanner-ci-lane.md',
             self.repo_root / 'docs' / 'release' / 'baseline-debt-lifecycle.md',
+            self.repo_root / 'docs' / 'release' / 'risk-calibration.md',
             self.repo_root / 'docs' / 'release' / 'provenance-verification.md',
             self.repo_root / 'docs' / 'release' / 'install-integrity-verification.md',
             self.repo_root / 'docs' / 'policy-bundles' / 'strict-web-app.json',
@@ -86,6 +87,7 @@ class ReleaseDocsTests(unittest.TestCase):
         self.assertIn('docs/release/resilient-run-patterns.md', content)
         self.assertIn('docs/release/real-scanner-ci-lane.md', content)
         self.assertIn('docs/release/baseline-debt-lifecycle.md', content)
+        self.assertIn('docs/release/risk-calibration.md', content)
         self.assertIn('docs/release/provenance-verification.md', content)
         self.assertIn('docs/release/install-integrity-verification.md', content)
         self.assertIn('docs/policy-bundles/', content)
