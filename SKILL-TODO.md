@@ -4,9 +4,9 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## Current Execution Order
 
-1. [x] Complete `M27 Dependency And Supply-Chain Guardrails` to formalize dependency audit and pinned-tooling workflows.
-2. [x] Complete `M28 Real-Scanner CI Lane Productization` to make optional scanner lanes reusable across repositories.
-3. [x] Complete `M29 Baseline Debt Lifecycle Governance` to standardize debt triage and retirement evidence.
+1. [ ] Complete `M30 Policy Bundle Templates And Validation` to standardize reusable policy presets for multi-repo adoption.
+2. [ ] Complete `M31 Scanner Evidence Integrity And Provenance` to harden tamper-evident report and artifact handoff contracts.
+3. [ ] Complete `M32 Baseline Debt Waiver Expiry Automation` to prevent stale accepted debt from silently persisting.
 
 ## M21 Post-M20 Validation Closure
 
@@ -216,6 +216,23 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [x] Add baseline maintenance playbook for `new`, `accepted`, and `retired` accessibility debt states with approval checkpoints.
 - [x] Add CLI/report metadata support to tag findings with debt state transitions across baseline updates.
 - [x] Add release checklist updates to require baseline refresh evidence before publishing significant remediation changes.
+## M30 Policy Bundle Templates And Validation
+
+- [ ] Add a `docs/policy-bundles/` template set (`strict-web-app`, `legacy-content`, `marketing-site`) with deterministic include/ignore/fail-on defaults.
+- [ ] Add `--policy-bundle <name>` support that composes bundle defaults with existing CLI and `--policy-config` override precedence.
+- [ ] Add bundle validation and contract tests to ensure every shipped bundle resolves to a fully explainable effective policy and stable summary output.
+
+## M31 Scanner Evidence Integrity And Provenance
+
+- [ ] Add run artifact manifest output (`artifact-manifest.json`) with file checksums, generator version, and timestamp metadata for every report run.
+- [ ] Add optional signature/hash-chain mode for baseline reports so CI can detect tampered or stale evidence before applying debt transitions.
+- [ ] Add docs and regression tests for provenance verification workflow in CI and release readiness checks.
+
+## M32 Baseline Debt Waiver Expiry Automation
+
+- [ ] Add baseline debt waiver fields (`owner`, `approved_at`, `expires_at`, `reason`) with strict schema validation.
+- [ ] Add CLI warning/fail modes for expired waivers to enforce explicit debt renewal or retirement before release gating.
+- [ ] Add release checklist and triage workflow updates that require waiver-expiry review evidence for accepted debt states.
 ## Notes
 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
