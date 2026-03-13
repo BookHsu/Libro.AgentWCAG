@@ -495,6 +495,90 @@ class CliFlowTests(unittest.TestCase):
             self.assertFalse(payload['ok'])
             self.assertFalse(payload['adapter_prompt'])
 
+    def test_doctor_manifest_integrity_mode_detects_hash_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            destination = Path(tmp) / 'codex-skill'
+            install = subprocess.run(
+                [
+                    sys.executable,
+                    'scripts/install-agent.py',
+                    '--agent',
+                    'codex',
+                    '--dest',
+                    str(destination),
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(install.returncode, 0, install.stdout + install.stderr)
+            prompt_path = destination / 'adapters' / 'openai-codex' / 'prompt-template.md'
+            prompt_path.write_text(prompt_path.read_text(encoding='utf-8') + '\n<!-- tamper -->\n', encoding='utf-8')
+
+            doctor = subprocess.run(
+                [
+                    sys.executable,
+                    'scripts/doctor-agent.py',
+                    '--agent',
+                    'codex',
+                    '--dest',
+                    str(destination),
+                    '--verify-manifest-integrity',
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertNotEqual(doctor.returncode, 0)
+            payload = json.loads(doctor.stdout)
+            self.assertFalse(payload['ok'])
+            self.assertFalse(payload['manifest_integrity']['verified'])
+            self.assertEqual(payload['manifest_integrity']['algorithm'], 'sha256')
+            self.assertGreaterEqual(len(payload['manifest_integrity']['hash_mismatches']), 1)
+
+    def test_doctor_manifest_integrity_mode_detects_missing_companion_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            destination = Path(tmp) / 'gemini-skill'
+            install = subprocess.run(
+                [
+                    sys.executable,
+                    'scripts/install-agent.py',
+                    '--agent',
+                    'gemini',
+                    '--dest',
+                    str(destination),
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(install.returncode, 0, install.stdout + install.stderr)
+            (destination / 'adapters' / 'gemini' / 'failure-guide.md').unlink()
+
+            doctor = subprocess.run(
+                [
+                    sys.executable,
+                    'scripts/doctor-agent.py',
+                    '--agent',
+                    'gemini',
+                    '--dest',
+                    str(destination),
+                    '--verify-manifest-integrity',
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertNotEqual(doctor.returncode, 0)
+            payload = json.loads(doctor.stdout)
+            self.assertFalse(payload['ok'])
+            self.assertFalse(payload['manifest_integrity']['verified'])
+            self.assertIn('adapters/gemini/failure-guide.md', payload['manifest_integrity']['missing_files'])
+
 
     def test_run_accessibility_audit_with_sarif_and_rule_filters(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
