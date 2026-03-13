@@ -243,9 +243,9 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M34 Policy Bundle Governance And Drift Detection
 
-- [ ] Add bundle lock metadata (`bundle_version`, `bundle_hash`, `updated_at`) to each `docs/policy-bundles/*.json` artifact and fail validation when metadata is missing or stale.
-- [ ] Add `--validate-policy-bundles` CLI/CI check in `scripts/validate_skill.py` to verify bundle schema, deterministic key ordering, and compatibility with `--explain-policy` output.
-- [ ] Add release checklist gate requiring policy-bundle drift evidence (baseline hash diff + reviewer sign-off) before merging policy preset or bundle changes.
+- [x] Add bundle lock metadata (`bundle_version`, `bundle_hash`, `updated_at`) to each `docs/policy-bundles/*.json` artifact and fail validation when metadata is missing or stale.
+- [x] Add `--validate-policy-bundles` CLI/CI check in `scripts/validate_skill.py` to verify bundle schema, deterministic key ordering, and compatibility with `--explain-policy` output.
+- [x] Add release checklist gate requiring policy-bundle drift evidence (baseline hash diff + reviewer sign-off) before merging policy preset or bundle changes.
 
 ## M35 Accessibility Debt Trend Intelligence
 

@@ -135,7 +135,7 @@ Current adapter coverage:
 
 ```powershell
 python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"
-python scripts/validate_skill.py skills/libro-agent-wcag
+python scripts/validate_skill.py skills/libro-agent-wcag --validate-policy-bundles
 ```
 
 ## Runtime requirements
@@ -164,6 +164,7 @@ python scripts/validate_skill.py skills/libro-agent-wcag
 - `docs/release/provenance-verification.md`:  baseline evidence/hash-chain verification and artifact-manifest CI workflow
 - `docs/release/install-integrity-verification.md`:  post-install manifest integrity verification and corruption remediation playbook
 - `docs/policy-bundles/*.json`:  reusable policy-bundle templates (`strict-web-app`, `legacy-content`, `marketing-site`) for multi-repo adoption
+- Policy bundle governance: `bundle_version`, `bundle_hash`, and `updated_at` are lock metadata fields; validate drift via `python scripts/validate_skill.py skills/libro-agent-wcag --validate-policy-bundles` before merging policy changes.
 - `docs/release/release-packaging-extras-placement.md`:  decision record for extras placement
 - `.github/ISSUE_TEMPLATE/installation-failure.yml`:  installation failure intake form
 - `.github/ISSUE_TEMPLATE/remediation-mismatch.yml`:  remediation mismatch intake form

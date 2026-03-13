@@ -1,7 +1,10 @@
 {
   "name": "strict-web-app",
   "description": "Strict default for modern web apps with full WCAG rule coverage.",
+  "bundle_version": "1.0.0",
+  "updated_at": "2026-03-13T03:19:02Z",
   "fail_on": "moderate",
   "include_rules": [],
-  "ignore_rules": []
+  "ignore_rules": [],
+  "bundle_hash": "7a6bbf9146c7045ff49a9f15bb7f7149c09ac3df55c6e1cd790f9efd95eb4d59"
 }
