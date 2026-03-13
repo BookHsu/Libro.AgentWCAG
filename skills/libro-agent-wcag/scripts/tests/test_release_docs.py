@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import unittest
 from pathlib import Path
 
@@ -47,6 +49,30 @@ class ReleaseDocsTests(unittest.TestCase):
         ]
         for file_path in expected_files:
             self.assertTrue(file_path.exists(), f'Missing file: {file_path}')
+
+
+    def test_policy_bundle_lock_metadata_is_present_and_hash_stable(self) -> None:
+        required_order = [
+            'name',
+            'description',
+            'bundle_version',
+            'updated_at',
+            'fail_on',
+            'include_rules',
+            'ignore_rules',
+            'bundle_hash',
+        ]
+        for bundle_path in sorted((self.repo_root / 'docs' / 'policy-bundles').glob('*.json')):
+            payload = json.loads(bundle_path.read_text(encoding='utf-8'))
+            self.assertEqual(list(payload.keys()), required_order)
+            self.assertRegex(payload['bundle_version'], r'^\d+\.\d+\.\d+$')
+            self.assertRegex(payload['updated_at'], r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$')
+            self.assertRegex(payload['bundle_hash'], r'^[0-9a-f]{64}$')
+
+            material = {key: payload[key] for key in required_order if key != 'bundle_hash'}
+            canonical = json.dumps(material, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+            expected = hashlib.sha256(canonical.encode('utf-8')).hexdigest()
+            self.assertEqual(payload['bundle_hash'], expected)
 
     def test_readme_links_release_readiness(self) -> None:
         content = (self.repo_root / 'README.md').read_text(encoding='utf-8')
