@@ -189,3 +189,23 @@ Use `run_meta.baseline_diff` and the latest report findings to classify each unr
 - After implementation, rerun audit and update baseline snapshot if debt was intentionally accepted.
 - Close handoff only when report status and issue tracker state are aligned.
 
+## Risk calibration gate
+
+Use historical evidence to suppress noisy high-severity triage drift:
+
+- `--risk-calibration-source <path>` accepts a report/artifact JSON file or a directory of report JSON files.
+- `--risk-calibration-mode warn` records downgrade notes when evidence is missing/stale/conflicting and continues the run.
+- `--risk-calibration-mode strict` fails with exit code `46` when currently triggered high-severity rules are statistically unstable.
+
+Example release-lane command:
+
+```bash
+python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
+  --target https://example.com \
+  --output-dir out/risk-calibration \
+  --fail-on serious \
+  --risk-calibration-source .ci/risk-calibration \
+  --risk-calibration-mode strict
+```
+
+The run writes calibration evidence to `run_meta.risk_calibration`, including fallback reason and strict gate status.

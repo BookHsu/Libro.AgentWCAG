@@ -56,6 +56,12 @@ BASELINE_SELECTOR_CANONICALIZATION_MODES = {"none", "basic"}
 BASELINE_EVIDENCE_MODES = {"none", "hash", "hash-chain"}
 WAIVER_EXPIRY_MODES = {"ignore", "warn", "fail"}
 WAIVER_EXPIRY_EXIT_CODE = 45
+RISK_CALIBRATION_MODES = {"off", "warn", "strict"}
+RISK_CALIBRATION_SCHEMA_VERSION = "1.0.0"
+RISK_CALIBRATION_EXIT_CODE = 46
+RISK_CALIBRATION_MIN_SAMPLES = 3
+RISK_CALIBRATION_PRECISION_THRESHOLD = 0.6
+HIGH_SEVERITY_LEVELS = {"critical", "serious"}
 DEBT_STATE_NEW = "new"
 DEBT_STATE_ACCEPTED = "accepted"
 DEBT_STATE_RETIRED = "retired"
@@ -774,6 +780,233 @@ def _build_debt_trend_payload(
         },
         'history_meta': history_meta,
     }
+
+
+def _is_actionable_outcome(finding: dict[str, Any]) -> bool:
+    status = str(finding.get('status', '')).strip().lower()
+    if status not in {'open', 'fixed'}:
+        return False
+    if bool(finding.get('manual_review_required')):
+        return False
+    return not bool(str(finding.get('downgrade_reason', '')).strip())
+
+
+def _extract_rule_signals_from_report(report: dict[str, Any]) -> dict[str, dict[str, int]]:
+    signals: dict[str, dict[str, int]] = {}
+    findings = report.get('findings')
+    if not isinstance(findings, list):
+        return signals
+    for item in findings:
+        if not isinstance(item, dict):
+            continue
+        rule_id = str(item.get('rule_id', '')).strip()
+        if not rule_id:
+            continue
+        severity = str(item.get('severity', 'info')).strip().lower()
+        bucket = signals.setdefault(
+            rule_id,
+            {
+                'observations': 0,
+                'actionable_count': 0,
+                'high_severity_observations': 0,
+                'high_severity_actionable_count': 0,
+            },
+        )
+        actionable = _is_actionable_outcome(item)
+        bucket['observations'] += 1
+        if actionable:
+            bucket['actionable_count'] += 1
+        if severity in HIGH_SEVERITY_LEVELS:
+            bucket['high_severity_observations'] += 1
+            if actionable:
+                bucket['high_severity_actionable_count'] += 1
+    return signals
+
+
+def _merge_rule_signals(
+    aggregate: dict[str, dict[str, int]],
+    additional: dict[str, dict[str, int]],
+) -> None:
+    for rule_id, stats in additional.items():
+        bucket = aggregate.setdefault(
+            rule_id,
+            {
+                'observations': 0,
+                'actionable_count': 0,
+                'high_severity_observations': 0,
+                'high_severity_actionable_count': 0,
+            },
+        )
+        bucket['observations'] += int(stats.get('observations', 0))
+        bucket['actionable_count'] += int(stats.get('actionable_count', 0))
+        bucket['high_severity_observations'] += int(stats.get('high_severity_observations', 0))
+        bucket['high_severity_actionable_count'] += int(stats.get('high_severity_actionable_count', 0))
+
+
+def _load_risk_calibration_source(
+    source_path: str | None,
+) -> tuple[dict[str, dict[str, int]], dict[str, Any]]:
+    if not source_path:
+        return {}, {'downgrade_reason': 'missing-evidence', 'message': '--risk-calibration-source is required'}
+    source = Path(source_path)
+    if not source.exists():
+        return {}, {'downgrade_reason': 'missing-evidence', 'message': f'source path does not exist: {source_path}'}
+
+    aggregate: dict[str, dict[str, int]] = {}
+    report_files = [source] if source.is_file() else sorted(source.rglob('*.json'))
+    if not report_files:
+        return {}, {'downgrade_reason': 'missing-evidence', 'message': 'no JSON evidence files found'}
+
+    stale_schema_files: list[str] = []
+    parsed_reports = 0
+    for report_file in report_files:
+        try:
+            payload = json.loads(report_file.read_text(encoding='utf-8'))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+
+        if 'rules' in payload and isinstance(payload.get('rules'), list) and 'findings' not in payload:
+            schema_version = str(payload.get('schema_version', '')).strip()
+            if schema_version and schema_version != RISK_CALIBRATION_SCHEMA_VERSION:
+                return {}, {
+                    'downgrade_reason': 'stale-schema',
+                    'message': (
+                        'risk calibration schema mismatch: '
+                        f'{schema_version} != {RISK_CALIBRATION_SCHEMA_VERSION}'
+                    ),
+                }
+            rule_entries = payload.get('rules', [])
+            seen_rule_ids: set[str] = set()
+            for entry in rule_entries:
+                if not isinstance(entry, dict):
+                    continue
+                rule_id = str(entry.get('rule_id', '')).strip()
+                if not rule_id:
+                    continue
+                if rule_id in seen_rule_ids:
+                    return {}, {
+                        'downgrade_reason': 'conflicting-rule-ids',
+                        'message': f'duplicate rule_id in calibration artifact: {rule_id}',
+                    }
+                seen_rule_ids.add(rule_id)
+                _merge_rule_signals(
+                    aggregate,
+                    {
+                        rule_id: {
+                            'observations': _coerce_non_negative_int(entry.get('observations')),
+                            'actionable_count': _coerce_non_negative_int(entry.get('actionable_count')),
+                            'high_severity_observations': _coerce_non_negative_int(
+                                entry.get('high_severity_observations')
+                            ),
+                            'high_severity_actionable_count': _coerce_non_negative_int(
+                                entry.get('high_severity_actionable_count')
+                            ),
+                        }
+                    },
+                )
+            parsed_reports += 1
+            continue
+
+        schema_version = str(((payload.get('report_schema') or {}).get('version'))).strip()
+        if schema_version and schema_version != REPORT_SCHEMA_VERSION:
+            stale_schema_files.append(str(report_file))
+            continue
+        _merge_rule_signals(aggregate, _extract_rule_signals_from_report(payload))
+        parsed_reports += 1
+
+    if not aggregate:
+        if stale_schema_files:
+            return {}, {
+                'downgrade_reason': 'stale-schema',
+                'message': f'no usable evidence after schema filtering ({len(stale_schema_files)} stale files)',
+            }
+        return {}, {'downgrade_reason': 'missing-evidence', 'message': 'no usable findings in calibration source'}
+    return aggregate, {
+        'parsed_reports': parsed_reports,
+        'scanned_files': len(report_files),
+        'stale_schema_file_count': len(stale_schema_files),
+    }
+
+
+def _evaluate_risk_calibration(
+    *,
+    report: dict[str, Any],
+    source_path: str | None,
+    mode: str,
+) -> dict[str, Any]:
+    result: dict[str, Any] = {
+        'schema_version': RISK_CALIBRATION_SCHEMA_VERSION,
+        'mode': mode,
+        'source_path': source_path or '',
+        'min_high_severity_samples': RISK_CALIBRATION_MIN_SAMPLES,
+        'high_severity_precision_threshold': RISK_CALIBRATION_PRECISION_THRESHOLD,
+        'applied': False,
+        'downgrade_reason': None,
+        'rules': [],
+        'unstable_high_severity_rules': [],
+        'source_meta': {},
+    }
+    if mode == 'off':
+        result['applied'] = False
+        result['downgrade_reason'] = 'mode-off'
+        return result
+
+    signals, source_meta = _load_risk_calibration_source(source_path)
+    result['source_meta'] = source_meta
+    if not signals:
+        result['downgrade_reason'] = str(source_meta.get('downgrade_reason') or 'missing-evidence')
+        return result
+
+    current_high_rule_ids = sorted(
+        {
+            str(item.get('rule_id', '')).strip()
+            for item in report.get('findings', [])
+            if isinstance(item, dict)
+            and str(item.get('severity', 'info')).strip().lower() in HIGH_SEVERITY_LEVELS
+            and str(item.get('status', '')).strip().lower() != 'fixed'
+            and str(item.get('rule_id', '')).strip()
+        }
+    )
+    result['current_high_severity_rules'] = current_high_rule_ids
+
+    rule_rows: list[dict[str, Any]] = []
+    unstable_rules: list[str] = []
+    for rule_id in sorted(signals):
+        stats = signals[rule_id]
+        observations = int(stats.get('observations', 0))
+        actionable_count = int(stats.get('actionable_count', 0))
+        high_observations = int(stats.get('high_severity_observations', 0))
+        high_actionable = int(stats.get('high_severity_actionable_count', 0))
+        precision = round((actionable_count / observations), 4) if observations else 0.0
+        high_precision = round((high_actionable / high_observations), 4) if high_observations else None
+        unstable = bool(
+            rule_id in current_high_rule_ids
+            and high_observations >= RISK_CALIBRATION_MIN_SAMPLES
+            and high_precision is not None
+            and high_precision < RISK_CALIBRATION_PRECISION_THRESHOLD
+        )
+        if unstable:
+            unstable_rules.append(rule_id)
+        rule_rows.append(
+            {
+                'rule_id': rule_id,
+                'observations': observations,
+                'actionable_count': actionable_count,
+                'precision': precision,
+                'high_severity_observations': high_observations,
+                'high_severity_actionable_count': high_actionable,
+                'high_severity_precision': high_precision,
+                'unstable_high_severity': unstable,
+            }
+        )
+    result['rules'] = rule_rows
+    result['unstable_high_severity_rules'] = unstable_rules
+    result['applied'] = True
+    return result
+
+
 def _normalize_rule_list(value: Any, name: str) -> list[str]:
     if value is None:
         return []
@@ -859,6 +1092,8 @@ def _build_effective_policy(
     baseline_signature_config: dict[str, Any],
     baseline_evidence_mode: str,
     waiver_expiry_mode: str,
+    risk_calibration_mode: str,
+    risk_calibration_source: str | None,
     overlapping_rules: list[str],
 ) -> dict[str, Any]:
     return {
@@ -875,6 +1110,8 @@ def _build_effective_policy(
         "baseline_signature": baseline_signature_config,
         "baseline_evidence_mode": baseline_evidence_mode,
         "waiver_expiry_mode": waiver_expiry_mode,
+        "risk_calibration_mode": risk_calibration_mode,
+        "risk_calibration_source": risk_calibration_source,
         "overlapping_rules": overlapping_rules,
         "rule_overlap_resolution": "ignore-rules-win",
     }
@@ -1167,6 +1404,14 @@ def _build_compact_summary(
     debt_trend = summary.get('debt_trend')
     if debt_trend:
         compact['debt_trend'] = debt_trend
+    risk_calibration = report.get('run_meta', {}).get('risk_calibration')
+    if risk_calibration:
+        compact['risk_calibration'] = {
+            'mode': risk_calibration.get('mode'),
+            'applied': bool(risk_calibration.get('applied')),
+            'downgrade_reason': risk_calibration.get('downgrade_reason'),
+            'unstable_high_severity_rules': risk_calibration.get('unstable_high_severity_rules', []),
+        }
     return compact
 
 def _apply_rule_policy(
@@ -1647,6 +1892,17 @@ def parse_args() -> argparse.Namespace:
         help="Number of historical baseline trend points to keep in debt-trend artifact output.",
     )
     parser.add_argument(
+        "--risk-calibration-source",
+        default=None,
+        help="JSON report/artifact file or directory used to compute per-rule risk calibration precision.",
+    )
+    parser.add_argument(
+        "--risk-calibration-mode",
+        choices=sorted(RISK_CALIBRATION_MODES),
+        default="off",
+        help="Risk calibration gate mode: off, warn, or strict.",
+    )
+    parser.add_argument(
         "--scanner-retry-attempts",
         type=int,
         default=DEFAULT_SCANNER_RETRY_ATTEMPTS,
@@ -1794,6 +2050,8 @@ def main() -> int:
         baseline_signature_config=baseline_signature_config,
         baseline_evidence_mode=args.baseline_evidence_mode,
         waiver_expiry_mode=args.waiver_expiry_mode,
+        risk_calibration_mode=args.risk_calibration_mode,
+        risk_calibration_source=args.risk_calibration_source,
         overlapping_rules=overlapping_rules,
     )
 
@@ -2065,6 +2323,46 @@ def main() -> int:
     }
 
     gate_findings = list(report.get('findings', []))
+    risk_calibration_gate_failed = False
+    risk_calibration = _evaluate_risk_calibration(
+        report=report,
+        source_path=args.risk_calibration_source,
+        mode=args.risk_calibration_mode,
+    )
+    if (
+        args.risk_calibration_mode == 'strict'
+        and risk_calibration.get('applied')
+        and risk_calibration.get('unstable_high_severity_rules')
+    ):
+        risk_calibration_gate_failed = True
+    risk_calibration['gate'] = {
+        'mode': args.risk_calibration_mode,
+        'failed': risk_calibration_gate_failed,
+        'exit_code': RISK_CALIBRATION_EXIT_CODE if risk_calibration_gate_failed else 0,
+    }
+    report['run_meta']['risk_calibration'] = risk_calibration
+    report.setdefault('summary', {})['risk_calibration'] = {
+        'mode': risk_calibration.get('mode'),
+        'applied': bool(risk_calibration.get('applied')),
+        'downgrade_reason': risk_calibration.get('downgrade_reason'),
+        'unstable_high_severity_rule_count': len(risk_calibration.get('unstable_high_severity_rules', [])),
+    }
+    if risk_calibration.get('applied'):
+        report['run_meta']['notes'].append(
+            'Risk calibration applied: '
+            f"{len(risk_calibration.get('rules', []))} rules evaluated, "
+            f"{len(risk_calibration.get('unstable_high_severity_rules', []))} unstable high-severity rule(s)."
+        )
+    elif args.risk_calibration_mode != 'off':
+        downgrade_reason = str(risk_calibration.get('downgrade_reason') or 'missing-evidence')
+        downgrade_message = str((risk_calibration.get('source_meta') or {}).get('message') or '').strip()
+        note = (
+            'Risk calibration downgraded '
+            f'({downgrade_reason}): {downgrade_message}. '
+            'Continuing without calibration gate.'
+        )
+        report['run_meta']['notes'].append(note)
+
     if args.max_findings is not None:
         findings_cap = _cap_report_findings(report, args.max_findings)
         report['run_meta']['findings_cap'] = {
@@ -2157,6 +2455,15 @@ def main() -> int:
                 'Waiver expiry gate failed: expired waivers detected under --waiver-expiry-mode=fail.'
             )
     report['run_meta']['waiver_gate'] = waiver_gate
+
+    if risk_calibration_gate_failed:
+        if not should_fail:
+            should_fail = True
+            exit_code = RISK_CALIBRATION_EXIT_CODE
+        report['run_meta']['notes'].append(
+            'Risk calibration gate failed: unstable high-severity rules detected under --risk-calibration-mode=strict '
+            f"({', '.join(risk_calibration.get('unstable_high_severity_rules', []))})."
+        )
 
     debt_trend_payload = _build_debt_trend_payload(
         now_utc=datetime.now(timezone.utc),
@@ -2263,6 +2570,8 @@ def main() -> int:
         if should_fail:
             if report['run_meta'].get('waiver_gate', {}).get('failed'):
                 print('Waiver gate failed: one or more accepted debt waivers are expired.')
+            elif report['run_meta'].get('risk_calibration', {}).get('gate', {}).get('failed'):
+                print('Risk calibration gate failed: unstable high-severity rule outcomes detected.')
             elif fail_on:
                 print(f'Policy gate failed: unresolved finding severity >= {fail_on}')
     if should_fail:
