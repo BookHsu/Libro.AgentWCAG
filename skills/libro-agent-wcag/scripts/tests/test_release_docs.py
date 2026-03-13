@@ -27,6 +27,7 @@ class ReleaseDocsTests(unittest.TestCase):
             self.repo_root / 'docs' / 'release' / 'real-scanner-ci-lane.md',
             self.repo_root / 'docs' / 'release' / 'baseline-debt-lifecycle.md',
             self.repo_root / 'docs' / 'release' / 'provenance-verification.md',
+            self.repo_root / 'docs' / 'release' / 'install-integrity-verification.md',
             self.repo_root / 'docs' / 'policy-bundles' / 'strict-web-app.json',
             self.repo_root / 'docs' / 'policy-bundles' / 'legacy-content.json',
             self.repo_root / 'docs' / 'policy-bundles' / 'marketing-site.json',
@@ -60,10 +61,10 @@ class ReleaseDocsTests(unittest.TestCase):
         self.assertIn('docs/release/real-scanner-ci-lane.md', content)
         self.assertIn('docs/release/baseline-debt-lifecycle.md', content)
         self.assertIn('docs/release/provenance-verification.md', content)
+        self.assertIn('docs/release/install-integrity-verification.md', content)
         self.assertIn('docs/policy-bundles/', content)
 
 
 if __name__ == '__main__':
     unittest.main()
-
 
