@@ -150,6 +150,7 @@ Coverage target in this repo:
 ## Already Implemented
 
 - Automated tests for workflow logic, rule mapping, severity bands, citations, remediation strategy defaults, edge cases, CLI flows, install flows, scanner command/error paths, repo contracts, and matrix-completion scenarios.
+- Automated stability-ledger regression coverage for missing-history fallback, scanner capability drift downgrade, and fail-mode volatility gating.
 - Static contract checks for all non-test repo files.
 - Scripted manual assets for inherently human-evaluated categories and for mixed-mode categories that still benefit from review checklists.
 - Root-level smoke coverage through repo discovery and validator execution.
@@ -169,5 +170,3 @@ Run the current automated suite:
 python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"
 python scripts/validate_skill.py skills/libro-agent-wcag
 ```
-
-

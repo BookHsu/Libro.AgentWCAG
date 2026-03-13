@@ -64,6 +64,11 @@ RISK_CALIBRATION_PRECISION_THRESHOLD = 0.6
 HIGH_SEVERITY_LEVELS = {"critical", "serious"}
 REPLAY_VERIFICATION_SCHEMA_VERSION = "1.0.0"
 REPLAY_VERIFICATION_EXIT_CODE = 47
+SCANNER_STABILITY_MODES = {"off", "warn", "fail"}
+SCANNER_STABILITY_SCHEMA_VERSION = "1.0.0"
+SCANNER_STABILITY_EXIT_CODE = 48
+DEFAULT_SCANNER_STABILITY_WINDOW = 5
+DEFAULT_SCANNER_STABILITY_MAX_VARIANCE = 0
 DEBT_STATE_NEW = "new"
 DEBT_STATE_ACCEPTED = "accepted"
 DEBT_STATE_RETIRED = "retired"
@@ -1096,6 +1101,8 @@ def _build_effective_policy(
     waiver_expiry_mode: str,
     risk_calibration_mode: str,
     risk_calibration_source: str | None,
+    stability_mode: str,
+    stability_baseline: str | None,
     overlapping_rules: list[str],
 ) -> dict[str, Any]:
     return {
@@ -1114,6 +1121,8 @@ def _build_effective_policy(
         "waiver_expiry_mode": waiver_expiry_mode,
         "risk_calibration_mode": risk_calibration_mode,
         "risk_calibration_source": risk_calibration_source,
+        "stability_mode": stability_mode,
+        "stability_baseline": stability_baseline,
         "overlapping_rules": overlapping_rules,
         "rule_overlap_resolution": "ignore-rules-win",
     }
@@ -1417,6 +1426,14 @@ def _build_compact_summary(
     replay_verification = report.get('run_meta', {}).get('replay_verification')
     if replay_verification:
         compact['replay_verification'] = replay_verification
+    scanner_stability = report.get('run_meta', {}).get('scanner_stability')
+    if scanner_stability:
+        compact['scanner_stability'] = {
+            'mode': scanner_stability.get('mode'),
+            'window': scanner_stability.get('window'),
+            'comparison': scanner_stability.get('comparison', {}),
+            'gate': scanner_stability.get('gate', {}),
+        }
     return compact
 
 def _apply_rule_policy(
@@ -1852,6 +1869,383 @@ def _build_replay_verification_summary(
     }
 
 
+
+def _normalize_stability_scanner(scanner: Any) -> str:
+    value = str(scanner or '').strip().lower()
+    if value in {'axe', 'lighthouse'}:
+        return value
+    return ''
+
+
+def _stability_signature(scanner: str, rule_id: str, target: str) -> str:
+    return f'{scanner}|{rule_id}|{target}'
+
+
+def _parse_stability_signature(signature: str) -> tuple[str, str, str]:
+    parts = signature.split('|', 2)
+    if len(parts) != 3:
+        return '', '', ''
+    return parts[0], parts[1], parts[2]
+
+
+def _sanitize_scanner_stability_row(raw: Any) -> dict[str, Any] | None:
+    if not isinstance(raw, dict):
+        return None
+    scanner = _normalize_stability_scanner(raw.get('scanner'))
+    rule_id = str(raw.get('rule_id', '')).strip()
+    target = str(raw.get('target', '')).strip() or 'unknown'
+    if not scanner or not rule_id:
+        return None
+    return {
+        'scanner': scanner,
+        'rule_id': rule_id,
+        'target': target,
+        'finding_count': _coerce_non_negative_int(raw.get('finding_count')),
+    }
+
+
+def _sanitize_scanner_stability_point(raw: Any) -> dict[str, Any] | None:
+    if not isinstance(raw, dict):
+        return None
+    raw_rows = raw.get('rows')
+    if not isinstance(raw_rows, list):
+        return None
+    rows = [row for row in (_sanitize_scanner_stability_row(item) for item in raw_rows) if row is not None]
+    available_scanners = sorted(
+        {
+            scanner
+            for scanner in (_normalize_stability_scanner(item) for item in raw.get('available_scanners', []))
+            if scanner
+        }
+    )
+    return {
+        'recorded_at': str(raw.get('recorded_at', '')).strip() or '',
+        'target': str(raw.get('target', '')).strip() or '',
+        'available_scanners': available_scanners,
+        'rows': rows,
+    }
+
+
+def _extract_scanner_stability_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
+    findings = report.get('findings')
+    if not isinstance(findings, list):
+        return []
+
+    counts: dict[tuple[str, str, str], int] = {}
+    for finding in findings:
+        if not isinstance(finding, dict):
+            continue
+        if finding.get('status') == 'fixed':
+            continue
+        rule_id = str(finding.get('rule_id', '')).strip()
+        if not rule_id:
+            continue
+        target = str(finding.get('changed_target', '')).strip() or 'unknown'
+
+        source_values = finding.get('sources')
+        if not isinstance(source_values, list):
+            source_values = [finding.get('source')]
+        scanners = {
+            scanner
+            for scanner in (_normalize_stability_scanner(item) for item in source_values)
+            if scanner
+        }
+        for scanner in scanners:
+            key = (scanner, rule_id, target)
+            counts[key] = counts.get(key, 0) + 1
+
+    rows = [
+        {
+            'scanner': scanner,
+            'rule_id': rule_id,
+            'target': target,
+            'finding_count': count,
+        }
+        for (scanner, rule_id, target), count in counts.items()
+    ]
+    return sorted(rows, key=lambda item: (item['scanner'], item['rule_id'], item['target']))
+
+
+def _normalize_scanner_stability_bounds(raw: Any) -> dict[str, Any]:
+    if not isinstance(raw, dict):
+        return {
+            'default_max_variance': DEFAULT_SCANNER_STABILITY_MAX_VARIANCE,
+            'per_signature': {},
+        }
+    default_max = _coerce_non_negative_int(raw.get('default_max_variance'))
+    raw_per_signature = raw.get('per_signature')
+    per_signature: dict[str, int] = {}
+    if isinstance(raw_per_signature, dict):
+        for signature, value in raw_per_signature.items():
+            key = str(signature).strip()
+            if not key:
+                continue
+            per_signature[key] = _coerce_non_negative_int(value)
+    return {
+        'default_max_variance': default_max,
+        'per_signature': per_signature,
+    }
+
+
+def _extract_historical_scanner_stability_points(
+    baseline_payload: dict[str, Any],
+) -> tuple[list[dict[str, Any]], dict[str, Any], dict[str, Any], int]:
+    history_meta = {'history_reset_reason': 'missing-history', 'loaded_point_count': 0}
+    approved_bounds = _normalize_scanner_stability_bounds(None)
+    window = DEFAULT_SCANNER_STABILITY_WINDOW
+
+    if not baseline_payload:
+        return [], history_meta, approved_bounds, window
+
+    if 'points' in baseline_payload and isinstance(baseline_payload.get('points'), list):
+        schema_version = str(baseline_payload.get('schema_version', '')).strip()
+        if schema_version and schema_version != SCANNER_STABILITY_SCHEMA_VERSION:
+            return [], {
+                'history_reset_reason': 'stability-schema-version-mismatch',
+                'baseline_stability_schema_version': schema_version,
+                'expected_stability_schema_version': SCANNER_STABILITY_SCHEMA_VERSION,
+                'loaded_point_count': 0,
+            }, approved_bounds, window
+
+        points = [
+            point
+            for point in (_sanitize_scanner_stability_point(item) for item in baseline_payload.get('points', []))
+            if point is not None
+        ]
+        history_meta = {
+            'history_reset_reason': None,
+            'loaded_point_count': len(points),
+        }
+        approved_bounds = _normalize_scanner_stability_bounds(baseline_payload.get('approved_bounds'))
+        window = max(1, _coerce_non_negative_int(baseline_payload.get('window')) or DEFAULT_SCANNER_STABILITY_WINDOW)
+        return points, history_meta, approved_bounds, window
+
+    report_schema_version = str(((baseline_payload.get('report_schema') or {}).get('version'))).strip()
+    if report_schema_version and report_schema_version != REPORT_SCHEMA_VERSION:
+        return [], {
+            'history_reset_reason': 'schema-version-mismatch',
+            'baseline_report_schema_version': report_schema_version,
+            'expected_report_schema_version': REPORT_SCHEMA_VERSION,
+            'loaded_point_count': 0,
+        }, approved_bounds, window
+
+    run_meta = baseline_payload.get('run_meta')
+    if not isinstance(run_meta, dict):
+        return [], history_meta, approved_bounds, window
+    stability = run_meta.get('scanner_stability')
+    if not isinstance(stability, dict):
+        return [], history_meta, approved_bounds, window
+
+    schema_version = str(stability.get('schema_version', '')).strip()
+    if schema_version and schema_version != SCANNER_STABILITY_SCHEMA_VERSION:
+        return [], {
+            'history_reset_reason': 'stability-schema-version-mismatch',
+            'baseline_stability_schema_version': schema_version,
+            'expected_stability_schema_version': SCANNER_STABILITY_SCHEMA_VERSION,
+            'loaded_point_count': 0,
+        }, approved_bounds, window
+
+    raw_points = stability.get('points')
+    if not isinstance(raw_points, list):
+        return [], history_meta, approved_bounds, window
+
+    points = [point for point in (_sanitize_scanner_stability_point(item) for item in raw_points) if point is not None]
+    history_meta = {'history_reset_reason': None, 'loaded_point_count': len(points)}
+    approved_bounds = _normalize_scanner_stability_bounds(stability.get('approved_bounds'))
+    window = max(1, _coerce_non_negative_int(stability.get('window')) or DEFAULT_SCANNER_STABILITY_WINDOW)
+    return points, history_meta, approved_bounds, window
+
+
+def _load_stability_baseline_payload(
+    baseline_path: str | None,
+) -> tuple[dict[str, Any], dict[str, Any], str]:
+    if not baseline_path:
+        return {}, {
+            'history_reset_reason': 'missing-history',
+            'loaded_point_count': 0,
+            'message': '--stability-baseline is not provided',
+        }, ''
+
+    source = Path(baseline_path)
+    if not source.exists():
+        return {}, {
+            'history_reset_reason': 'missing-history',
+            'loaded_point_count': 0,
+            'message': f'stability baseline does not exist: {baseline_path}',
+        }, ''
+
+    source_path = source
+    if source.is_dir():
+        ledger_path = source / 'scanner-stability.json'
+        report_path = source / 'wcag-report.json'
+        if ledger_path.exists():
+            source_path = ledger_path
+        elif report_path.exists():
+            source_path = report_path
+        else:
+            return {}, {
+                'history_reset_reason': 'missing-history',
+                'loaded_point_count': 0,
+                'message': 'stability baseline directory is missing scanner-stability.json and wcag-report.json',
+            }, str(source)
+
+    try:
+        payload = json.loads(source_path.read_text(encoding='utf-8'))
+    except (json.JSONDecodeError, OSError):
+        return {}, {
+            'history_reset_reason': 'invalid-baseline',
+            'loaded_point_count': 0,
+            'message': f'failed to parse stability baseline: {source_path}',
+        }, str(source_path)
+
+    if not isinstance(payload, dict):
+        return {}, {
+            'history_reset_reason': 'invalid-baseline',
+            'loaded_point_count': 0,
+            'message': 'stability baseline must be a JSON object',
+        }, str(source_path)
+
+    return payload, {'history_reset_reason': None, 'loaded_point_count': 0}, str(source_path)
+
+
+def _build_scanner_stability_payload(
+    *,
+    now_utc: datetime,
+    mode: str,
+    current_report: dict[str, Any],
+    baseline_path: str | None,
+) -> dict[str, Any]:
+    baseline_payload, baseline_meta, baseline_source_path = _load_stability_baseline_payload(baseline_path)
+    history_points, history_meta, approved_bounds, window = _extract_historical_scanner_stability_points(baseline_payload)
+
+    if baseline_meta.get('history_reset_reason'):
+        history_meta = {
+            **history_meta,
+            **baseline_meta,
+        }
+
+    current_point = {
+        'recorded_at': now_utc.isoformat().replace('+00:00', 'Z'),
+        'target': str(current_report.get('target', {}).get('value', '')).strip(),
+        'available_scanners': sorted(_extract_available_scanners(current_report)),
+        'rows': _extract_scanner_stability_rows(current_report),
+    }
+
+    merged_points = history_points + [current_point]
+    points = merged_points[-window:]
+
+    series: dict[str, list[int]] = {}
+    for point in points:
+        for row in point.get('rows', []):
+            signature = _stability_signature(row['scanner'], row['rule_id'], row['target'])
+            series.setdefault(signature, []).append(_coerce_non_negative_int(row.get('finding_count')))
+
+    variance_rows: list[dict[str, Any]] = []
+    for signature, samples in sorted(series.items()):
+        scanner, rule_id, target = _parse_stability_signature(signature)
+        if not scanner or not rule_id:
+            continue
+        low = min(samples) if samples else 0
+        high = max(samples) if samples else 0
+        variance_rows.append(
+            {
+                'scanner': scanner,
+                'rule_id': rule_id,
+                'target': target,
+                'samples': len(samples),
+                'min_count': low,
+                'max_count': high,
+                'variance': high - low,
+                'latest_count': samples[-1] if samples else 0,
+            }
+        )
+
+    previous_point = points[-2] if len(points) > 1 else None
+    current_rows_map = {
+        _stability_signature(item['scanner'], item['rule_id'], item['target']): _coerce_non_negative_int(item['finding_count'])
+        for item in current_point['rows']
+    }
+    previous_rows_map: dict[str, int] = {}
+    previous_scanners: list[str] = []
+    if previous_point:
+        previous_rows_map = {
+            _stability_signature(item['scanner'], item['rule_id'], item['target']): _coerce_non_negative_int(item['finding_count'])
+            for item in previous_point.get('rows', [])
+        }
+        previous_scanners = sorted(
+            {
+                scanner
+                for scanner in (
+                    _normalize_stability_scanner(item) for item in previous_point.get('available_scanners', [])
+                )
+                if scanner
+            }
+        )
+
+    signatures = sorted(set(current_rows_map) | set(previous_rows_map))
+    breaches: list[dict[str, Any]] = []
+    max_delta = 0
+    for signature in signatures:
+        previous_count = previous_rows_map.get(signature, 0)
+        current_count = current_rows_map.get(signature, 0)
+        delta = abs(current_count - previous_count)
+        allowed = approved_bounds['per_signature'].get(signature, approved_bounds['default_max_variance'])
+        max_delta = max(max_delta, delta)
+        if delta > allowed:
+            scanner, rule_id, target = _parse_stability_signature(signature)
+            breaches.append(
+                {
+                    'signature': signature,
+                    'scanner': scanner,
+                    'rule_id': rule_id,
+                    'target': target,
+                    'previous_count': previous_count,
+                    'current_count': current_count,
+                    'delta': delta,
+                    'allowed_max_variance': allowed,
+                }
+            )
+
+    current_scanners = current_point['available_scanners']
+    scanner_capability_changed = bool(previous_point) and previous_scanners != current_scanners
+
+    downgrade_reason: str | None = None
+    if mode == 'off':
+        downgrade_reason = 'mode-off'
+    elif previous_point is None:
+        downgrade_reason = 'missing-history'
+    elif scanner_capability_changed:
+        downgrade_reason = 'scanner-capability-changed'
+
+    gate_failed = mode == 'fail' and downgrade_reason is None and len(breaches) > 0
+
+    return {
+        'schema_version': SCANNER_STABILITY_SCHEMA_VERSION,
+        'generated_at': now_utc.isoformat().replace('+00:00', 'Z'),
+        'mode': mode,
+        'baseline_source': baseline_source_path,
+        'window': window,
+        'points': points,
+        'variance_rows': variance_rows,
+        'approved_bounds': approved_bounds,
+        'comparison': {
+            'evaluated_signature_count': len(signatures),
+            'breach_count': len(breaches),
+            'max_delta': max_delta,
+            'breaches': breaches,
+            'scanner_capability_changed': scanner_capability_changed,
+            'previous_scanners': previous_scanners,
+            'current_scanners': current_scanners,
+        },
+        'history_meta': history_meta,
+        'gate': {
+            'mode': mode,
+            'evaluated': downgrade_reason is None,
+            'failed': gate_failed,
+            'exit_code': SCANNER_STABILITY_EXIT_CODE if gate_failed else 0,
+            'downgrade_reason': downgrade_reason,
+        },
+    }
 def _stage_report_schema_artifact(output_dir: Path) -> tuple[dict[str, Any], Path]:
     if not REPORT_SCHEMA_SOURCE_PATH.exists():
         raise FileNotFoundError(f'report schema file is missing: {REPORT_SCHEMA_SOURCE_PATH}')
@@ -2092,6 +2486,17 @@ def parse_args() -> argparse.Namespace:
         help="Directory containing prior run artifacts (wcag-report.json) for replay verification.",
     )
     parser.add_argument(
+        "--stability-baseline",
+        default=None,
+        help="Path to prior scanner stability baseline report or scanner-stability.json artifact.",
+    )
+    parser.add_argument(
+        "--stability-mode",
+        choices=sorted(SCANNER_STABILITY_MODES),
+        default="off",
+        help="Scanner stability gate mode: off, warn, or fail.",
+    )
+    parser.add_argument(
         "--scanner-retry-attempts",
         type=int,
         default=DEFAULT_SCANNER_RETRY_ATTEMPTS,
@@ -2216,6 +2621,8 @@ def main() -> int:
         raise ValueError('--fail-on-new-only requires --baseline-report')
     if args.replay_verify_from and not Path(args.replay_verify_from).exists():
         raise ValueError('--replay-verify-from directory does not exist: ' + str(args.replay_verify_from))
+    if args.stability_baseline and not Path(args.stability_baseline).exists():
+        raise ValueError('--stability-baseline path does not exist: ' + str(args.stability_baseline))
 
     if args.preflight_only:
         preflight = run_preflight_checks(args.timeout)
@@ -2243,6 +2650,8 @@ def main() -> int:
         waiver_expiry_mode=args.waiver_expiry_mode,
         risk_calibration_mode=args.risk_calibration_mode,
         risk_calibration_source=args.risk_calibration_source,
+        stability_mode=args.stability_mode,
+        stability_baseline=args.stability_baseline,
         overlapping_rules=overlapping_rules,
     )
 
@@ -2611,6 +3020,67 @@ def main() -> int:
             f"regressed={replay_verification['status_counts']['regressed']}, "
             f"non-deterministic={replay_verification['status_counts']['non-deterministic']}."
         )
+    scanner_stability = _build_scanner_stability_payload(
+        now_utc=datetime.now(timezone.utc),
+        mode=args.stability_mode,
+        current_report=report,
+        baseline_path=args.stability_baseline,
+    )
+    scanner_stability_path = output_dir / 'scanner-stability.json'
+    scanner_stability_path.write_text(json.dumps(scanner_stability, ensure_ascii=False, indent=2), encoding='utf-8')
+    scanner_stability_comparison = scanner_stability.get('comparison', {})
+    scanner_stability_gate = scanner_stability.get('gate', {})
+    report['run_meta']['scanner_stability'] = {
+        'schema_version': scanner_stability.get('schema_version'),
+        'mode': scanner_stability.get('mode'),
+        'artifact_path': str(scanner_stability_path),
+        'window': scanner_stability.get('window'),
+        'baseline_source': scanner_stability.get('baseline_source'),
+        'history_meta': scanner_stability.get('history_meta', {}),
+        'approved_bounds': scanner_stability.get('approved_bounds', {}),
+        'comparison': {
+            'evaluated_signature_count': scanner_stability_comparison.get('evaluated_signature_count', 0),
+            'breach_count': scanner_stability_comparison.get('breach_count', 0),
+            'max_delta': scanner_stability_comparison.get('max_delta', 0),
+            'scanner_capability_changed': bool(scanner_stability_comparison.get('scanner_capability_changed')),
+            'previous_scanners': scanner_stability_comparison.get('previous_scanners', []),
+            'current_scanners': scanner_stability_comparison.get('current_scanners', []),
+        },
+        'gate': scanner_stability_gate,
+        'points': scanner_stability.get('points', []),
+    }
+    report.setdefault('summary', {})['scanner_stability'] = {
+        'mode': scanner_stability.get('mode'),
+        'window': scanner_stability.get('window'),
+        'breach_count': scanner_stability_comparison.get('breach_count', 0),
+        'max_delta': scanner_stability_comparison.get('max_delta', 0),
+        'scanner_capability_changed': bool(scanner_stability_comparison.get('scanner_capability_changed')),
+        'gate_failed': bool(scanner_stability_gate.get('failed')),
+    }
+
+    scanner_stability_downgrade = str(scanner_stability_gate.get('downgrade_reason') or '')
+    if scanner_stability_downgrade == 'missing-history' and args.stability_mode != 'off':
+        report['run_meta']['notes'].append(
+            'Scanner stability downgraded (missing-history): provide --stability-baseline with scanner-stability.json '
+            'or a prior wcag-report.json containing run_meta.scanner_stability.'
+        )
+    elif scanner_stability_downgrade == 'scanner-capability-changed':
+        report['run_meta']['notes'].append(
+            'Scanner stability downgraded (scanner-capability-changed): '
+            'baseline scanners and current scanners differ; comparison is informational only.'
+        )
+    elif args.stability_mode != 'off':
+        report['run_meta']['notes'].append(
+            'Scanner stability: '
+            f"breaches={scanner_stability_comparison.get('breach_count', 0)}, "
+            f"max_delta={scanner_stability_comparison.get('max_delta', 0)} "
+            f"(window={scanner_stability.get('window')}, mode={args.stability_mode})."
+        )
+        if args.stability_mode == 'warn' and scanner_stability_comparison.get('breach_count', 0) > 0:
+            report['run_meta']['notes'].append(
+                'Scanner stability warning: volatility exceeds approved bounds under --stability-mode=warn.'
+            )
+
     output_json = output_dir / 'wcag-report.json'
     output_md = output_dir / 'wcag-report.md'
     if report_format == 'json':
@@ -2698,6 +3168,13 @@ def main() -> int:
         report['run_meta']['notes'].append(
             'Replay verification gate failed: high-severity regressed findings were introduced.'
         )
+    if report['run_meta'].get('scanner_stability', {}).get('gate', {}).get('failed'):
+        if not should_fail:
+            should_fail = True
+            exit_code = SCANNER_STABILITY_EXIT_CODE
+        report['run_meta']['notes'].append(
+            'Scanner stability gate failed: volatility exceeded approved bounds under --stability-mode=fail.'
+        )
 
     debt_trend_payload = _build_debt_trend_payload(
         now_utc=datetime.now(timezone.utc),
@@ -2764,6 +3241,7 @@ def main() -> int:
     if effective_policy_output is not None:
         artifact_paths['effective-policy'] = effective_policy_output
     artifact_paths['debt-trend'] = debt_trend_path
+    artifact_paths['scanner-stability'] = scanner_stability_path
     if replay_summary_path is not None:
         artifact_paths['replay-summary'] = replay_summary_path
     if replay_diff_path is not None:
@@ -2812,6 +3290,8 @@ def main() -> int:
                 print('Risk calibration gate failed: unstable high-severity rule outcomes detected.')
             elif report['run_meta'].get('replay_verification', {}).get('gate', {}).get('failed'):
                 print('Replay verification gate failed: high-severity regressed findings detected.')
+            elif report['run_meta'].get('scanner_stability', {}).get('gate', {}).get('failed'):
+                print('Scanner stability gate failed: volatility exceeded approved bounds.')
             elif fail_on:
                 print(f'Policy gate failed: unresolved finding severity >= {fail_on}')
     if should_fail:
@@ -2821,4 +3301,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
