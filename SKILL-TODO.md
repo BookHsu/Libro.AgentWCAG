@@ -10,7 +10,7 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 4. [x] Complete `M35 Accessibility Debt Trend Intelligence` to expose actionable debt trends and release risk signals across repeated baseline runs.
 5. [x] Complete `M36 Rule-Risk Evidence Calibration` to align deterministic risk scoring with observed remediation outcomes and reduce triage noise.
 6. [x] Complete `M37 Remediation Verification Replay Lane` to prove applied fixes remain stable across re-scan cycles and framework render variance.
-7. [ ] Complete `M38 Real-Scanner Stability Ledger` to track scanner drift over time and gate releases when result volatility exceeds policy.
+7. [x] Complete `M38 Real-Scanner Stability Ledger` to track scanner drift over time and gate releases when result volatility exceeds policy.
 
 ## M21 Post-M20 Validation Closure
 
@@ -268,13 +268,10 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [x] Add docs and regression tests for replay gate behavior in CI, including deterministic handling for framework render drift and scanner capability differences.
 ## M38 Real-Scanner Stability Ledger
 
-- [ ] Add a scanner-stability ledger artifact (`scanner-stability.json`) that records repeated run variance per scanner, rule, and fixture target.
-- [ ] Add `--stability-baseline <path>` and `--stability-mode (off|warn|fail)` options so CI can compare current volatility against approved bounds.
-- [ ] Add docs and regression tests for stability-window handling, missing-history fallback, and deterministic messaging when environment capability changes.
+- [x] Add a scanner-stability ledger artifact (`scanner-stability.json`) that records repeated run variance per scanner, rule, and fixture target.
+- [x] Add `--stability-baseline <path>` and `--stability-mode (off|warn|fail)` options so CI can compare current volatility against approved bounds.
+- [x] Add docs and regression tests for stability-window handling, missing-history fallback, and deterministic messaging when environment capability changes.
 ## Notes
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
-
-
-
