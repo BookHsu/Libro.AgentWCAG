@@ -168,6 +168,21 @@ class RunnerTests(unittest.TestCase):
             sys.argv = original
         self.assertEqual(args.policy_preset, "legacy")
 
+    def test_cli_accepts_policy_bundle_flag(self) -> None:
+        original = sys.argv
+        sys.argv = [
+            "run_accessibility_audit.py",
+            "--target",
+            "https://example.com",
+            "--policy-bundle",
+            "marketing-site",
+        ]
+        try:
+            args = parse_args()
+        finally:
+            sys.argv = original
+        self.assertEqual(args.policy_bundle, "marketing-site")
+
     def test_cli_accepts_policy_discovery_flags(self) -> None:
         original = sys.argv
         sys.argv = [
@@ -215,6 +230,11 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(preset['fail_on'], 'serious')
         self.assertIn('meta-viewport', preset['ignore_rules'])
 
+    def test_resolve_policy_bundle_returns_expected_fail_on_and_ignore_rules(self) -> None:
+        bundle = runner._resolve_policy_bundle('legacy-content')
+        self.assertEqual(bundle['fail_on'], 'serious')
+        self.assertIn('color-contrast', bundle['ignore_rules'])
+
     def test_policy_presets_payload_contains_balanced_profile(self) -> None:
         payload = runner._policy_presets_payload()
         names = [item['name'] for item in payload['presets']]
@@ -226,6 +246,7 @@ class RunnerTests(unittest.TestCase):
             fail_on='serious',
             include_rules=['image-alt'],
             ignore_rules=['meta-viewport'],
+            policy_bundle={'name': 'legacy-content'},
             policy_preset={'name': 'legacy'},
             policy_config_path='policy.json',
             policy_sources={},
@@ -238,6 +259,7 @@ class RunnerTests(unittest.TestCase):
             },
             overlapping_rules=['meta-viewport'],
         )
+        self.assertEqual(policy['bundle'], 'legacy-content')
         self.assertEqual(policy['preset'], 'legacy')
         self.assertTrue(policy['fail_on_new_only'])
         self.assertEqual(policy['baseline_signature']['selector_canonicalization'], 'basic')
