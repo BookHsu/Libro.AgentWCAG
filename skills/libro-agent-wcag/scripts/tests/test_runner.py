@@ -287,6 +287,8 @@ class RunnerTests(unittest.TestCase):
             waiver_expiry_mode='warn',
             risk_calibration_mode='warn',
             risk_calibration_source='calibration.json',
+            stability_mode='warn',
+            stability_baseline='stability.json',
             overlapping_rules=['meta-viewport'],
         )
         self.assertEqual(policy['bundle'], 'legacy-content')
@@ -297,6 +299,8 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(policy['waiver_expiry_mode'], 'warn')
         self.assertEqual(policy['risk_calibration_mode'], 'warn')
         self.assertEqual(policy['risk_calibration_source'], 'calibration.json')
+        self.assertEqual(policy['stability_mode'], 'warn')
+        self.assertEqual(policy['stability_baseline'], 'stability.json')
         self.assertEqual(policy['overlapping_rules'], ['meta-viewport'])
 
     def test_build_scanner_capabilities_reports_mocked_rule_catalog(self) -> None:
@@ -1042,6 +1046,203 @@ class RunnerPolicyTests(unittest.TestCase):
         self.assertEqual(replay['gate']['exit_code'], 47)
 
 
+
+    def test_cli_accepts_stability_flags(self) -> None:
+        original = sys.argv
+        sys.argv = [
+            "run_accessibility_audit.py",
+            "--target",
+            "https://example.com",
+            "--stability-baseline",
+            "./baseline-out",
+            "--stability-mode",
+            "fail",
+        ]
+        try:
+            args = parse_args()
+        finally:
+            sys.argv = original
+        self.assertEqual(args.stability_baseline, "./baseline-out")
+        self.assertEqual(args.stability_mode, "fail")
+
+    def test_build_scanner_stability_payload_downgrades_when_history_missing(self) -> None:
+        report = {
+            'target': {'value': 'https://example.com'},
+            'run_meta': {
+                'scanner_capabilities': {
+                    'scanners': {
+                        'axe': {'available': True},
+                        'lighthouse': {'available': False},
+                    }
+                }
+            },
+            'findings': [
+                {
+                    'rule_id': 'image-alt',
+                    'changed_target': 'img.hero',
+                    'status': 'open',
+                    'sources': ['axe'],
+                }
+            ],
+        }
+        stability = runner._build_scanner_stability_payload(
+            now_utc=datetime.fromisoformat('2026-03-13T00:00:00+00:00'),
+            mode='warn',
+            current_report=report,
+            baseline_path=None,
+        )
+        self.assertEqual(stability['window'], 5)
+        self.assertEqual(stability['comparison']['breach_count'], 1)
+        self.assertEqual(stability['gate']['downgrade_reason'], 'missing-history')
+        self.assertFalse(stability['gate']['failed'])
+
+    def test_build_scanner_stability_payload_respects_history_window_from_baseline_artifact(self) -> None:
+        workspace = Path(__file__).resolve().parents[4] / 'automation-work' / 'm38-stability-window-test'
+        if workspace.exists():
+            import shutil
+
+            shutil.rmtree(workspace, ignore_errors=True)
+        workspace.mkdir(parents=True, exist_ok=True)
+        baseline = workspace / 'scanner-stability.json'
+        baseline.write_text(
+            json.dumps(
+                {
+                    'schema_version': '1.0.0',
+                    'window': 2,
+                    'approved_bounds': {'default_max_variance': 0, 'per_signature': {}},
+                    'points': [
+                        {
+                            'recorded_at': '2026-03-10T00:00:00Z',
+                            'target': 'https://example.com',
+                            'available_scanners': ['axe'],
+                            'rows': [
+                                {
+                                    'scanner': 'axe',
+                                    'rule_id': 'image-alt',
+                                    'target': 'img.hero',
+                                    'finding_count': 1,
+                                }
+                            ],
+                        },
+                        {
+                            'recorded_at': '2026-03-11T00:00:00Z',
+                            'target': 'https://example.com',
+                            'available_scanners': ['axe'],
+                            'rows': [
+                                {
+                                    'scanner': 'axe',
+                                    'rule_id': 'image-alt',
+                                    'target': 'img.hero',
+                                    'finding_count': 1,
+                                }
+                            ],
+                        },
+                    ],
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding='utf-8',
+        )
+        report = {
+            'target': {'value': 'https://example.com'},
+            'run_meta': {
+                'scanner_capabilities': {
+                    'scanners': {
+                        'axe': {'available': True},
+                        'lighthouse': {'available': False},
+                    }
+                }
+            },
+            'findings': [
+                {
+                    'rule_id': 'image-alt',
+                    'changed_target': 'img.hero',
+                    'status': 'open',
+                    'sources': ['axe'],
+                }
+            ],
+        }
+        stability = runner._build_scanner_stability_payload(
+            now_utc=datetime.fromisoformat('2026-03-12T00:00:00+00:00'),
+            mode='warn',
+            current_report=report,
+            baseline_path=str(baseline),
+        )
+        self.assertEqual(stability['window'], 2)
+        self.assertEqual(len(stability['points']), 2)
+        self.assertEqual(stability['history_meta']['loaded_point_count'], 2)
+
+    def test_build_scanner_stability_payload_downgrades_on_scanner_capability_change(self) -> None:
+        workspace = Path(__file__).resolve().parents[4] / 'automation-work' / 'm38-stability-capability-drift-test'
+        if workspace.exists():
+            import shutil
+
+            shutil.rmtree(workspace, ignore_errors=True)
+        workspace.mkdir(parents=True, exist_ok=True)
+        baseline = workspace / 'scanner-stability.json'
+        baseline.write_text(
+            json.dumps(
+                {
+                    'schema_version': '1.0.0',
+                    'window': 3,
+                    'approved_bounds': {'default_max_variance': 0, 'per_signature': {}},
+                    'points': [
+                        {
+                            'recorded_at': '2026-03-10T00:00:00Z',
+                            'target': 'https://example.com',
+                            'available_scanners': ['axe', 'lighthouse'],
+                            'rows': [
+                                {
+                                    'scanner': 'axe',
+                                    'rule_id': 'image-alt',
+                                    'target': 'img.hero',
+                                    'finding_count': 1,
+                                }
+                            ],
+                        }
+                    ],
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding='utf-8',
+        )
+        report = {
+            'target': {'value': 'https://example.com'},
+            'run_meta': {
+                'scanner_capabilities': {
+                    'scanners': {
+                        'axe': {'available': True},
+                        'lighthouse': {'available': False},
+                    }
+                }
+            },
+            'findings': [
+                {
+                    'rule_id': 'image-alt',
+                    'changed_target': 'img.hero',
+                    'status': 'open',
+                    'sources': ['axe'],
+                },
+                {
+                    'rule_id': 'button-name',
+                    'changed_target': 'button.icon',
+                    'status': 'open',
+                    'sources': ['axe'],
+                },
+            ],
+        }
+        stability = runner._build_scanner_stability_payload(
+            now_utc=datetime.fromisoformat('2026-03-12T00:00:00+00:00'),
+            mode='fail',
+            current_report=report,
+            baseline_path=str(baseline),
+        )
+        self.assertTrue(stability['comparison']['scanner_capability_changed'])
+        self.assertEqual(stability['gate']['downgrade_reason'], 'scanner-capability-changed')
+        self.assertFalse(stability['gate']['failed'])
+
+
 if __name__ == "__main__":
     unittest.main()
-
