@@ -62,6 +62,8 @@ RISK_CALIBRATION_EXIT_CODE = 46
 RISK_CALIBRATION_MIN_SAMPLES = 3
 RISK_CALIBRATION_PRECISION_THRESHOLD = 0.6
 HIGH_SEVERITY_LEVELS = {"critical", "serious"}
+REPLAY_VERIFICATION_SCHEMA_VERSION = "1.0.0"
+REPLAY_VERIFICATION_EXIT_CODE = 47
 DEBT_STATE_NEW = "new"
 DEBT_STATE_ACCEPTED = "accepted"
 DEBT_STATE_RETIRED = "retired"
@@ -1412,6 +1414,9 @@ def _build_compact_summary(
             'downgrade_reason': risk_calibration.get('downgrade_reason'),
             'unstable_high_severity_rules': risk_calibration.get('unstable_high_severity_rules', []),
         }
+    replay_verification = report.get('run_meta', {}).get('replay_verification')
+    if replay_verification:
+        compact['replay_verification'] = replay_verification
     return compact
 
 def _apply_rule_policy(
@@ -1668,6 +1673,185 @@ def _tag_findings_with_debt_state(
             finding['debt_state'] = DEBT_STATE_RETIRED
 
 
+def _extract_available_scanners(report: dict[str, Any]) -> set[str]:
+    scanner_capabilities = report.get('run_meta', {}).get('scanner_capabilities', {})
+    scanners = scanner_capabilities.get('scanners')
+    if not isinstance(scanners, dict):
+        return set()
+    available: set[str] = set()
+    for scanner_name, details in scanners.items():
+        if not isinstance(details, dict):
+            continue
+        if details.get('available'):
+            available.add(str(scanner_name))
+    return available
+
+
+def _collect_replay_signature_rows(
+    report: dict[str, Any],
+    signature_config: dict[str, Any] | None = None,
+) -> dict[str, dict[str, str]]:
+    effective_signature_config = signature_config or {
+        'include_target_in_signature': False,
+        'target_normalization': 'none',
+        'selector_canonicalization': 'none',
+    }
+    report_target = str(report.get('target', {}).get('value', '')).strip()
+    rows: dict[str, dict[str, str]] = {}
+    for finding in report.get('findings', []):
+        if not isinstance(finding, dict):
+            continue
+        if finding.get('status') == 'fixed':
+            continue
+        signature = _finding_signature_with_config(finding, effective_signature_config, report_target)
+        rows[signature] = {
+            'signature': signature,
+            'rule_id': str(finding.get('rule_id', '')).strip(),
+            'severity': str(finding.get('severity', 'info')).strip() or 'info',
+        }
+    return rows
+
+
+def _load_replay_source_report(replay_dir: Path) -> tuple[dict[str, Any], Path]:
+    source_report_path = replay_dir / 'wcag-report.json'
+    if not source_report_path.exists():
+        raise ValueError(
+            '--replay-verify-from must point to a directory containing wcag-report.json: '
+            + str(source_report_path)
+        )
+    payload = json.loads(source_report_path.read_text(encoding='utf-8'))
+    if not isinstance(payload, dict):
+        raise ValueError('replay source report must be a JSON object')
+    return payload, source_report_path
+
+
+def _build_replay_diff_markdown(
+    replay_summary: dict[str, Any],
+    output_path: Path,
+) -> None:
+    lines = [
+        '# Replay Verification Diff',
+        '',
+        f"- Source report: `{replay_summary.get('source_report_path', '')}`",
+        f"- Generated at: `{replay_summary.get('generated_at', '')}`",
+        f"- Gate failed: `{replay_summary.get('gate', {}).get('failed', False)}`",
+        '',
+        '| Signature | Rule | Severity | Replay Status |',
+        '|---|---|---|---|',
+    ]
+    for item in replay_summary.get('findings', []):
+        signature = str(item.get('signature', '')).replace('|', '\\|')
+        lines.append(
+            f"| `{signature}` | `{item.get('rule_id', '')}` | `{item.get('severity', 'info')}` | `{item.get('status', '')}` |"
+        )
+    output_path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+
+
+def _build_replay_verification_summary(
+    current_report: dict[str, Any],
+    replay_source_report: dict[str, Any],
+    replay_source_path: Path,
+    replay_source_dir: Path,
+    *,
+    now_utc: datetime | None = None,
+) -> dict[str, Any]:
+    generated_at = (now_utc or datetime.now(timezone.utc)).isoformat().replace('+00:00', 'Z')
+    signature_config = {
+        'include_target_in_signature': False,
+        'target_normalization': 'none',
+        'selector_canonicalization': 'none',
+    }
+    source_rows = _collect_replay_signature_rows(replay_source_report, signature_config)
+    current_rows = _collect_replay_signature_rows(current_report, signature_config)
+    source_signatures = set(source_rows)
+    current_signatures = set(current_rows)
+
+    source_target = _normalize_signature_target(
+        str(replay_source_report.get('target', {}).get('value', '')).strip(),
+        'path-only',
+    )
+    current_target = _normalize_signature_target(
+        str(current_report.get('target', {}).get('value', '')).strip(),
+        'path-only',
+    )
+    source_scanners = sorted(_extract_available_scanners(replay_source_report))
+    current_scanners = sorted(_extract_available_scanners(current_report))
+
+    nondeterministic_reasons: list[str] = []
+    target_drift = bool(source_target and current_target and source_target != current_target)
+    scanner_drift = source_scanners != current_scanners
+    if target_drift:
+        nondeterministic_reasons.append(
+            f'target-drift: source={source_target} current={current_target}'
+        )
+    if scanner_drift:
+        nondeterministic_reasons.append(
+            'scanner-capability-drift: source=' + ','.join(source_scanners) + ' current=' + ','.join(current_scanners)
+        )
+
+    findings_rows: list[dict[str, str]] = []
+    for signature in sorted(source_signatures - current_signatures):
+        source = source_rows[signature]
+        findings_rows.append(
+            {
+                'signature': signature,
+                'rule_id': source.get('rule_id', ''),
+                'severity': source.get('severity', 'info'),
+                'status': 'resolved',
+            }
+        )
+    for signature in sorted(source_signatures & current_signatures):
+        current = current_rows[signature]
+        findings_rows.append(
+            {
+                'signature': signature,
+                'rule_id': current.get('rule_id', ''),
+                'severity': current.get('severity', 'info'),
+                'status': 'unchanged',
+            }
+        )
+    for signature in sorted(current_signatures - source_signatures):
+        current = current_rows[signature]
+        findings_rows.append(
+            {
+                'signature': signature,
+                'rule_id': current.get('rule_id', ''),
+                'severity': current.get('severity', 'info'),
+                'status': 'non-deterministic' if nondeterministic_reasons else 'regressed',
+            }
+        )
+
+    status_counts = {
+        'resolved': sum(1 for item in findings_rows if item.get('status') == 'resolved'),
+        'unchanged': sum(1 for item in findings_rows if item.get('status') == 'unchanged'),
+        'regressed': sum(1 for item in findings_rows if item.get('status') == 'regressed'),
+        'non-deterministic': sum(1 for item in findings_rows if item.get('status') == 'non-deterministic'),
+    }
+    high_severity_regressed = [
+        item for item in findings_rows
+        if item.get('status') == 'regressed' and str(item.get('severity', 'info')) in HIGH_SEVERITY_LEVELS
+    ]
+    gate_failed = len(high_severity_regressed) > 0
+    gate = {
+        'failed': gate_failed,
+        'exit_code': REPLAY_VERIFICATION_EXIT_CODE if gate_failed else 0,
+        'high_severity_regressed_count': len(high_severity_regressed),
+        'high_severity_regressed_signatures': [item.get('signature', '') for item in high_severity_regressed],
+    }
+    return {
+        'schema_version': REPLAY_VERIFICATION_SCHEMA_VERSION,
+        'source_report_dir': str(replay_source_dir),
+        'source_report_path': str(replay_source_path),
+        'generated_at': generated_at,
+        'source_scanners': source_scanners,
+        'current_scanners': current_scanners,
+        'non_deterministic_reasons': nondeterministic_reasons,
+        'status_counts': status_counts,
+        'gate': gate,
+        'findings': findings_rows,
+    }
+
+
 def _stage_report_schema_artifact(output_dir: Path) -> tuple[dict[str, Any], Path]:
     if not REPORT_SCHEMA_SOURCE_PATH.exists():
         raise FileNotFoundError(f'report schema file is missing: {REPORT_SCHEMA_SOURCE_PATH}')
@@ -1903,6 +2087,11 @@ def parse_args() -> argparse.Namespace:
         help="Risk calibration gate mode: off, warn, or strict.",
     )
     parser.add_argument(
+        "--replay-verify-from",
+        default=None,
+        help="Directory containing prior run artifacts (wcag-report.json) for replay verification.",
+    )
+    parser.add_argument(
         "--scanner-retry-attempts",
         type=int,
         default=DEFAULT_SCANNER_RETRY_ATTEMPTS,
@@ -2025,6 +2214,8 @@ def main() -> int:
         raise ValueError('--fail-on-new-only requires --fail-on')
     if args.fail_on_new_only and not args.baseline_report:
         raise ValueError('--fail-on-new-only requires --baseline-report')
+    if args.replay_verify_from and not Path(args.replay_verify_from).exists():
+        raise ValueError('--replay-verify-from directory does not exist: ' + str(args.replay_verify_from))
 
     if args.preflight_only:
         preflight = run_preflight_checks(args.timeout)
@@ -2384,6 +2575,42 @@ def main() -> int:
         ),
         'available_rule_count': scanner_capabilities['available_rule_count'],
     }
+    replay_summary_path: Path | None = None
+    replay_diff_path: Path | None = None
+    replay_verification: dict[str, Any] | None = None
+    if args.replay_verify_from:
+        replay_dir = Path(args.replay_verify_from)
+        replay_source_report, replay_source_path = _load_replay_source_report(replay_dir)
+        replay_verification = _build_replay_verification_summary(
+            current_report=report,
+            replay_source_report=replay_source_report,
+            replay_source_path=replay_source_path,
+            replay_source_dir=replay_dir,
+        )
+        replay_summary_path = output_dir / 'replay-summary.json'
+        replay_diff_path = output_dir / 'replay-diff.md'
+        replay_summary_path.write_text(json.dumps(replay_verification, ensure_ascii=False, indent=2), encoding='utf-8')
+        _build_replay_diff_markdown(replay_verification, replay_diff_path)
+        report['run_meta']['replay_verification'] = {
+            'source_report_dir': str(replay_dir),
+            'summary_path': str(replay_summary_path),
+            'diff_path': str(replay_diff_path),
+            'status_counts': replay_verification.get('status_counts', {}),
+            'non_deterministic_reasons': replay_verification.get('non_deterministic_reasons', []),
+            'gate': replay_verification.get('gate', {}),
+        }
+        report.setdefault('summary', {})['replay_verification'] = {
+            'status_counts': replay_verification.get('status_counts', {}),
+            'non_deterministic_count': replay_verification.get('status_counts', {}).get('non-deterministic', 0),
+            'gate_failed': bool(replay_verification.get('gate', {}).get('failed')),
+        }
+        report['run_meta']['notes'].append(
+            'Replay verification: '
+            f"resolved={replay_verification['status_counts']['resolved']}, "
+            f"unchanged={replay_verification['status_counts']['unchanged']}, "
+            f"regressed={replay_verification['status_counts']['regressed']}, "
+            f"non-deterministic={replay_verification['status_counts']['non-deterministic']}."
+        )
     output_json = output_dir / 'wcag-report.json'
     output_md = output_dir / 'wcag-report.md'
     if report_format == 'json':
@@ -2464,6 +2691,13 @@ def main() -> int:
             'Risk calibration gate failed: unstable high-severity rules detected under --risk-calibration-mode=strict '
             f"({', '.join(risk_calibration.get('unstable_high_severity_rules', []))})."
         )
+    if replay_verification and replay_verification.get('gate', {}).get('failed'):
+        if not should_fail:
+            should_fail = True
+            exit_code = REPLAY_VERIFICATION_EXIT_CODE
+        report['run_meta']['notes'].append(
+            'Replay verification gate failed: high-severity regressed findings were introduced.'
+        )
 
     debt_trend_payload = _build_debt_trend_payload(
         now_utc=datetime.now(timezone.utc),
@@ -2530,6 +2764,10 @@ def main() -> int:
     if effective_policy_output is not None:
         artifact_paths['effective-policy'] = effective_policy_output
     artifact_paths['debt-trend'] = debt_trend_path
+    if replay_summary_path is not None:
+        artifact_paths['replay-summary'] = replay_summary_path
+    if replay_diff_path is not None:
+        artifact_paths['replay-diff'] = replay_diff_path
     if diff_path is not None:
         artifact_paths['fixes-diff'] = diff_path
     if snapshot_path is not None:
@@ -2572,6 +2810,8 @@ def main() -> int:
                 print('Waiver gate failed: one or more accepted debt waivers are expired.')
             elif report['run_meta'].get('risk_calibration', {}).get('gate', {}).get('failed'):
                 print('Risk calibration gate failed: unstable high-severity rule outcomes detected.')
+            elif report['run_meta'].get('replay_verification', {}).get('gate', {}).get('failed'):
+                print('Replay verification gate failed: high-severity regressed findings detected.')
             elif fail_on:
                 print(f'Policy gate failed: unresolved finding severity >= {fail_on}')
     if should_fail:

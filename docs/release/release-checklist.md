@@ -31,6 +31,7 @@ Use this checklist before publishing a new version of `libro-agent-wcag`.
 - [ ] Run baseline provenance verification mode (`--baseline-evidence-mode hash` or `hash-chain`) and archive verification evidence per `docs/release/provenance-verification.md`.
 - [ ] Run waiver-expiry review (`--waiver-expiry-mode warn|fail`) and attach renewal/retirement evidence for accepted debt waivers.
 - [ ] Run risk-calibration review (`--risk-calibration-source <path>` + `--risk-calibration-mode warn|strict`) and archive `run_meta.risk_calibration` evidence per `docs/release/risk-calibration.md`.
+- [ ] Run replay verification (`--replay-verify-from <report-dir>`) and archive `replay-summary.json`/`replay-diff.md` per `docs/release/replay-verification-lane.md`.
 - [ ] For any policy preset/bundle change, attach policy-bundle drift evidence (`bundle_hash` diff) and reviewer sign-off before merge.
 - [ ] Push `master` and create release artifacts/tags per project policy.
 
