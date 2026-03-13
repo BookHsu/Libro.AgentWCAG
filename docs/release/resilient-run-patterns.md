@@ -179,6 +179,7 @@ Use `run_meta.baseline_diff` and the latest report findings to classify each unr
 - Confirm fix strategy: `apply-fixes`, assisted remediation, or manual-only follow-up.
 - Capture verification evidence: include rerun result or before/after artifact path.
 - Record decision status: `new`, `persistent`, or `resolved` in PR or issue tracker.
+- For `persistent` debt, review `run_meta.baseline_diff.waiver_review` and enforce `--waiver-expiry-mode fail` on release lanes when renewal evidence is missing/expired.
 
 ### Ownership handoff checklist
 
@@ -187,6 +188,4 @@ Use `run_meta.baseline_diff` and the latest report findings to classify each unr
 - Add acceptance criteria for closure (expected scanner result and artifact paths).
 - After implementation, rerun audit and update baseline snapshot if debt was intentionally accepted.
 - Close handoff only when report status and issue tracker state are aligned.
-
-
 

@@ -4,7 +4,7 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## Current Execution Order
 
-1. [ ] Complete `M32 Baseline Debt Waiver Expiry Automation` to prevent stale accepted debt from silently persisting.
+1. [x] Complete `M32 Baseline Debt Waiver Expiry Automation` to prevent stale accepted debt from silently persisting.
 2. [ ] Complete `M33 Multi-Agent Install Manifest Integrity` to guarantee installed skill bundles remain adapter-correct and tamper-evident across agents.
 3. [ ] Complete `M34 Policy Bundle Governance And Drift Detection` to keep shipped policy bundles audited, explainable, and release-gated against silent drift.
 
@@ -230,9 +230,9 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M32 Baseline Debt Waiver Expiry Automation
 
-- [ ] Add baseline debt waiver fields (`owner`, `approved_at`, `expires_at`, `reason`) with strict schema validation.
-- [ ] Add CLI warning/fail modes for expired waivers to enforce explicit debt renewal or retirement before release gating.
-- [ ] Add release checklist and triage workflow updates that require waiver-expiry review evidence for accepted debt states.
+- [x] Add baseline debt waiver fields (`owner`, `approved_at`, `expires_at`, `reason`) with strict schema validation.
+- [x] Add CLI warning/fail modes for expired waivers to enforce explicit debt renewal or retirement before release gating.
+- [x] Add release checklist and triage workflow updates that require waiver-expiry review evidence for accepted debt states.
 
 ## M33 Multi-Agent Install Manifest Integrity
 
@@ -250,6 +250,4 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.
 - Assisted remediation should preserve canonical report semantics and clearly signal remaining manual work.
 - Framework-aware remediation should only be added once fixture coverage and regression safety are strong enough.
-
-
 
