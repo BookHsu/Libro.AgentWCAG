@@ -899,6 +899,22 @@ class RunnerPolicyTests(unittest.TestCase):
         self.assertEqual(args.risk_calibration_source, "calibration.json")
         self.assertEqual(args.risk_calibration_mode, "strict")
 
+
+    def test_cli_accepts_replay_verify_from_flag(self) -> None:
+        original = sys.argv
+        sys.argv = [
+            "run_accessibility_audit.py",
+            "--target",
+            "https://example.com",
+            "--replay-verify-from",
+            "./out-prev",
+        ]
+        try:
+            args = parse_args()
+        finally:
+            sys.argv = original
+        self.assertEqual(args.replay_verify_from, "./out-prev")
+
     def test_evaluate_risk_calibration_downgrades_when_source_missing(self) -> None:
         report = {
             'findings': [
@@ -983,6 +999,47 @@ class RunnerPolicyTests(unittest.TestCase):
         )
         self.assertTrue(calibration['applied'])
         self.assertIn('image-alt', calibration['unstable_high_severity_rules'])
+
+
+    def test_build_replay_verification_summary_detects_high_severity_regression(self) -> None:
+        source_report = {
+            'target': {'value': 'https://example.com'},
+            'run_meta': {
+                'scanner_capabilities': {
+                    'scanners': {
+                        'axe': {'available': True},
+                        'lighthouse': {'available': False},
+                    }
+                }
+            },
+            'findings': [
+                {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'severity': 'serious', 'status': 'open'},
+            ],
+        }
+        current_report = {
+            'target': {'value': 'https://example.com'},
+            'run_meta': {
+                'scanner_capabilities': {
+                    'scanners': {
+                        'axe': {'available': True},
+                        'lighthouse': {'available': False},
+                    }
+                }
+            },
+            'findings': [
+                {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'severity': 'serious', 'status': 'open'},
+                {'rule_id': 'button-name', 'changed_target': 'button.icon', 'severity': 'serious', 'status': 'open'},
+            ],
+        }
+        replay = runner._build_replay_verification_summary(
+            current_report=current_report,
+            replay_source_report=source_report,
+            replay_source_path=Path('source/wcag-report.json'),
+            replay_source_dir=Path('source'),
+        )
+        self.assertEqual(replay['status_counts']['regressed'], 1)
+        self.assertTrue(replay['gate']['failed'])
+        self.assertEqual(replay['gate']['exit_code'], 47)
 
 
 if __name__ == "__main__":
