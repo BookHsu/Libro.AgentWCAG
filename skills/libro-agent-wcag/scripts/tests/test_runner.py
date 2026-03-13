@@ -125,6 +125,8 @@ class RunnerTests(unittest.TestCase):
             "--baseline-selector-canonicalization",
             "basic",
             "--fail-on-new-only",
+            "--debt-trend-window",
+            "7",
         ]
         try:
             args = parse_args()
@@ -135,6 +137,7 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(args.baseline_target_normalization, "host-path")
         self.assertEqual(args.baseline_selector_canonicalization, "basic")
         self.assertTrue(args.fail_on_new_only)
+        self.assertEqual(args.debt_trend_window, 7)
 
     def test_cli_accepts_baseline_evidence_mode_flag(self) -> None:
         original = sys.argv
@@ -787,6 +790,91 @@ class RunnerPolicyTests(unittest.TestCase):
         self.assertEqual(review['expired_count'], 1)
         self.assertEqual(review['missing_count'], 1)
         self.assertEqual(review['expired_waivers'][0]['signature'], 'button-name|button.icon')
+
+    def test_build_debt_trend_payload_handles_missing_history(self) -> None:
+        trend = runner._build_debt_trend_payload(
+            now_utc=datetime.fromisoformat('2026-03-13T00:00:00+00:00'),
+            window=3,
+            baseline_report={},
+            baseline_report_path=None,
+            debt_transitions=None,
+            waiver_review=None,
+        )
+        self.assertEqual(trend['summary']['total_points'], 1)
+        self.assertEqual(trend['summary']['latest_counts']['new'], 0)
+        self.assertEqual(trend['summary']['latest_counts']['regressed'], 0)
+
+    def test_build_debt_trend_payload_resets_history_on_schema_mismatch(self) -> None:
+        baseline_report = {
+            'report_schema': {'version': '0.9.0'},
+            'run_meta': {
+                'debt_trend': {
+                    'schema_version': '1.0.0',
+                    'points': [
+                        {
+                            'recorded_at': '2026-03-10T00:00:00Z',
+                            'source_report': 'baseline.json',
+                            'counts': {'new': 1, 'accepted': 2, 'retired': 0, 'regressed': 0},
+                        }
+                    ],
+                }
+            },
+        }
+        transitions = {
+            'new': {'count': 2},
+            'accepted': {'count': 3},
+            'retired': {'count': 1},
+        }
+        trend = runner._build_debt_trend_payload(
+            now_utc=datetime.fromisoformat('2026-03-13T00:00:00+00:00'),
+            window=5,
+            baseline_report=baseline_report,
+            baseline_report_path='baseline.json',
+            debt_transitions=transitions,
+            waiver_review={'expired_count': 1},
+        )
+        self.assertEqual(trend['summary']['total_points'], 1)
+        self.assertEqual(trend['summary']['latest_counts']['new'], 2)
+        self.assertEqual(trend['summary']['latest_counts']['regressed'], 1)
+        self.assertEqual(trend['history_meta']['history_reset_reason'], 'schema-version-mismatch')
+
+    def test_build_debt_trend_payload_inherits_and_rolls_waiver_expiry_regression(self) -> None:
+        baseline_report = {
+            'report_schema': {'version': '1.0.0'},
+            'run_meta': {
+                'debt_trend': {
+                    'schema_version': '1.0.0',
+                    'points': [
+                        {
+                            'recorded_at': '2026-03-11T00:00:00Z',
+                            'source_report': 'baseline-a.json',
+                            'counts': {'new': 1, 'accepted': 2, 'retired': 0, 'regressed': 0},
+                        },
+                        {
+                            'recorded_at': '2026-03-12T00:00:00Z',
+                            'source_report': 'baseline-b.json',
+                            'counts': {'new': 0, 'accepted': 2, 'retired': 1, 'regressed': 0},
+                        },
+                    ],
+                }
+            },
+        }
+        transitions = {
+            'new': {'count': 0},
+            'accepted': {'count': 2},
+            'retired': {'count': 1},
+        }
+        trend = runner._build_debt_trend_payload(
+            now_utc=datetime.fromisoformat('2026-03-13T00:00:00+00:00'),
+            window=3,
+            baseline_report=baseline_report,
+            baseline_report_path='baseline-c.json',
+            debt_transitions=transitions,
+            waiver_review={'expired_count': 2},
+        )
+        self.assertEqual(trend['summary']['total_points'], 3)
+        self.assertEqual(trend['summary']['latest_counts']['regressed'], 2)
+        self.assertEqual(trend['summary']['delta_from_previous']['regressed'], 2)
 
 if __name__ == "__main__":
     unittest.main()

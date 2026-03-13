@@ -6,8 +6,8 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 1. [x] Complete `M32 Baseline Debt Waiver Expiry Automation` to prevent stale accepted debt from silently persisting.
 2. [x] Complete `M33 Multi-Agent Install Manifest Integrity` to guarantee installed skill bundles remain adapter-correct and tamper-evident across agents.
-3. [ ] Complete `M34 Policy Bundle Governance And Drift Detection` to keep shipped policy bundles audited, explainable, and release-gated against silent drift.
-4. [ ] Complete `M35 Accessibility Debt Trend Intelligence` to expose actionable debt trends and release risk signals across repeated baseline runs.
+3. [x] Complete `M34 Policy Bundle Governance And Drift Detection` to keep shipped policy bundles audited, explainable, and release-gated against silent drift.
+4. [x] Complete `M35 Accessibility Debt Trend Intelligence` to expose actionable debt trends and release risk signals across repeated baseline runs.
 
 ## M21 Post-M20 Validation Closure
 
@@ -249,9 +249,9 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M35 Accessibility Debt Trend Intelligence
 
-- [ ] Add baseline trend artifact output (`debt-trend.json`) to summarize `new`, `accepted`, `retired`, and `regressed` finding counts for the last N baseline reports.
-- [ ] Add `--debt-trend-window <N>` support in `scripts/run_accessibility_audit.py` and include trend highlights in Markdown summary plus `run_meta`.
-- [ ] Add docs and regression tests covering trend computation edge cases (missing history, schema-version mismatch, and waived-debt expiry rollover).
+- [x] Add baseline trend artifact output (`debt-trend.json`) to summarize `new`, `accepted`, `retired`, and `regressed` finding counts for the last N baseline reports.
+- [x] Add `--debt-trend-window <N>` support in `scripts/run_accessibility_audit.py` and include trend highlights in Markdown summary plus `run_meta`.
+- [x] Add docs and regression tests covering trend computation edge cases (missing history, schema-version mismatch, and waived-debt expiry rollover).
 ## Notes
 
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.

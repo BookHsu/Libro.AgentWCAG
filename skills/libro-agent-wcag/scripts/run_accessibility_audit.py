@@ -59,7 +59,10 @@ WAIVER_EXPIRY_EXIT_CODE = 45
 DEBT_STATE_NEW = "new"
 DEBT_STATE_ACCEPTED = "accepted"
 DEBT_STATE_RETIRED = "retired"
+DEBT_STATE_REGRESSED = "regressed"
 DEBT_WAIVER_REQUIRED_FIELDS = {"signature", "owner", "approved_at", "expires_at", "reason"}
+DEBT_TREND_SCHEMA_VERSION = "1.0.0"
+DEFAULT_DEBT_TREND_WINDOW = 5
 REPORT_SCHEMA_NAME = "libro-agent-wcag-report"
 REPORT_SCHEMA_VERSION = "1.0.0"
 REPORT_SCHEMA_FILENAME = f"wcag-report-{REPORT_SCHEMA_VERSION}.schema.json"
@@ -616,6 +619,161 @@ def _load_baseline_report(path: str | None) -> dict[str, Any]:
     payload['debt_waivers'] = _validate_debt_waivers(payload.get('debt_waivers'))
     return payload
 
+
+def _coerce_non_negative_int(value: Any) -> int:
+    if isinstance(value, bool):
+        return 0
+    try:
+        converted = int(value)
+    except (TypeError, ValueError):
+        return 0
+    return converted if converted >= 0 else 0
+
+
+def _build_debt_trend_counts(
+    debt_transitions: dict[str, Any] | None,
+    waiver_review: dict[str, Any] | None,
+) -> dict[str, int]:
+    transitions = debt_transitions or {}
+    return {
+        DEBT_STATE_NEW: _coerce_non_negative_int(((transitions.get(DEBT_STATE_NEW) or {}).get('count'))),
+        DEBT_STATE_ACCEPTED: _coerce_non_negative_int(((transitions.get(DEBT_STATE_ACCEPTED) or {}).get('count'))),
+        DEBT_STATE_RETIRED: _coerce_non_negative_int(((transitions.get(DEBT_STATE_RETIRED) or {}).get('count'))),
+        DEBT_STATE_REGRESSED: _coerce_non_negative_int((waiver_review or {}).get('expired_count')),
+    }
+
+
+def _empty_debt_trend_counts() -> dict[str, int]:
+    return {
+        DEBT_STATE_NEW: 0,
+        DEBT_STATE_ACCEPTED: 0,
+        DEBT_STATE_RETIRED: 0,
+        DEBT_STATE_REGRESSED: 0,
+    }
+
+
+def _sanitize_debt_trend_point(raw: Any) -> dict[str, Any] | None:
+    if not isinstance(raw, dict):
+        return None
+    counts = raw.get('counts')
+    if not isinstance(counts, dict):
+        return None
+    return {
+        'recorded_at': str(raw.get('recorded_at', '')).strip() or '',
+        'source_report': str(raw.get('source_report', '')).strip() or '',
+        'counts': {
+            DEBT_STATE_NEW: _coerce_non_negative_int(counts.get(DEBT_STATE_NEW)),
+            DEBT_STATE_ACCEPTED: _coerce_non_negative_int(counts.get(DEBT_STATE_ACCEPTED)),
+            DEBT_STATE_RETIRED: _coerce_non_negative_int(counts.get(DEBT_STATE_RETIRED)),
+            DEBT_STATE_REGRESSED: _coerce_non_negative_int(counts.get(DEBT_STATE_REGRESSED)),
+        },
+    }
+
+
+def _derive_baseline_point_from_legacy_report(
+    baseline_report: dict[str, Any],
+    baseline_report_path: str | None,
+) -> dict[str, Any] | None:
+    run_meta = baseline_report.get('run_meta')
+    if not isinstance(run_meta, dict):
+        return None
+    baseline_diff = run_meta.get('baseline_diff')
+    if not isinstance(baseline_diff, dict):
+        return None
+    transitions = baseline_diff.get('debt_transitions')
+    if not isinstance(transitions, dict):
+        return None
+    waiver_review = baseline_diff.get('waiver_review')
+    if not isinstance(waiver_review, dict):
+        waiver_review = None
+    counts = _build_debt_trend_counts(transitions, waiver_review)
+    recorded_at = str(run_meta.get('generated_at') or run_meta.get('completed_at') or '').strip()
+    source_report = baseline_report_path or str(baseline_diff.get('baseline_report_path', '')).strip()
+    return {
+        'recorded_at': recorded_at,
+        'source_report': source_report,
+        'counts': counts,
+    }
+
+
+def _extract_historical_debt_trend_points(
+    baseline_report: dict[str, Any],
+    baseline_report_path: str | None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    report_schema_version = str(
+        ((baseline_report.get('report_schema') or {}).get('version')) if isinstance(baseline_report, dict) else ''
+    ).strip()
+    if report_schema_version and report_schema_version != REPORT_SCHEMA_VERSION:
+        return [], {
+            'history_reset_reason': 'schema-version-mismatch',
+            'baseline_report_schema_version': report_schema_version,
+            'expected_report_schema_version': REPORT_SCHEMA_VERSION,
+            'loaded_point_count': 0,
+        }
+
+    run_meta = baseline_report.get('run_meta')
+    if not isinstance(run_meta, dict):
+        return [], {'history_reset_reason': 'missing-history', 'loaded_point_count': 0}
+    trend = run_meta.get('debt_trend')
+    if not isinstance(trend, dict):
+        fallback = _derive_baseline_point_from_legacy_report(baseline_report, baseline_report_path)
+        if fallback:
+            return [fallback], {'history_reset_reason': 'legacy-fallback', 'loaded_point_count': 1}
+        return [], {'history_reset_reason': 'missing-history', 'loaded_point_count': 0}
+
+    schema_version = str(trend.get('schema_version', '')).strip()
+    if schema_version and schema_version != DEBT_TREND_SCHEMA_VERSION:
+        return [], {
+            'history_reset_reason': 'trend-schema-version-mismatch',
+            'baseline_trend_schema_version': schema_version,
+            'expected_trend_schema_version': DEBT_TREND_SCHEMA_VERSION,
+            'loaded_point_count': 0,
+        }
+    raw_points = trend.get('points')
+    if not isinstance(raw_points, list):
+        return [], {'history_reset_reason': 'missing-history', 'loaded_point_count': 0}
+    points = [point for point in (_sanitize_debt_trend_point(item) for item in raw_points) if point is not None]
+    return points, {'history_reset_reason': None, 'loaded_point_count': len(points)}
+
+
+def _build_debt_trend_payload(
+    *,
+    now_utc: datetime,
+    window: int,
+    baseline_report: dict[str, Any],
+    baseline_report_path: str | None,
+    debt_transitions: dict[str, Any] | None,
+    waiver_review: dict[str, Any] | None,
+) -> dict[str, Any]:
+    history_points, history_meta = _extract_historical_debt_trend_points(baseline_report, baseline_report_path)
+    current_point = {
+        'recorded_at': now_utc.isoformat().replace('+00:00', 'Z'),
+        'source_report': baseline_report_path or '',
+        'counts': _build_debt_trend_counts(debt_transitions, waiver_review),
+    }
+    merged_points = history_points + [current_point]
+    points = merged_points[-window:]
+    previous = points[-2]['counts'] if len(points) > 1 else _empty_debt_trend_counts()
+    latest = points[-1]['counts']
+    delta = {
+        DEBT_STATE_NEW: latest[DEBT_STATE_NEW] - previous[DEBT_STATE_NEW],
+        DEBT_STATE_ACCEPTED: latest[DEBT_STATE_ACCEPTED] - previous[DEBT_STATE_ACCEPTED],
+        DEBT_STATE_RETIRED: latest[DEBT_STATE_RETIRED] - previous[DEBT_STATE_RETIRED],
+        DEBT_STATE_REGRESSED: latest[DEBT_STATE_REGRESSED] - previous[DEBT_STATE_REGRESSED],
+    }
+    return {
+        'schema_version': DEBT_TREND_SCHEMA_VERSION,
+        'generated_at': now_utc.isoformat().replace('+00:00', 'Z'),
+        'window': window,
+        'points': points,
+        'summary': {
+            'total_points': len(points),
+            'history_points_used': max(0, len(points) - 1),
+            'latest_counts': latest,
+            'delta_from_previous': delta,
+        },
+        'history_meta': history_meta,
+    }
 def _normalize_rule_list(value: Any, name: str) -> list[str]:
     if value is None:
         return []
@@ -1006,6 +1164,9 @@ def _build_compact_summary(
     waiver_gate = report.get('run_meta', {}).get('waiver_gate')
     if waiver_gate:
         compact['waiver_gate'] = waiver_gate
+    debt_trend = summary.get('debt_trend')
+    if debt_trend:
+        compact['debt_trend'] = debt_trend
     return compact
 
 def _apply_rule_policy(
@@ -1480,6 +1641,12 @@ def parse_args() -> argparse.Namespace:
         help="When used with --fail-on and --baseline-report, fail only on newly introduced debt.",
     )
     parser.add_argument(
+        "--debt-trend-window",
+        type=int,
+        default=DEFAULT_DEBT_TREND_WINDOW,
+        help="Number of historical baseline trend points to keep in debt-trend artifact output.",
+    )
+    parser.add_argument(
         "--scanner-retry-attempts",
         type=int,
         default=DEFAULT_SCANNER_RETRY_ATTEMPTS,
@@ -1596,6 +1763,8 @@ def main() -> int:
         raise ValueError('--scanner-retry-backoff-seconds must be >= 0')
     if args.max_findings is not None and args.max_findings < 1:
         raise ValueError('--max-findings must be >= 1')
+    if args.debt_trend_window < 1:
+        raise ValueError('--debt-trend-window must be >= 1')
     if args.fail_on_new_only and not args.fail_on:
         raise ValueError('--fail-on-new-only requires --fail-on')
     if args.fail_on_new_only and not args.baseline_report:
@@ -1830,6 +1999,7 @@ def main() -> int:
 
     baseline_diff: dict[str, Any] | None = None
     waiver_review: dict[str, Any] | None = None
+    debt_transitions: dict[str, Any] | None = None
     if baseline_report:
         baseline_diff = _build_baseline_diff(report, baseline_report, baseline_signature_config)
         debt_transitions = _build_debt_transition_summary(baseline_diff)
@@ -1988,6 +2158,44 @@ def main() -> int:
             )
     report['run_meta']['waiver_gate'] = waiver_gate
 
+    debt_trend_payload = _build_debt_trend_payload(
+        now_utc=datetime.now(timezone.utc),
+        window=args.debt_trend_window,
+        baseline_report=baseline_report,
+        baseline_report_path=args.baseline_report,
+        debt_transitions=debt_transitions,
+        waiver_review=waiver_review,
+    )
+    debt_trend_path = output_dir / 'debt-trend.json'
+    debt_trend_path.write_text(json.dumps(debt_trend_payload, ensure_ascii=False, indent=2), encoding='utf-8')
+    trend_summary = debt_trend_payload.get('summary', {})
+    report['run_meta']['debt_trend'] = {
+        'schema_version': debt_trend_payload.get('schema_version'),
+        'window': debt_trend_payload.get('window'),
+        'artifact_path': str(debt_trend_path),
+        'latest_counts': trend_summary.get('latest_counts', _empty_debt_trend_counts()),
+        'delta_from_previous': trend_summary.get('delta_from_previous', _empty_debt_trend_counts()),
+        'history_meta': debt_trend_payload.get('history_meta', {}),
+    }
+    report.setdefault('summary', {})['debt_trend'] = {
+        'window': debt_trend_payload.get('window'),
+        'latest_counts': trend_summary.get('latest_counts', _empty_debt_trend_counts()),
+        'delta_from_previous': trend_summary.get('delta_from_previous', _empty_debt_trend_counts()),
+        'history_points_used': trend_summary.get('history_points_used', 0),
+    }
+    history_reset_reason = str((debt_trend_payload.get('history_meta') or {}).get('history_reset_reason') or '')
+    if history_reset_reason:
+        report['run_meta']['notes'].append(
+            'Debt trend history reset reason: ' + history_reset_reason
+        )
+    report['run_meta']['notes'].append(
+        f"Debt trend: new={report['summary']['debt_trend']['latest_counts'][DEBT_STATE_NEW]}, "
+        f"accepted={report['summary']['debt_trend']['latest_counts'][DEBT_STATE_ACCEPTED]}, "
+        f"retired={report['summary']['debt_trend']['latest_counts'][DEBT_STATE_RETIRED]}, "
+        f"regressed={report['summary']['debt_trend']['latest_counts'][DEBT_STATE_REGRESSED]} "
+        f"(window={args.debt_trend_window})."
+    )
+
     artifact_manifest_path = output_dir / 'artifact-manifest.json'
     report['run_meta']['artifact_manifest'] = {
         'path': str(artifact_manifest_path),
@@ -2014,6 +2222,7 @@ def main() -> int:
 
     if effective_policy_output is not None:
         artifact_paths['effective-policy'] = effective_policy_output
+    artifact_paths['debt-trend'] = debt_trend_path
     if diff_path is not None:
         artifact_paths['fixes-diff'] = diff_path
     if snapshot_path is not None:

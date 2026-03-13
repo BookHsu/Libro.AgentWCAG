@@ -85,3 +85,27 @@ python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
 - Attach waiver-expiry review evidence (expired/valid/missing counts and renewal decisions) for accepted debt.
 - If baseline is unchanged, document why and who approved carry-forward debt.
 
+## Debt trend intelligence
+
+Use debt trend mode to track baseline debt movement across repeated runs:
+
+```powershell
+python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
+  --target <target> \
+  --output-dir out/debt-trend \
+  --baseline-report .ci/wcag-baseline.json \
+  --debt-trend-window 5 \
+  --summary-only
+```
+
+Outputs:
+- `out/debt-trend/debt-trend.json` with `new`, `accepted`, `retired`, and `regressed` counts over the latest window.
+- `summary.debt_trend` and `run_meta.debt_trend` highlights in `wcag-report.json` and compact summary output.
+- Markdown summary lines in `wcag-report.md` for latest counts and delta from previous run.
+
+Edge-case behavior:
+- Missing history: trend starts with current run only.
+- Report schema mismatch: prior trend history is reset with `history_reset_reason=schema-version-mismatch`.
+- Waiver-expiry rollover: `regressed` count is derived from expired accepted waivers.
+
+
