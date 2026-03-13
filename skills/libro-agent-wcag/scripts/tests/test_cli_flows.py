@@ -1923,6 +1923,149 @@ class CliFlowTests(unittest.TestCase):
         self.assertGreaterEqual(replay_summary['status_counts']['non-deterministic'], 1)
         self.assertFalse(replay_summary['gate']['failed'])
 
+
+    def test_run_accessibility_audit_stability_mode_fail_blocks_on_breach(self) -> None:
+        test_dir = self.repo_root / 'automation-work' / 'm38-stability-fail-gate'
+        if test_dir.exists():
+            shutil.rmtree(test_dir, ignore_errors=True)
+        test_dir.mkdir(parents=True, exist_ok=True)
+
+        html_path = test_dir / 'sample.html'
+        output_dir = test_dir / 'out'
+        baseline_path = test_dir / 'scanner-stability.json'
+        axe_json = test_dir / 'axe.json'
+        html_path.write_text('<!doctype html><html><body><img class="hero" src="hero.png"><button class="icon"></button></body></html>', encoding='utf-8')
+        baseline_path.write_text(
+            json.dumps(
+                {
+                    'schema_version': '1.0.0',
+                    'window': 3,
+                    'approved_bounds': {'default_max_variance': 0, 'per_signature': {}},
+                    'points': [
+                        {
+                            'recorded_at': '2026-03-10T00:00:00Z',
+                            'target': str(html_path),
+                            'available_scanners': ['axe'],
+                            'rows': [
+                                {'scanner': 'axe', 'rule_id': 'image-alt', 'target': 'img.hero', 'finding_count': 1},
+                            ],
+                        }
+                    ],
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding='utf-8',
+        )
+        axe_json.write_text(
+            json.dumps(
+                {
+                    'violations': [
+                        {'id': 'image-alt', 'impact': 'serious', 'description': 'Image alt missing', 'nodes': [{'target': ['img.hero']}]},
+                        {'id': 'button-name', 'impact': 'serious', 'description': 'Button name missing', 'nodes': [{'target': ['button.icon']}]},
+                    ]
+                }
+            ),
+            encoding='utf-8',
+        )
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(output_dir),
+                '--stability-baseline',
+                str(baseline_path),
+                '--stability-mode',
+                'fail',
+                '--mock-axe-json',
+                str(axe_json),
+                '--skip-lighthouse',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 48, completed.stdout + completed.stderr)
+        self.assertTrue((output_dir / 'scanner-stability.json').exists())
+        payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
+        self.assertTrue(payload['run_meta']['scanner_stability']['gate']['failed'])
+        self.assertEqual(payload['run_meta']['scanner_stability']['comparison']['breach_count'], 1)
+
+    def test_run_accessibility_audit_stability_downgrades_on_scanner_capability_change(self) -> None:
+        test_dir = self.repo_root / 'automation-work' / 'm38-stability-capability-drift'
+        if test_dir.exists():
+            shutil.rmtree(test_dir, ignore_errors=True)
+        test_dir.mkdir(parents=True, exist_ok=True)
+
+        html_path = test_dir / 'sample.html'
+        output_dir = test_dir / 'out'
+        baseline_path = test_dir / 'scanner-stability.json'
+        axe_json = test_dir / 'axe.json'
+        html_path.write_text('<!doctype html><html><body><img class="hero" src="hero.png"><button class="icon"></button></body></html>', encoding='utf-8')
+        baseline_path.write_text(
+            json.dumps(
+                {
+                    'schema_version': '1.0.0',
+                    'window': 3,
+                    'approved_bounds': {'default_max_variance': 0, 'per_signature': {}},
+                    'points': [
+                        {
+                            'recorded_at': '2026-03-10T00:00:00Z',
+                            'target': str(html_path),
+                            'available_scanners': ['axe', 'lighthouse'],
+                            'rows': [
+                                {'scanner': 'axe', 'rule_id': 'image-alt', 'target': 'img.hero', 'finding_count': 1},
+                            ],
+                        }
+                    ],
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding='utf-8',
+        )
+        axe_json.write_text(
+            json.dumps(
+                {
+                    'violations': [
+                        {'id': 'image-alt', 'impact': 'serious', 'description': 'Image alt missing', 'nodes': [{'target': ['img.hero']}]},
+                    ]
+                }
+            ),
+            encoding='utf-8',
+        )
+
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(output_dir),
+                '--stability-baseline',
+                str(baseline_path),
+                '--stability-mode',
+                'warn',
+                '--mock-axe-json',
+                str(axe_json),
+                '--skip-lighthouse',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
+        self.assertEqual(payload['run_meta']['scanner_stability']['gate']['downgrade_reason'], 'scanner-capability-changed')
+        notes = ' '.join(payload['run_meta'].get('notes', []))
+        self.assertIn('scanner-capability-changed', notes)
+
 if __name__ == '__main__':
     unittest.main()
-

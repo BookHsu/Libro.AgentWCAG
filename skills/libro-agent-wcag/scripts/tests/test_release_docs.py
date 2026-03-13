@@ -30,6 +30,7 @@ class ReleaseDocsTests(unittest.TestCase):
             self.repo_root / 'docs' / 'release' / 'baseline-debt-lifecycle.md',
             self.repo_root / 'docs' / 'release' / 'risk-calibration.md',
             self.repo_root / 'docs' / 'release' / 'replay-verification-lane.md',
+            self.repo_root / 'docs' / 'release' / 'scanner-stability-ledger.md',
             self.repo_root / 'docs' / 'release' / 'provenance-verification.md',
             self.repo_root / 'docs' / 'release' / 'install-integrity-verification.md',
             self.repo_root / 'docs' / 'policy-bundles' / 'strict-web-app.json',
@@ -90,6 +91,7 @@ class ReleaseDocsTests(unittest.TestCase):
         self.assertIn('docs/release/baseline-debt-lifecycle.md', content)
         self.assertIn('docs/release/risk-calibration.md', content)
         self.assertIn('docs/release/replay-verification-lane.md', content)
+        self.assertIn('docs/release/scanner-stability-ledger.md', content)
         self.assertIn('docs/release/provenance-verification.md', content)
         self.assertIn('docs/release/install-integrity-verification.md', content)
         self.assertIn('docs/policy-bundles/', content)
@@ -97,4 +99,3 @@ class ReleaseDocsTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
