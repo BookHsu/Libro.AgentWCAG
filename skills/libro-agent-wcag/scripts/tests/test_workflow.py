@@ -79,6 +79,18 @@ class WorkflowTests(unittest.TestCase):
             self.assertIn(finding["id"], markdown)
         self.assertIn("問題編號", markdown)
 
+    def test_markdown_includes_debt_trend_summary_when_present(self) -> None:
+        contract = resolve_contract({"target": "https://example.com"})
+        report = normalize_report(contract, {"violations": []}, {"audits": {}}, None, None)
+        report['summary']['debt_trend'] = {
+            'window': 4,
+            'latest_counts': {'new': 1, 'accepted': 2, 'retired': 3, 'regressed': 1},
+            'delta_from_previous': {'new': 1, 'accepted': 0, 'retired': -1, 'regressed': 1},
+        }
+        markdown = to_markdown_table(report)
+        self.assertIn('債務趨勢: new=1, accepted=2, retired=3, regressed=1 (window=4)', markdown)
+        self.assertIn('債務趨勢變化: new=1, accepted=0, retired=-1, regressed=1', markdown)
+
     def test_citation_presence_for_major_finding(self) -> None:
         contract = resolve_contract({"target": "https://example.com"})
         axe_data = {
@@ -600,5 +612,4 @@ class WorkflowTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
 

@@ -56,6 +56,8 @@ MARKDOWN_LABELS = {
         "files_modified": "Files modified by core workflow",
         "modification_owner": "Modification executed by",
         "task_mode": "Task mode",
+        "debt_trend": "Debt trend",
+        "debt_trend_delta": "Debt trend delta",
         "yes": "yes",
         "no": "no",
     },
@@ -64,6 +66,8 @@ MARKDOWN_LABELS = {
         "files_modified": "核心流程是否已修改檔案",
         "modification_owner": "實際修改執行者",
         "task_mode": "任務模式",
+        "debt_trend": "債務趨勢",
+        "debt_trend_delta": "債務趨勢變化",
         "yes": "是",
         "no": "否",
     },
@@ -842,8 +846,28 @@ def to_markdown_table(report: dict[str, Any]) -> str:
         f"{labels['task_mode']}: {report['target']['task_mode']}",
         f"{labels['files_modified']}: {modified_text}",
         f"{labels['modification_owner']}: {report['run_meta'].get('modification_owner', 'agent-or-adapter')}",
-        "",
     ]
+    debt_trend = report.get('summary', {}).get('debt_trend', {})
+    if isinstance(debt_trend, dict) and debt_trend:
+        latest_counts = debt_trend.get('latest_counts', {})
+        delta_counts = debt_trend.get('delta_from_previous', {})
+        window = debt_trend.get('window', 0)
+        summary_lines.append(
+            f"{labels['debt_trend']}: "
+            f"new={latest_counts.get('new', 0)}, "
+            f"accepted={latest_counts.get('accepted', 0)}, "
+            f"retired={latest_counts.get('retired', 0)}, "
+            f"regressed={latest_counts.get('regressed', 0)} "
+            f"(window={window})"
+        )
+        summary_lines.append(
+            f"{labels['debt_trend_delta']}: "
+            f"new={delta_counts.get('new', 0)}, "
+            f"accepted={delta_counts.get('accepted', 0)}, "
+            f"retired={delta_counts.get('retired', 0)}, "
+            f"regressed={delta_counts.get('regressed', 0)}"
+        )
+    summary_lines.append("")
     header_columns = MARKDOWN_COLUMNS[language_key]
     header = "| " + " | ".join(header_columns) + " |"
     separator = "| " + " | ".join(["---"] * len(header_columns)) + " |"
@@ -891,10 +915,4 @@ def write_report_files(report: dict[str, Any], json_path: str, markdown_path: st
     markdown_target.parent.mkdir(parents=True, exist_ok=True)
     json_target.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     markdown_target.write_text(to_markdown_table(report), encoding="utf-8")
-
-
-
-
-
-
 
