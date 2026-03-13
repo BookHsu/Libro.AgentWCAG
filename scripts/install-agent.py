@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shutil
 from pathlib import Path
@@ -51,15 +52,38 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(8192), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def write_manifest(destination: Path, agent: str) -> None:
+    entrypoints = {
+        "skill_entrypoint": Path("SKILL.md"),
+        "adapter_prompt": Path(f"adapters/{adapter_name(agent)}/prompt-template.md"),
+        "usage_example": Path(f"adapters/{adapter_name(agent)}/usage-example.md"),
+        "failure_guide": Path(f"adapters/{adapter_name(agent)}/failure-guide.md"),
+        "e2e_example": Path(f"adapters/{adapter_name(agent)}/e2e-example.md"),
+    }
+    integrity_hashes = {
+        name: sha256_file(destination / relative_path) for name, relative_path in entrypoints.items()
+    }
+
     manifest = {
         "skill_name": SKILL_NAME,
         "agent": agent,
-        "skill_entrypoint": "SKILL.md",
-        "adapter_prompt": f"adapters/{adapter_name(agent)}/prompt-template.md",
-        "usage_example": f"adapters/{adapter_name(agent)}/usage-example.md",
-        "failure_guide": f"adapters/{adapter_name(agent)}/failure-guide.md",
-        "e2e_example": f"adapters/{adapter_name(agent)}/e2e-example.md",
+        "skill_entrypoint": str(entrypoints["skill_entrypoint"]).replace("\\", "/"),
+        "adapter_prompt": str(entrypoints["adapter_prompt"]).replace("\\", "/"),
+        "usage_example": str(entrypoints["usage_example"]).replace("\\", "/"),
+        "failure_guide": str(entrypoints["failure_guide"]).replace("\\", "/"),
+        "e2e_example": str(entrypoints["e2e_example"]).replace("\\", "/"),
+        "manifest_integrity": {
+            "algorithm": "sha256",
+            "entrypoint_hashes": integrity_hashes,
+        },
         "notes": "For non-Codex agents, wire the adapter prompt into your agent's prompt or skill system.",
         "invoke_example": invoke_example(agent),
         "doctor_command": f"python scripts/doctor-agent.py --agent {agent}",
