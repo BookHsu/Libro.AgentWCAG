@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch, Mock
 
@@ -143,12 +144,15 @@ class RunnerTests(unittest.TestCase):
             "https://example.com",
             "--baseline-evidence-mode",
             "hash-chain",
+            "--waiver-expiry-mode",
+            "fail",
         ]
         try:
             args = parse_args()
         finally:
             sys.argv = original
         self.assertEqual(args.baseline_evidence_mode, "hash-chain")
+        self.assertEqual(args.waiver_expiry_mode, "fail")
 
     def test_cli_accepts_findings_controls_flags(self) -> None:
         original = sys.argv
@@ -276,6 +280,7 @@ class RunnerTests(unittest.TestCase):
                 'selector_canonicalization': 'basic',
             },
             baseline_evidence_mode='hash-chain',
+            waiver_expiry_mode='warn',
             overlapping_rules=['meta-viewport'],
         )
         self.assertEqual(policy['bundle'], 'legacy-content')
@@ -283,6 +288,7 @@ class RunnerTests(unittest.TestCase):
         self.assertTrue(policy['fail_on_new_only'])
         self.assertEqual(policy['baseline_signature']['selector_canonicalization'], 'basic')
         self.assertEqual(policy['baseline_evidence_mode'], 'hash-chain')
+        self.assertEqual(policy['waiver_expiry_mode'], 'warn')
         self.assertEqual(policy['overlapping_rules'], ['meta-viewport'])
 
     def test_build_scanner_capabilities_reports_mocked_rule_catalog(self) -> None:
@@ -736,13 +742,52 @@ class RunnerPolicyTests(unittest.TestCase):
         self.assertEqual(diff['introduced_count'], 0)
         self.assertEqual(diff['persistent_count'], 1)
 
+    def test_validate_debt_waivers_rejects_missing_required_fields(self) -> None:
+        with self.assertRaises(ValueError):
+            runner._validate_debt_waivers(
+                [
+                    {
+                        'signature': 'image-alt|img.hero',
+                        'owner': 'team-a',
+                        'approved_at': '2026-01-10T09:00:00Z',
+                        'expires_at': '2026-06-01T00:00:00Z',
+                    }
+                ]
+            )
+
+    def test_evaluate_debt_waiver_review_counts_expired_missing_and_valid(self) -> None:
+        baseline_diff = {
+            'persistent_signatures': ['button-name|button.icon', 'image-alt|img.hero', 'label|input#email'],
+        }
+        baseline_report = {
+            'debt_waivers': [
+                {
+                    'signature': 'image-alt|img.hero',
+                    'owner': 'team-a',
+                    'approved_at': '2026-01-10T09:00:00Z',
+                    'expires_at': '2026-06-01T00:00:00Z',
+                    'reason': 'legacy sprint scope',
+                },
+                {
+                    'signature': 'button-name|button.icon',
+                    'owner': 'team-b',
+                    'approved_at': '2026-01-10T09:00:00Z',
+                    'expires_at': '2026-01-15T00:00:00Z',
+                    'reason': 'pending design update',
+                },
+            ]
+        }
+        review = runner._evaluate_debt_waiver_review(
+            baseline_diff,
+            baseline_report,
+            now_utc=datetime.fromisoformat('2026-03-01T00:00:00+00:00'),
+        )
+        self.assertEqual(review['accepted_count'], 3)
+        self.assertEqual(review['valid_count'], 1)
+        self.assertEqual(review['expired_count'], 1)
+        self.assertEqual(review['missing_count'], 1)
+        self.assertEqual(review['expired_waivers'][0]['signature'], 'button-name|button.icon')
+
 if __name__ == "__main__":
     unittest.main()
-
-
-
-
-
-
-
 
