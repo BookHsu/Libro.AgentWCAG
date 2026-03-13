@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 import tempfile
@@ -284,6 +285,8 @@ class RunnerTests(unittest.TestCase):
             },
             baseline_evidence_mode='hash-chain',
             waiver_expiry_mode='warn',
+            risk_calibration_mode='warn',
+            risk_calibration_source='calibration.json',
             overlapping_rules=['meta-viewport'],
         )
         self.assertEqual(policy['bundle'], 'legacy-content')
@@ -292,6 +295,8 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(policy['baseline_signature']['selector_canonicalization'], 'basic')
         self.assertEqual(policy['baseline_evidence_mode'], 'hash-chain')
         self.assertEqual(policy['waiver_expiry_mode'], 'warn')
+        self.assertEqual(policy['risk_calibration_mode'], 'warn')
+        self.assertEqual(policy['risk_calibration_source'], 'calibration.json')
         self.assertEqual(policy['overlapping_rules'], ['meta-viewport'])
 
     def test_build_scanner_capabilities_reports_mocked_rule_catalog(self) -> None:
@@ -875,6 +880,110 @@ class RunnerPolicyTests(unittest.TestCase):
         self.assertEqual(trend['summary']['total_points'], 3)
         self.assertEqual(trend['summary']['latest_counts']['regressed'], 2)
         self.assertEqual(trend['summary']['delta_from_previous']['regressed'], 2)
+
+    def test_cli_accepts_risk_calibration_flags(self) -> None:
+        original = sys.argv
+        sys.argv = [
+            "run_accessibility_audit.py",
+            "--target",
+            "https://example.com",
+            "--risk-calibration-source",
+            "calibration.json",
+            "--risk-calibration-mode",
+            "strict",
+        ]
+        try:
+            args = parse_args()
+        finally:
+            sys.argv = original
+        self.assertEqual(args.risk_calibration_source, "calibration.json")
+        self.assertEqual(args.risk_calibration_mode, "strict")
+
+    def test_evaluate_risk_calibration_downgrades_when_source_missing(self) -> None:
+        report = {
+            'findings': [
+                {'rule_id': 'image-alt', 'severity': 'serious', 'status': 'open'},
+            ]
+        }
+        calibration = runner._evaluate_risk_calibration(
+            report=report,
+            source_path='missing-calibration-source.json',
+            mode='warn',
+        )
+        self.assertFalse(calibration['applied'])
+        self.assertEqual(calibration['downgrade_reason'], 'missing-evidence')
+
+    def test_evaluate_risk_calibration_downgrades_on_conflicting_rule_ids(self) -> None:
+        workspace = Path(__file__).resolve().parents[4] / 'automation-work' / 'm36-risk-calibration-conflict-test'
+        if workspace.exists():
+            import shutil
+
+            shutil.rmtree(workspace, ignore_errors=True)
+        workspace.mkdir(parents=True, exist_ok=True)
+        source = workspace / 'risk-calibration.json'
+        source.write_text(
+            json.dumps(
+                {
+                    'schema_version': '1.0.0',
+                    'rules': [
+                        {'rule_id': 'image-alt', 'observations': 4, 'actionable_count': 3},
+                        {'rule_id': 'image-alt', 'observations': 2, 'actionable_count': 1},
+                    ],
+                }
+            ),
+            encoding='utf-8',
+        )
+        report = {
+            'findings': [
+                {'rule_id': 'image-alt', 'severity': 'serious', 'status': 'open'},
+            ]
+        }
+        calibration = runner._evaluate_risk_calibration(
+            report=report,
+            source_path=str(source),
+            mode='warn',
+        )
+        self.assertFalse(calibration['applied'])
+        self.assertEqual(calibration['downgrade_reason'], 'conflicting-rule-ids')
+
+    def test_evaluate_risk_calibration_marks_unstable_high_severity_rule(self) -> None:
+        workspace = Path(__file__).resolve().parents[4] / 'automation-work' / 'm36-risk-calibration-unstable-test'
+        if workspace.exists():
+            import shutil
+
+            shutil.rmtree(workspace, ignore_errors=True)
+        workspace.mkdir(parents=True, exist_ok=True)
+        source = workspace / 'risk-calibration.json'
+        source.write_text(
+            json.dumps(
+                {
+                    'schema_version': '1.0.0',
+                    'rules': [
+                        {
+                            'rule_id': 'image-alt',
+                            'observations': 8,
+                            'actionable_count': 6,
+                            'high_severity_observations': 6,
+                            'high_severity_actionable_count': 2,
+                        }
+                    ],
+                }
+            ),
+            encoding='utf-8',
+        )
+        report = {
+            'findings': [
+                {'rule_id': 'image-alt', 'severity': 'serious', 'status': 'open'},
+            ]
+        }
+        calibration = runner._evaluate_risk_calibration(
+            report=report,
+            source_path=str(source),
+            mode='strict',
+        )
+        self.assertTrue(calibration['applied'])
+        self.assertIn('image-alt', calibration['unstable_high_severity_rules'])
+
 
 if __name__ == "__main__":
     unittest.main()

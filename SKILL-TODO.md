@@ -8,7 +8,7 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 2. [x] Complete `M33 Multi-Agent Install Manifest Integrity` to guarantee installed skill bundles remain adapter-correct and tamper-evident across agents.
 3. [x] Complete `M34 Policy Bundle Governance And Drift Detection` to keep shipped policy bundles audited, explainable, and release-gated against silent drift.
 4. [x] Complete `M35 Accessibility Debt Trend Intelligence` to expose actionable debt trends and release risk signals across repeated baseline runs.
-5. [ ] Complete `M36 Rule-Risk Evidence Calibration` to align deterministic risk scoring with observed remediation outcomes and reduce triage noise.
+5. [x] Complete `M36 Rule-Risk Evidence Calibration` to align deterministic risk scoring with observed remediation outcomes and reduce triage noise.
 
 ## M21 Post-M20 Validation Closure
 
@@ -255,9 +255,9 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 - [x] Add docs and regression tests covering trend computation edge cases (missing history, schema-version mismatch, and waived-debt expiry rollover).
 ## M36 Rule-Risk Evidence Calibration
 
-- [ ] Add an optional evidence calibration pass that computes per-rule precision signals from repeated fixture and baseline runs, then emits `run_meta.risk_calibration` for triage context.
-- [ ] Add `--risk-calibration-source <path>` and `--risk-calibration-mode (off|warn|strict)` options so CI can fail on statistically unstable high-severity rule outcomes.
-- [ ] Add docs and regression tests for calibration fallback behavior (missing evidence, stale schema, conflicting rule ids), including deterministic downgrade messaging.
+- [x] Add an optional evidence calibration pass that computes per-rule precision signals from repeated fixture and baseline runs, then emits `run_meta.risk_calibration` for triage context.
+- [x] Add `--risk-calibration-source <path>` and `--risk-calibration-mode (off|warn|strict)` options so CI can fail on statistically unstable high-severity rule outcomes.
+- [x] Add docs and regression tests for calibration fallback behavior (missing evidence, stale schema, conflicting rule ids), including deterministic downgrade messaging.
 
 ## Notes
 - Safe auto-fix should remain limited to low-risk deterministic rewrites.

@@ -161,6 +161,7 @@ python scripts/validate_skill.py skills/libro-agent-wcag --validate-policy-bundl
 - `docs/release/github-actions-wcag-ci-sample.yml`:  GitHub Actions sample with artifact retention and SARIF PR annotation
 - `docs/release/real-scanner-ci-lane.md`:  reusable optional real-scanner CI lane, evidence artifact conventions, and triage handoff contract
 - `docs/release/baseline-debt-lifecycle.md`:  baseline debt state governance (`new`/`accepted`/`retired`) and approval checkpoints
+- `docs/release/risk-calibration.md`:  per-rule risk calibration evidence workflow, fallback semantics, and strict CI gate contract
 - `docs/release/provenance-verification.md`:  baseline evidence/hash-chain verification and artifact-manifest CI workflow
 - `docs/release/install-integrity-verification.md`:  post-install manifest integrity verification and corruption remediation playbook
 - `docs/policy-bundles/*.json`:  reusable policy-bundle templates (`strict-web-app`, `legacy-content`, `marketing-site`) for multi-repo adoption
