@@ -54,9 +54,12 @@ FINDING_SORT_MODES = {"severity", "rule", "target"}
 BASELINE_TARGET_NORMALIZATION_MODES = {"none", "host-path", "path-only"}
 BASELINE_SELECTOR_CANONICALIZATION_MODES = {"none", "basic"}
 BASELINE_EVIDENCE_MODES = {"none", "hash", "hash-chain"}
+WAIVER_EXPIRY_MODES = {"ignore", "warn", "fail"}
+WAIVER_EXPIRY_EXIT_CODE = 45
 DEBT_STATE_NEW = "new"
 DEBT_STATE_ACCEPTED = "accepted"
 DEBT_STATE_RETIRED = "retired"
+DEBT_WAIVER_REQUIRED_FIELDS = {"signature", "owner", "approved_at", "expires_at", "reason"}
 REPORT_SCHEMA_NAME = "libro-agent-wcag-report"
 REPORT_SCHEMA_VERSION = "1.0.0"
 REPORT_SCHEMA_FILENAME = f"wcag-report-{REPORT_SCHEMA_VERSION}.schema.json"
@@ -542,6 +545,60 @@ def _load_policy_config(path: str | None) -> dict[str, Any]:
     return payload
 
 
+def _parse_waiver_timestamp(value: str, field: str, index: int) -> datetime:
+    normalized = value.strip()
+    if normalized.endswith('Z'):
+        normalized = normalized[:-1] + '+00:00'
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError as err:
+        raise ValueError(
+            f'--baseline-report debt_waivers[{index}].{field} must be ISO8601 with timezone'
+        ) from err
+    if parsed.tzinfo is None:
+        raise ValueError(f'--baseline-report debt_waivers[{index}].{field} must include timezone offset')
+    return parsed.astimezone(timezone.utc)
+
+
+def _validate_debt_waivers(value: Any) -> list[dict[str, str]]:
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise ValueError('--baseline-report debt_waivers must be a list')
+    validated: list[dict[str, str]] = []
+    seen_signatures: set[str] = set()
+    for index, raw_waiver in enumerate(value):
+        if not isinstance(raw_waiver, dict):
+            raise ValueError(f'--baseline-report debt_waivers[{index}] must be a JSON object')
+        missing_keys = sorted(DEBT_WAIVER_REQUIRED_FIELDS - set(raw_waiver))
+        unknown_keys = sorted(set(raw_waiver) - DEBT_WAIVER_REQUIRED_FIELDS)
+        if missing_keys or unknown_keys:
+            raise ValueError(
+                f'--baseline-report debt_waivers[{index}] must contain exactly keys: '
+                'signature, owner, approved_at, expires_at, reason '
+                f'(missing: {missing_keys or "none"}, unknown: {unknown_keys or "none"})'
+            )
+        waiver: dict[str, str] = {}
+        for field in sorted(DEBT_WAIVER_REQUIRED_FIELDS):
+            raw_value = raw_waiver.get(field)
+            if not isinstance(raw_value, str) or not raw_value.strip():
+                raise ValueError(f'--baseline-report debt_waivers[{index}].{field} must be a non-empty string')
+            waiver[field] = raw_value.strip()
+        if waiver['signature'] in seen_signatures:
+            raise ValueError(f'--baseline-report debt_waivers[{index}].signature is duplicated: {waiver["signature"]}')
+        approved_at = _parse_waiver_timestamp(waiver['approved_at'], 'approved_at', index)
+        expires_at = _parse_waiver_timestamp(waiver['expires_at'], 'expires_at', index)
+        if expires_at <= approved_at:
+            raise ValueError(
+                f'--baseline-report debt_waivers[{index}] expires_at must be later than approved_at'
+            )
+        waiver['approved_at'] = approved_at.isoformat().replace('+00:00', 'Z')
+        waiver['expires_at'] = expires_at.isoformat().replace('+00:00', 'Z')
+        seen_signatures.add(waiver['signature'])
+        validated.append(waiver)
+    return validated
+
+
 def _load_baseline_report(path: str | None) -> dict[str, Any]:
     if not path:
         return {}
@@ -556,6 +613,7 @@ def _load_baseline_report(path: str | None) -> dict[str, Any]:
         payload['findings'] = []
     elif not isinstance(findings, list):
         raise ValueError('--baseline-report JSON must include findings as a list')
+    payload['debt_waivers'] = _validate_debt_waivers(payload.get('debt_waivers'))
     return payload
 
 def _normalize_rule_list(value: Any, name: str) -> list[str]:
@@ -642,6 +700,7 @@ def _build_effective_policy(
     baseline_report_path: str | None,
     baseline_signature_config: dict[str, Any],
     baseline_evidence_mode: str,
+    waiver_expiry_mode: str,
     overlapping_rules: list[str],
 ) -> dict[str, Any]:
     return {
@@ -657,6 +716,7 @@ def _build_effective_policy(
         "baseline_report_path": baseline_report_path,
         "baseline_signature": baseline_signature_config,
         "baseline_evidence_mode": baseline_evidence_mode,
+        "waiver_expiry_mode": waiver_expiry_mode,
         "overlapping_rules": overlapping_rules,
         "rule_overlap_resolution": "ignore-rules-win",
     }
@@ -900,11 +960,12 @@ def _build_compact_summary(
         'manual_required_count': summary.get('manual_required_count', 0),
     }
     if fail_on:
+        policy_gate = report.get('run_meta', {}).get('policy_gate', {})
         compact['policy_gate'] = {
             'fail_on': fail_on,
-            'failed': should_fail,
-            'exit_code': exit_code if should_fail else 0,
-            'scope': report.get('run_meta', {}).get('policy_gate', {}).get('scope', 'all-unresolved'),
+            'failed': bool(policy_gate.get('failed', False)),
+            'exit_code': int(policy_gate.get('exit_code', 0)),
+            'scope': policy_gate.get('scope', 'all-unresolved'),
         }
     baseline_diff = report.get('run_meta', {}).get('baseline_diff')
     if baseline_diff:
@@ -913,6 +974,14 @@ def _build_compact_summary(
             'resolved_count': baseline_diff.get('resolved_count', 0),
             'persistent_count': baseline_diff.get('persistent_count', 0),
         }
+        waiver_review = baseline_diff.get('waiver_review')
+        if waiver_review:
+            compact['waiver_review'] = {
+                'accepted_count': waiver_review.get('accepted_count', 0),
+                'expired_count': waiver_review.get('expired_count', 0),
+                'missing_count': waiver_review.get('missing_count', 0),
+                'valid_count': waiver_review.get('valid_count', 0),
+            }
     findings_cap = report.get('run_meta', {}).get('findings_cap')
     if findings_cap:
         compact['findings_cap'] = findings_cap
@@ -934,6 +1003,9 @@ def _build_compact_summary(
     artifact_manifest = report.get('run_meta', {}).get('artifact_manifest')
     if artifact_manifest:
         compact['artifact_manifest'] = artifact_manifest
+    waiver_gate = report.get('run_meta', {}).get('waiver_gate')
+    if waiver_gate:
+        compact['waiver_gate'] = waiver_gate
     return compact
 
 def _apply_rule_policy(
@@ -1116,6 +1188,57 @@ def _build_debt_transition_summary(baseline_diff: dict[str, Any]) -> dict[str, A
         },
     }
 
+
+
+def _build_debt_waiver_index(baseline_report: dict[str, Any]) -> dict[str, dict[str, str]]:
+    waivers = baseline_report.get('debt_waivers')
+    if not isinstance(waivers, list):
+        return {}
+    return {
+        str(item.get('signature', '')).strip(): item
+        for item in waivers
+        if isinstance(item, dict) and str(item.get('signature', '')).strip()
+    }
+
+
+def _evaluate_debt_waiver_review(
+    baseline_diff: dict[str, Any],
+    baseline_report: dict[str, Any],
+    now_utc: datetime | None = None,
+) -> dict[str, Any]:
+    now = now_utc or datetime.now(timezone.utc)
+    accepted_signatures = sorted(set(baseline_diff.get('persistent_signatures', [])))
+    waiver_index = _build_debt_waiver_index(baseline_report)
+    expired: list[dict[str, str]] = []
+    valid: list[dict[str, str]] = []
+    missing: list[str] = []
+    for signature in accepted_signatures:
+        waiver = waiver_index.get(signature)
+        if not waiver:
+            missing.append(signature)
+            continue
+        expires_at = datetime.fromisoformat(str(waiver['expires_at']).replace('Z', '+00:00'))
+        waiver_entry = {
+            'signature': signature,
+            'owner': str(waiver['owner']),
+            'approved_at': str(waiver['approved_at']),
+            'expires_at': str(waiver['expires_at']),
+            'reason': str(waiver['reason']),
+        }
+        if expires_at <= now:
+            expired.append(waiver_entry)
+        else:
+            valid.append(waiver_entry)
+    return {
+        'accepted_count': len(accepted_signatures),
+        'valid_count': len(valid),
+        'expired_count': len(expired),
+        'missing_count': len(missing),
+        'valid_waivers': valid,
+        'expired_waivers': expired,
+        'missing_signatures': missing,
+        'evaluated_at': now.isoformat().replace('+00:00', 'Z'),
+    }
 
 def _tag_findings_with_debt_state(
     report: dict[str, Any],
@@ -1346,6 +1469,12 @@ def parse_args() -> argparse.Namespace:
         help="Baseline evidence integrity mode (none|hash|hash-chain) for tamper/staleness checks.",
     )
     parser.add_argument(
+        "--waiver-expiry-mode",
+        choices=sorted(WAIVER_EXPIRY_MODES),
+        default="warn",
+        help="Expired baseline debt waiver handling: ignore, warn, or fail.",
+    )
+    parser.add_argument(
         "--fail-on-new-only",
         action="store_true",
         help="When used with --fail-on and --baseline-report, fail only on newly introduced debt.",
@@ -1495,6 +1624,7 @@ def main() -> int:
         baseline_report_path=args.baseline_report,
         baseline_signature_config=baseline_signature_config,
         baseline_evidence_mode=args.baseline_evidence_mode,
+        waiver_expiry_mode=args.waiver_expiry_mode,
         overlapping_rules=overlapping_rules,
     )
 
@@ -1699,16 +1829,25 @@ def main() -> int:
                 _remove_if_exists(snapshot_path)
 
     baseline_diff: dict[str, Any] | None = None
+    waiver_review: dict[str, Any] | None = None
     if baseline_report:
         baseline_diff = _build_baseline_diff(report, baseline_report, baseline_signature_config)
         debt_transitions = _build_debt_transition_summary(baseline_diff)
+        waiver_review = _evaluate_debt_waiver_review(baseline_diff, baseline_report)
         _tag_findings_with_debt_state(report, baseline_diff, baseline_signature_config)
         report['run_meta']['baseline_diff'] = {
             **baseline_diff,
             'baseline_report_path': args.baseline_report,
             'debt_transitions': debt_transitions,
+            'waiver_review': waiver_review,
         }
         report.setdefault('summary', {})['debt_transitions'] = debt_transitions
+        report['summary']['waiver_review'] = {
+            'accepted_count': waiver_review.get('accepted_count', 0),
+            'valid_count': waiver_review.get('valid_count', 0),
+            'expired_count': waiver_review.get('expired_count', 0),
+            'missing_count': waiver_review.get('missing_count', 0),
+        }
         report['run_meta']['notes'].append(
             (
                 'Baseline diff: introduced='
@@ -1717,6 +1856,16 @@ def main() -> int:
                 f"persistent={baseline_diff['persistent_count']}."
             )
         )
+        if waiver_review['expired_count'] > 0:
+            report['run_meta']['notes'].append(
+                'Baseline waiver review: '
+                f"{waiver_review['expired_count']} expired waiver(s) need renewal or retirement."
+            )
+        if waiver_review['missing_count'] > 0:
+            report['run_meta']['notes'].append(
+                'Baseline waiver review: '
+                f"{waiver_review['missing_count']} accepted signature(s) missing waiver metadata."
+            )
 
     baseline_evidence: dict[str, Any] | None = None
     if args.baseline_evidence_mode != 'none':
@@ -1817,6 +1966,28 @@ def main() -> int:
     else:
         should_fail, exit_code = False, 0
 
+    waiver_gate = {
+        'mode': args.waiver_expiry_mode,
+        'evaluated_count': waiver_review.get('accepted_count', 0) if waiver_review else 0,
+        'expired_count': waiver_review.get('expired_count', 0) if waiver_review else 0,
+        'failed': False,
+        'exit_code': 0,
+    }
+    if waiver_review and args.waiver_expiry_mode in {'warn', 'fail'} and waiver_review.get('expired_count', 0) > 0:
+        if args.waiver_expiry_mode == 'warn':
+            report['run_meta']['notes'].append(
+                'Waiver expiry gate warning: expired waivers detected; renew or retire accepted debt.'
+            )
+        else:
+            waiver_gate['failed'] = True
+            waiver_gate['exit_code'] = WAIVER_EXPIRY_EXIT_CODE
+            should_fail = True
+            exit_code = WAIVER_EXPIRY_EXIT_CODE
+            report['run_meta']['notes'].append(
+                'Waiver expiry gate failed: expired waivers detected under --waiver-expiry-mode=fail.'
+            )
+    report['run_meta']['waiver_gate'] = waiver_gate
+
     artifact_manifest_path = output_dir / 'artifact-manifest.json'
     report['run_meta']['artifact_manifest'] = {
         'path': str(artifact_manifest_path),
@@ -1881,7 +2052,10 @@ def main() -> int:
             for note in report['run_meta']['notes']:
                 print(f'- {note}')
         if should_fail:
-            print(f'Policy gate failed: unresolved finding severity >= {fail_on}')
+            if report['run_meta'].get('waiver_gate', {}).get('failed'):
+                print('Waiver gate failed: one or more accepted debt waivers are expired.')
+            elif fail_on:
+                print(f'Policy gate failed: unresolved finding severity >= {fail_on}')
     if should_fail:
         return exit_code
     return 0
@@ -1889,14 +2063,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
-
-
-
-
-
-
-
-
-
 

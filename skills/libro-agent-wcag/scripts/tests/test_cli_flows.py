@@ -694,6 +694,137 @@ class CliFlowTests(unittest.TestCase):
             self.assertEqual(findings['image-alt']['debt_state'], 'accepted')
             self.assertEqual(payload['summary']['debt_transitions']['retired']['count'], 1)
 
+    def test_run_accessibility_audit_waiver_expiry_warn_mode_keeps_exit_zero(self) -> None:
+        test_dir = self.repo_root / 'automation-work' / 'm32-waiver-warn'
+        if test_dir.exists():
+            shutil.rmtree(test_dir, ignore_errors=True)
+        test_dir.mkdir(parents=True, exist_ok=True)
+        html_path = test_dir / 'sample.html'
+        output_dir = test_dir / 'out'
+        axe_json = test_dir / 'axe.json'
+        baseline_json = test_dir / 'baseline.json'
+        html_path.write_text('<!doctype html><html><body><img class="hero" src="hero.png"></body></html>', encoding='utf-8')
+        axe_json.write_text(
+            json.dumps(
+                {
+                    'violations': [
+                        {'id': 'image-alt', 'impact': 'serious', 'description': 'Image alt missing', 'nodes': [{'target': ['img.hero']}]},
+                    ]
+                }
+            ),
+            encoding='utf-8',
+        )
+        baseline_json.write_text(
+            json.dumps(
+                {
+                    'findings': [
+                        {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'status': 'open'},
+                    ],
+                    'debt_waivers': [
+                        {
+                            'signature': 'image-alt|img.hero',
+                            'owner': 'a11y-owner',
+                            'approved_at': '2026-01-01T00:00:00Z',
+                            'expires_at': '2026-02-01T00:00:00Z',
+                            'reason': 'defer to Q2 redesign',
+                        }
+                    ],
+                }
+            ),
+            encoding='utf-8',
+        )
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(output_dir),
+                '--baseline-report',
+                str(baseline_json),
+                '--waiver-expiry-mode',
+                'warn',
+                '--mock-axe-json',
+                str(axe_json),
+                '--skip-lighthouse',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
+        self.assertEqual(payload['run_meta']['waiver_gate']['mode'], 'warn')
+        self.assertEqual(payload['run_meta']['waiver_gate']['expired_count'], 1)
+        self.assertFalse(payload['run_meta']['waiver_gate']['failed'])
+
+    def test_run_accessibility_audit_waiver_expiry_fail_mode_blocks_release_gate(self) -> None:
+        test_dir = self.repo_root / 'automation-work' / 'm32-waiver-fail'
+        if test_dir.exists():
+            shutil.rmtree(test_dir, ignore_errors=True)
+        test_dir.mkdir(parents=True, exist_ok=True)
+        html_path = test_dir / 'sample.html'
+        output_dir = test_dir / 'out'
+        axe_json = test_dir / 'axe.json'
+        baseline_json = test_dir / 'baseline.json'
+        html_path.write_text('<!doctype html><html><body><img class="hero" src="hero.png"></body></html>', encoding='utf-8')
+        axe_json.write_text(
+            json.dumps(
+                {
+                    'violations': [
+                        {'id': 'image-alt', 'impact': 'serious', 'description': 'Image alt missing', 'nodes': [{'target': ['img.hero']}]},
+                    ]
+                }
+            ),
+            encoding='utf-8',
+        )
+        baseline_json.write_text(
+            json.dumps(
+                {
+                    'findings': [
+                        {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'status': 'open'},
+                    ],
+                    'debt_waivers': [
+                        {
+                            'signature': 'image-alt|img.hero',
+                            'owner': 'a11y-owner',
+                            'approved_at': '2026-01-01T00:00:00Z',
+                            'expires_at': '2026-02-01T00:00:00Z',
+                            'reason': 'defer to Q2 redesign',
+                        }
+                    ],
+                }
+            ),
+            encoding='utf-8',
+        )
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(output_dir),
+                '--baseline-report',
+                str(baseline_json),
+                '--waiver-expiry-mode',
+                'fail',
+                '--mock-axe-json',
+                str(axe_json),
+                '--skip-lighthouse',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 45, completed.stdout + completed.stderr)
+        payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
+        self.assertTrue(payload['run_meta']['waiver_gate']['failed'])
+        self.assertEqual(payload['run_meta']['waiver_gate']['exit_code'], 45)
+
     def test_run_accessibility_audit_fail_on_new_only_fails_for_introduced_debt(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             html_path = Path(tmp) / 'sample.html'
@@ -1398,6 +1529,4 @@ class CliFlowTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
 
