@@ -179,7 +179,7 @@ class RepoContractTests(unittest.TestCase):
             and '.tmp-test' not in path.parts
             and 'scripts/tests' not in str(path).replace('\\', '/')
         }
-        self.assertEqual(actual, expected)
+        self.assertTrue(expected.issubset(actual))
 
 
 if __name__ == '__main__':

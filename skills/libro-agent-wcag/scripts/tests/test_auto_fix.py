@@ -7,6 +7,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -420,7 +421,7 @@ class AutoFixTests(unittest.TestCase):
             color_contrast_finding = next(item for item in updated_report['findings'] if item['rule_id'] == 'color-contrast')
             self.assertEqual(color_contrast_finding['status'], 'open')
             self.assertNotIn('color-contrast', [item['rule_id'] for item in updated_report['summary']['diff_summary']])
-            self.assertIn('image-alt', diff_text)
+            self.assertIn('alt=""', diff_text)
 
     def test_repeated_normalize_and_apply_fixes_runs_remain_stable(self) -> None:
         fixture = Path(__file__).parent / 'fixtures' / 'empty-link-viewport.html'
@@ -540,7 +541,7 @@ class AutoFixTests(unittest.TestCase):
                 ]
             }
             report = normalize_report(contract, axe_data, {'audits': {}}, None, None)
-            with unittest.mock.patch('auto_fix._write_text_atomic', side_effect=OSError('disk full')):
+            with mock.patch('auto_fix._write_text_atomic', side_effect=OSError('disk full')):
                 with self.assertRaises(OSError):
                     apply_report_fixes(working, report)
             self.assertEqual(working.read_text(encoding='utf-8'), original)
