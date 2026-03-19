@@ -38,6 +38,8 @@
       ],
       "current": "Image elements have [alt] attributes",
       "changed_target": "img.hero",
+      "source_line": null,
+      "source_column": null,
       "status": "open",
       "fixability": "auto-fix",
       "verification_status": "not-run",
