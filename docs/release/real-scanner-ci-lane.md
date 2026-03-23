@@ -89,4 +89,4 @@ When opening a triage item, include:
 4. `live/wcag-report.sarif`
 5. any raw version/browser logs needed for runtime diagnosis
 
-This keeps PR review, code scanning, and local reproduction aligned.
+This keeps PR review and local reproduction aligned.
