@@ -50,6 +50,13 @@ Failure triage must preserve:
 - the resolved release manifest and bundle filename
 - the generated `smoke-summary.json`
 
+This same flow is the publish gate smoke lane consumed by `.github/workflows/release.yml`.
+
+Repo-native smoke vs release-consumer smoke:
+
+- repo-native smoke validates scripts directly from the checkout and is useful during feature development
+- release-consumer smoke starts from packaged release assets and is the gate for publishable operator experience
+
 Run the scripted realistic validation flow:
 
 - `python .\scripts\run-realistic-validation-smoke.py --agent codex`

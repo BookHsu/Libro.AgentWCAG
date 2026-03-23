@@ -27,6 +27,19 @@ pwsh -File .\scripts\install-latest.ps1 -ReleaseBase .\dist\release -Agent codex
 sh ./scripts/install-latest.sh --release-base ./dist/release --agent codex
 ```
 
+Release-consumer shortest path from a GitHub Release asset set:
+
+1. Download the published release assets for `vX.Y.Z`.
+2. Verify `libro-agent-wcag-X.Y.Z-sha256sums.txt`.
+3. Run `install-latest.ps1` or `install-latest.sh` against the release asset directory or URL.
+
+Release-consumer quickstart:
+
+1. Install from release assets.
+2. Verify with `python .\scripts\doctor-agent.py --agent codex --verify-manifest-integrity`.
+3. Run a first audit with `python .\skills\libro-agent-wcag\scripts\run_accessibility_audit.py --target <file-or-url> --output-dir out`.
+4. Remove the skill with `python .\scripts\uninstall-agent.py --agent codex`.
+
 ### Install a single agent bundle
 
 ```powershell
@@ -168,7 +181,13 @@ python scripts/validate_skill.py skills/libro-agent-wcag --validate-policy-bundl
 - Release bundles intentionally exclude `skills/libro-agent-wcag/scripts/tests/`, `docs/testing/`, and `docs/archive/`; use the versioned release manifest and checksum file for downstream verification.
 - Release-consumer bootstrap entrypoints are `scripts/install-latest.ps1` and `scripts/install-latest.sh`; both resolve `latest-release.json` or a pinned `--version`, verify `sha256`, then invoke the packaged installer from the extracted bundle.
 - Clean release-consumer validation is available via `python .\scripts\run-release-adoption-smoke.py --release-dir .\dist\release --agent codex`.
+- Formal GA release automation lives in `.github/workflows/release.yml` and is documented in `docs/release/ga-release-workflow.md`.
+- GA quality gates and compatibility promises are defined in `docs/release/ga-definition.md`.
+- Rollback and hotfix rules are defined in `docs/release/rollback-playbook.md`.
 - `docs/release/release-playbook.md`: packaging, validation, publish gate checklist, and release-notes workflow
+- `docs/release/ga-release-workflow.md`: tag-triggered publish flow, gate order, and retention contract
+- `docs/release/ga-definition.md`: GA scope, blocker policy, compatibility promises, and semver expectations
+- `docs/release/rollback-playbook.md`: rollback triggers, operator rules, and hotfix policy
 - `CHANGELOG.md`:  versioned release notes baseline
 - `docs/release/supported-environments.md`:  supported runtime and toolchain matrix
 - `docs/release/adoption-smoke-guide.md`: install, smoke, integrity verification, and troubleshooting guidance

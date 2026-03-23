@@ -62,3 +62,4 @@ When opening a dependency/security triage ticket, include:
 - Node versions outside active LTS maintenance.
 - Environments that block subprocess execution for scanner commands.
 - Release packaging lanes that cannot write local ZIP/checksum assets under the selected output directory.
+- GA publish attempts that skip the documented release workflow or bypass retained smoke/package artifacts.
