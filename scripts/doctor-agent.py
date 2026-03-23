@@ -6,12 +6,20 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
+
+SCRIPT_ROOT = Path(__file__).resolve().parents[1] / 'skills' / 'libro-agent-wcag' / 'scripts'
+if str(SCRIPT_ROOT) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_ROOT))
+
+from shared_constants import get_product_provenance
 
 SKILL_NAME = 'libro-agent-wcag'
 SUPPORTED_AGENTS = ('codex', 'claude', 'gemini', 'copilot')
 ALL_AGENTS = SUPPORTED_AGENTS + ('all',)
 REQUIRED_MANIFEST_FIELDS = ('skill_entrypoint', 'adapter_prompt', 'usage_example', 'failure_guide', 'e2e_example')
+REQUIRED_PROVENANCE_FIELDS = ('product_name', 'product_version', 'source_revision')
 
 
 def default_destination(agent: str) -> Path:
@@ -115,14 +123,82 @@ def verify_manifest_integrity(destination: Path, manifest: dict[str, object]) ->
     return integrity_payload
 
 
+def verify_manifest_provenance(manifest: dict[str, object]) -> dict[str, object]:
+    expected = get_product_provenance()
+    payload = {
+        'verified': False,
+        'missing_manifest_fields': [],
+        'mismatched_fields': [],
+        'expected': {
+            'product_name': expected['product_name'],
+            'product_version': expected['product_version'],
+            'source_revision': expected['source_revision'],
+        },
+    }
+
+    for field in REQUIRED_PROVENANCE_FIELDS:
+        value = manifest.get(field)
+        if not isinstance(value, str) or not value.strip():
+            payload['missing_manifest_fields'].append(field)
+            continue
+        if value != expected[field]:
+            payload['mismatched_fields'].append(
+                {
+                    'field': field,
+                    'expected': expected[field],
+                    'actual': value,
+                }
+            )
+
+    provenance_block = manifest.get('provenance')
+    if not isinstance(provenance_block, dict):
+        payload['missing_manifest_fields'].append('provenance')
+    else:
+        if provenance_block.get('version_source') != expected['version_source']:
+            payload['mismatched_fields'].append(
+                {
+                    'field': 'provenance.version_source',
+                    'expected': expected['version_source'],
+                    'actual': provenance_block.get('version_source'),
+                }
+            )
+        if provenance_block.get('source_revision_source') != expected['source_revision_source']:
+            payload['mismatched_fields'].append(
+                {
+                    'field': 'provenance.source_revision_source',
+                    'expected': expected['source_revision_source'],
+                    'actual': provenance_block.get('source_revision_source'),
+                }
+            )
+
+    payload['verified'] = not payload['missing_manifest_fields'] and not payload['mismatched_fields']
+    return payload
+
+
 def doctor(destination: Path, verify_manifest_integrity_mode: bool) -> dict[str, object]:
     manifest_path = destination / 'install-manifest.json'
+    expected_provenance = get_product_provenance()
     result = {
         'destination': str(destination),
         'exists': destination.exists(),
         'skill_md': (destination / 'SKILL.md').exists(),
         'manifest': manifest_path.exists(),
         'adapter_prompt': False,
+        'expected_product': {
+            'product_name': expected_provenance['product_name'],
+            'product_version': expected_provenance['product_version'],
+            'source_revision': expected_provenance['source_revision'],
+        },
+        'manifest_provenance': {
+            'verified': False,
+            'missing_manifest_fields': ['install-manifest.json'],
+            'mismatched_fields': [],
+            'expected': {
+                'product_name': expected_provenance['product_name'],
+                'product_version': expected_provenance['product_version'],
+                'source_revision': expected_provenance['source_revision'],
+            },
+        },
     }
     if verify_manifest_integrity_mode:
         result['manifest_integrity'] = {
@@ -139,6 +215,7 @@ def doctor(destination: Path, verify_manifest_integrity_mode: bool) -> dict[str,
         manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
         result['manifest_data'] = manifest
         result['adapter_prompt'] = (destination / manifest['adapter_prompt']).exists()
+        result['manifest_provenance'] = verify_manifest_provenance(manifest)
         if verify_manifest_integrity_mode:
             result['manifest_integrity'] = verify_manifest_integrity(destination, manifest)
     return result
@@ -146,7 +223,13 @@ def doctor(destination: Path, verify_manifest_integrity_mode: bool) -> dict[str,
 
 def run_for_agent(agent: str, destination: Path, verify_manifest_integrity_mode: bool) -> bool:
     result = doctor(destination, verify_manifest_integrity_mode)
-    checks = [result['exists'], result['skill_md'], result['manifest'], result['adapter_prompt']]
+    checks = [
+        result['exists'],
+        result['skill_md'],
+        result['manifest'],
+        result['adapter_prompt'],
+        result['manifest_provenance']['verified'],
+    ]
     if verify_manifest_integrity_mode:
         checks.append(bool(result['manifest_integrity']['verified']))
     status = all(checks)
