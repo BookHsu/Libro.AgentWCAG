@@ -277,6 +277,76 @@ def run_preflight_checks(timeout_seconds: int) -> dict[str, Any]:
     return {"ok": ok, "checks": results, "tools": tools}
 
 
+def _collect_scanner_rule_ids(
+    axe_data: dict[str, Any] | None,
+    lighthouse_data: dict[str, Any] | None,
+) -> list[str]:
+    rule_ids: set[str] = set()
+    if isinstance(axe_data, dict):
+        for violation in axe_data.get("violations", []):
+            if not isinstance(violation, dict):
+                continue
+            rule_id = str(violation.get("id", "")).strip()
+            if rule_id:
+                rule_ids.add(rule_id)
+    if isinstance(lighthouse_data, dict):
+        audits = lighthouse_data.get("audits", {})
+        if isinstance(audits, dict):
+            for audit_id in audits:
+                if isinstance(audit_id, str):
+                    value = audit_id.strip()
+                    if value:
+                        rule_ids.add(value)
+    return sorted(rule_ids)
+
+
+def _build_scanner_capabilities(
+    preflight: dict[str, Any],
+    report: dict[str, Any],
+    args: Any,
+    axe_data: dict[str, Any] | None,
+    lighthouse_data: dict[str, Any] | None,
+) -> dict[str, Any]:
+    tools = preflight.get("tools", {})
+    run_tools = report.get("run_meta", {}).get("tools", {})
+    available_rules = _collect_scanner_rule_ids(axe_data, lighthouse_data)
+    scanner_map = {
+        "axe": {
+            "requested": not args.skip_axe,
+            "mocked": bool(args.mock_axe_json),
+            "preflight_tool": "@axe-core/cli",
+        },
+        "lighthouse": {
+            "requested": not args.skip_lighthouse,
+            "mocked": bool(args.mock_lighthouse_json),
+            "preflight_tool": "lighthouse",
+        },
+    }
+    scanners: dict[str, Any] = {}
+    for scanner, config in scanner_map.items():
+        preflight_tool = config["preflight_tool"]
+        preflight_entry = tools.get(preflight_tool, {})
+        preflight_status = str(preflight_entry.get("status", "unknown"))
+        input_mode = "skipped"
+        if config["mocked"]:
+            input_mode = "mock"
+        elif config["requested"]:
+            input_mode = "live"
+        scanners[scanner] = {
+            "requested": config["requested"],
+            "input_mode": input_mode,
+            "preflight_status": preflight_status,
+            "run_status": run_tools.get(scanner, "unknown"),
+            "available": bool(config["mocked"] or preflight_status == "ok"),
+        }
+
+    return {
+        "scanners": scanners,
+        "available_rules": available_rules,
+        "available_rule_count": len(available_rules),
+    }
+
+
 __all__ = [
     "ALLOWED_URL_SCHEMES",
     "DEFAULT_SCANNER_RETRY_ATTEMPTS",
@@ -285,6 +355,8 @@ __all__ = [
     "NPX_EXECUTABLE",
     "PREFLIGHT_TOOL_CHECKS",
     "_build_version_provenance",
+    "_build_scanner_capabilities",
+    "_collect_scanner_rule_ids",
     "_extract_version_line",
     "_is_transient_scanner_error",
     "_resolve_npx_executable",
