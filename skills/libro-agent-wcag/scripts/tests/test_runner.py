@@ -18,12 +18,12 @@ if str(SCRIPT_ROOT) not in sys.path:
 import run_accessibility_audit as runner
 import advanced_gates
 import baseline_governance
+import report_artifacts
 import scanner_runtime
 
 from run_accessibility_audit import (
     DEFAULT_SCANNER_RETRY_ATTEMPTS,
     DEFAULT_TIMEOUT_SECONDS,
-    _build_artifact_manifest,
     _find_rule_policy_overlaps,
     _policy_config_keys_payload,
     parse_args,
@@ -397,7 +397,7 @@ class RunnerTests(unittest.TestCase):
         output_dir.mkdir(parents=True, exist_ok=True)
         report_path = output_dir / 'wcag-report.json'
         report_path.write_text('{"ok":true}', encoding='utf-8')
-        manifest, manifest_path = _build_artifact_manifest(
+        manifest, manifest_path = report_artifacts._build_artifact_manifest(
             output_dir=output_dir,
             report_format='json',
             target='https://example.com',
