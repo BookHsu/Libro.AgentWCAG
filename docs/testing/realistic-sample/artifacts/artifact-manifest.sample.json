@@ -1,0 +1,60 @@
+{
+  "generated_at": "2026-03-23T10:06:36Z",
+  "generator": {
+    "name": "run_accessibility_audit.py",
+    "product_name": "Libro.AgentWCAG",
+    "version": "1.0.0",
+    "product_version": "0.1.0",
+    "version_source": "pyproject.toml",
+    "source_revision": "40909dfb06f2ee93fca2b199abea26c4d7357117",
+    "source_revision_source": "git-head",
+    "report_schema_version": "1.0.0"
+  },
+  "target": "C:\\Source\\Libro.AgentWCAG.clean\\.tmp-realistic-smoke\\run\\mixed-findings.html",
+  "report_format": "json",
+  "artifact_count": 7,
+  "artifacts": [
+    {
+      "kind": "debt-trend",
+      "path": "C:\\Source\\Libro.AgentWCAG.clean\\.tmp-realistic-smoke\\run\\audit-output\\debt-trend.json",
+      "size_bytes": 850,
+      "sha256": "cf3c11811ae1e625ed65e7ee394b09d285d628ca9a4959b31ed740a5e3885f8d"
+    },
+    {
+      "kind": "fixes-diff",
+      "path": "C:\\Source\\Libro.AgentWCAG.clean\\.tmp-realistic-smoke\\run\\audit-output\\wcag-fixes.diff",
+      "size_bytes": 1134,
+      "sha256": "9683da12b80f9079e315db36bcf52b81a7b0e9f5db150bf7957c5583cd213fcc"
+    },
+    {
+      "kind": "fixes-snapshot",
+      "path": "C:\\Source\\Libro.AgentWCAG.clean\\.tmp-realistic-smoke\\run\\audit-output\\wcag-fixed-report.snapshot.json",
+      "size_bytes": 57420,
+      "sha256": "a7cb2f10e59e75e2614547eac2e409beddca6c88217bfcb7750e15b5eea19bd9"
+    },
+    {
+      "kind": "machine-report-json",
+      "path": "C:\\Source\\Libro.AgentWCAG.clean\\.tmp-realistic-smoke\\run\\audit-output\\wcag-report.json",
+      "size_bytes": 62248,
+      "sha256": "36e7de7f857246fdbeab5433b9ad44b41d706315c095f0208b1f0d384952d4d2"
+    },
+    {
+      "kind": "markdown-report",
+      "path": "C:\\Source\\Libro.AgentWCAG.clean\\.tmp-realistic-smoke\\run\\audit-output\\wcag-report.md",
+      "size_bytes": 4884,
+      "sha256": "8575258f7f3cc25f0fa1f391e2b33e6bedd24748d00b974d6010b4451b83a8a3"
+    },
+    {
+      "kind": "report-schema",
+      "path": "C:\\Source\\Libro.AgentWCAG.clean\\.tmp-realistic-smoke\\run\\audit-output\\schemas\\wcag-report-1.0.0.schema.json",
+      "size_bytes": 2886,
+      "sha256": "60abe41b254cc39525de80e3e87bd2a529c9d1ae85b88800ec338a2c4ea1f8e2"
+    },
+    {
+      "kind": "scanner-stability",
+      "path": "C:\\Source\\Libro.AgentWCAG.clean\\.tmp-realistic-smoke\\run\\audit-output\\scanner-stability.json",
+      "size_bytes": 1756,
+      "sha256": "a360f87ef886f1b76e01c09154ec32a3e6402898218ea815eb254a985cf2f67f"
+    }
+  ]
+}

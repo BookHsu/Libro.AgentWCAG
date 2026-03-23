@@ -17,6 +17,29 @@ Libro.AgentWCAG is a cross-agent WCAG web accessibility skill repository for cre
 
 Recommended installation uses the repo-native installer instead of a Codex-internal helper path.
 
+Release-consumer installs can bootstrap from packaged assets with:
+
+```powershell
+pwsh -File .\scripts\install-latest.ps1 -ReleaseBase .\dist\release -Agent codex
+```
+
+```sh
+sh ./scripts/install-latest.sh --release-base ./dist/release --agent codex
+```
+
+Release-consumer shortest path from a GitHub Release asset set:
+
+1. Download the published release assets for `vX.Y.Z`.
+2. Verify `libro-agent-wcag-X.Y.Z-sha256sums.txt`.
+3. Run `install-latest.ps1` or `install-latest.sh` against the release asset directory or URL.
+
+Release-consumer quickstart:
+
+1. Install from release assets.
+2. `install-latest.ps1` / `install-latest.sh` automatically runs `doctor-agent.py --verify-manifest-integrity` after install succeeds.
+3. Run a first audit with `python .\skills\libro-agent-wcag\scripts\run_accessibility_audit.py --target <file-or-url> --output-dir out`.
+4. Remove the skill with `python .\scripts\uninstall-agent.py --agent codex`.
+
 ### Install a single agent bundle
 
 ```powershell
@@ -54,7 +77,7 @@ sh ./scripts/install-agent.sh all
 Use `--dest <path>` to override, and `--force` to replace an existing installation.
 When `--agent all` is combined with `--dest`, the installer creates `codex/`, `claude/`, `gemini/`, and `copilot/` subdirectories under that base path.
 
-After installation, check `install-manifest.json` inside the installed folder. It points to the correct adapter prompt for the selected agent and includes `usage_example`, `failure_guide`, and `e2e_example` paths.
+After installation, check `install-manifest.json` inside the installed folder. It points to the correct adapter prompt for the selected agent and includes `usage_example`, `failure_guide`, and `e2e_example` paths, plus `product_version` and `source_revision` for release provenance.
 
 ### Verify installation
 
@@ -63,6 +86,10 @@ python .\scripts\doctor-agent.py --agent codex
 python .\scripts\doctor-agent.py --agent codex --verify-manifest-integrity
 python .\scripts\doctor-agent.py --agent all
 ```
+
+`scripts/install-agent.py`, `scripts/doctor-agent.py`, and `skills/libro-agent-wcag/scripts/report_artifacts.py` now read `product_version` from `pyproject.toml` through a shared helper. `source_revision` resolves from `LIBRO_AGENTWCAG_SOURCE_REVISION` when set, otherwise from the local git `HEAD`. `LIBRO_AGENTWCAG_BUILD_TIMESTAMP` is an optional UTC ISO-8601 override for release packaging lanes. Missing `project.version` or unresolved `source_revision` fail fast instead of emitting partial provenance.
+
+`doctor-agent.py` also emits machine-readable version consistency fields so downstream smoke and release checks can compare the installed manifest against the current repo/package provenance without reparsing `pyproject.toml` in multiple places.
 
 ### Uninstall
 
@@ -122,7 +149,7 @@ Current implementation note:
 - Non-local targets, unsupported local file types, and higher-risk remediation classes remain `suggest-only` or assisted/manual by design. See `docs/release/apply-fixes-scope.md` for the explicit scope matrix and boundaries.
 - Scanner runtime resilience is configurable via `--scanner-retry-attempts` and `--scanner-retry-backoff-seconds`. See `docs/release/resilient-run-patterns.md` for recommended CI patterns, including the reproducible dependency-audit lane (`pip-audit` + `npm audit`).
 - CI policy controls are available via `--report-format (json|sarif)`, `--fail-on`, `--include-rule`, `--ignore-rule`, `--policy-config`, `--policy-preset (strict|balanced|legacy)`, and `--policy-bundle (strict-web-app|legacy-content|marketing-site)` for deterministic gating and per-project rule policy. `--policy-config` now validates unsupported keys up front to avoid silent policy drift; use `--list-policy-config-keys` for machine-readable key discovery in scripts/automation. Use `--list-policy-presets` for preset discovery, and `--strict-rule-overlap` to fail fast when the same rule id appears in both include/ignore lists. `--sort-findings` and `--max-findings` keep output ordering deterministic and report volume manageable for CI triage.
-- Baseline diff gating is available via `--baseline-report` and `--fail-on-new-only` to fail only on newly introduced unresolved debt. Signature churn can be tuned with `--baseline-include-target`, `--baseline-target-normalization`, and `--baseline-selector-canonicalization`. Baseline updates now emit debt lifecycle metadata (`run_meta.baseline_diff.debt_transitions` and finding-level `debt_state`) for `new`, `accepted`, and `retired` tracking across refreshes. Debt waivers can be declared in baseline JSON via `debt_waivers[]` (`signature`, `owner`, `approved_at`, `expires_at`, `reason`) with strict schema validation; use `--waiver-expiry-mode (ignore|warn|fail)` to enforce renewal/retirement before release gates. Trend intelligence is available via `--debt-trend-window <N>` and emits `debt-trend.json` plus `summary.debt_trend`/`run_meta.debt_trend` highlights (`new`, `accepted`, `retired`, `regressed`) across the latest baseline window. Use `--baseline-evidence-mode (none|hash|hash-chain)` to verify baseline provenance and fail fast on tampered evidence before debt transitions are applied. Use `--replay-verify-from <report-dir>` to run remediation replay verification and emit `replay-summary.json` / `replay-diff.md` with deterministic high-severity regression gating. Use `--stability-baseline <path>` with `--stability-mode (off|warn|fail)` to emit `scanner-stability.json` and compare per-scanner/per-rule/per-target volatility against approved bounds, including deterministic downgrade messaging when scanner capability drifts. Every run now stages `artifact-manifest.json` with per-artifact `sha256`, size, timestamp, and generator metadata for CI handoff integrity checks. `--summary-only` prints a compact JSON gate summary while still writing full artifacts to disk, including scanner capability negotiation metadata (`available_scanners`, `unavailable_scanners`, `available_rule_count`). Add `--explain-policy` to include the fully merged effective policy in `run_meta.policy_effective` and compact summary output for CI debugging/audits. Use `--write-effective-policy` to persist merged policy (including source provenance) to a standalone JSON artifact. JSON reports now include `report_schema.version` (`1.0.0`) and stage schema artifacts under `out/schemas/wcag-report-1.0.0.schema.json` for CI compatibility checks before parsing.
+- Baseline diff gating is available via `--baseline-report` and `--fail-on-new-only` to fail only on newly introduced unresolved debt. Signature churn can be tuned with `--baseline-include-target`, `--baseline-target-normalization`, and `--baseline-selector-canonicalization`. Baseline updates now emit debt lifecycle metadata (`run_meta.baseline_diff.debt_transitions` and finding-level `debt_state`) for `new`, `accepted`, and `retired` tracking across refreshes. Debt waivers can be declared in baseline JSON via `debt_waivers[]` (`signature`, `owner`, `approved_at`, `expires_at`, `reason`) with strict schema validation; use `--waiver-expiry-mode (ignore|warn|fail)` to enforce renewal/retirement before release gates. Trend intelligence is available via `--debt-trend-window <N>` and emits `debt-trend.json` plus `summary.debt_trend`/`run_meta.debt_trend` highlights (`new`, `accepted`, `retired`, `regressed`) across the latest baseline window. Use `--baseline-evidence-mode (none|hash|hash-chain)` to verify baseline provenance and fail fast on tampered evidence before debt transitions are applied. Use `--replay-verify-from <report-dir>` to run remediation replay verification and emit `replay-summary.json` / `replay-diff.md` with deterministic high-severity regression gating. Use `--stability-baseline <path>` with `--stability-mode (off|warn|fail)` to emit `scanner-stability.json` and compare per-scanner/per-rule/per-target volatility against approved bounds, including deterministic downgrade messaging when scanner capability drifts. Every run now stages `artifact-manifest.json` with per-artifact `sha256`, size, timestamp, and generator metadata for CI handoff integrity checks; generator metadata includes `product_version`, `source_revision`, and the unchanged report schema version. JSON reports expose the same provenance in `run_meta.product`, Markdown reports append a `Report Metadata` section, and SARIF exports set driver `version` plus provenance properties. `--summary-only` prints a compact JSON gate summary while still writing full artifacts to disk, including scanner capability negotiation metadata (`available_scanners`, `unavailable_scanners`, `available_rule_count`) and minimal product provenance (`product_version`, `source_revision`, `report_schema_version`). Add `--explain-policy` to include the fully merged effective policy in `run_meta.policy_effective` and compact summary output for CI debugging/audits. Use `--write-effective-policy` to persist merged policy (including source provenance) to a standalone JSON artifact. JSON reports now include `report_schema.version` (`1.0.0`) and stage schema artifacts under `out/schemas/wcag-report-1.0.0.schema.json` for CI compatibility checks before parsing.
 
 Current adapter coverage:
 
@@ -148,7 +175,19 @@ python scripts/validate_skill.py skills/libro-agent-wcag --validate-policy-bundl
 
 ## Release readiness
 
+- Create versioned release assets from the repo root with `python .\scripts\package-release.py --output-dir .\dist\release --overwrite`.
+- Packaging emits deterministic bundle names: `libro-agent-wcag-<version>-codex.zip`, `libro-agent-wcag-<version>-claude.zip`, `libro-agent-wcag-<version>-gemini.zip`, `libro-agent-wcag-<version>-copilot.zip`, and `libro-agent-wcag-<version>-all-in-one.zip`.
+- Companion release artifacts are `libro-agent-wcag-<version>-release-manifest.json`, `libro-agent-wcag-<version>-sha256sums.txt`, and `latest-release.json`.
+- Release bundles intentionally exclude `skills/libro-agent-wcag/scripts/tests/`, `docs/testing/`, and `docs/archive/`; use the versioned release manifest and checksum file for downstream verification.
+- Release-consumer bootstrap entrypoints are `scripts/install-latest.ps1` and `scripts/install-latest.sh`; both resolve `latest-release.json` or a pinned `--version`, verify `sha256`, then invoke the packaged installer from the extracted bundle.
+- Clean release-consumer validation is available via `python .\scripts\run-release-adoption-smoke.py --release-dir .\dist\release --agent codex`.
+- Formal GA release automation lives in `.github/workflows/release.yml` and is documented in `docs/release/ga-release-workflow.md`.
+- GA quality gates and compatibility promises are defined in `docs/release/ga-definition.md`.
+- Rollback and hotfix rules are defined in `docs/release/rollback-playbook.md`.
 - `docs/release/release-playbook.md`: packaging, validation, publish gate checklist, and release-notes workflow
+- `docs/release/ga-release-workflow.md`: tag-triggered publish flow, gate order, and retention contract
+- `docs/release/ga-definition.md`: GA scope, blocker policy, compatibility promises, and semver expectations
+- `docs/release/rollback-playbook.md`: rollback triggers, operator rules, and hotfix policy
 - `CHANGELOG.md`:  versioned release notes baseline
 - `docs/release/supported-environments.md`:  supported runtime and toolchain matrix
 - `docs/release/adoption-smoke-guide.md`: install, smoke, integrity verification, and troubleshooting guidance

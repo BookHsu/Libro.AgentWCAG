@@ -10,12 +10,20 @@ This matrix defines the currently supported runtime and scanner prerequisites.
 | Scanner tools | `@axe-core/cli`, `lighthouse` via `npx` | Missing tools cause scanner-path failures. |
 | OS scripts | Windows PowerShell + POSIX shell | Wrapper scripts are provided for both. |
 | Agent adapters | Codex, Claude, Gemini, Copilot | Installed via `scripts/install-agent.py`. |
+| Release packaging | Python stdlib `zipfile`, local filesystem write access | `scripts/package-release.py` builds deterministic ZIP bundles, checksums, and release manifest assets. |
 
 ## Baseline prerequisites
 
 - Python dependencies from project setup are installed.
 - Node.js and `npx` are installed and callable from terminal.
 - Network and local file permissions allow scanner invocation on target files.
+
+## Clean release-consumer support
+
+- Windows: PowerShell with `Expand-Archive`, `Get-FileHash`, and `python` in `PATH`.
+- macOS: POSIX shell plus `python` in `PATH`; release bootstrap uses Python stdlib for download, zip extraction, and checksum verification.
+- Linux: POSIX shell plus `python` in `PATH`; release bootstrap uses Python stdlib for download, zip extraction, and checksum verification.
+- All clean-smoke environments must allow temporary-directory write access for bundle extraction, installer staging, audit artifacts, and smoke-summary output.
 
 ## Dependency lock and version-capture guidance
 
@@ -53,4 +61,5 @@ When opening a dependency/security triage ticket, include:
 - Legacy Python versions below 3.12.
 - Node versions outside active LTS maintenance.
 - Environments that block subprocess execution for scanner commands.
-
+- Release packaging lanes that cannot write local ZIP/checksum assets under the selected output directory.
+- GA publish attempts that skip the documented release workflow or bypass retained smoke/package artifacts.

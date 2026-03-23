@@ -103,8 +103,12 @@ Coverage target in this repo:
 - `scripts/install-agent.py`
 - `scripts/install-agent.ps1`
 - `scripts/install-agent.sh`
+- `scripts/install-latest.ps1`
+- `scripts/install-latest.sh`
 - `scripts/uninstall-agent.py`
 - `scripts/doctor-agent.py`
+- `scripts/package-release.py`
+- `scripts/run-release-adoption-smoke.py`
 - Coverage:
   - Installation Test
   - Integration Test
@@ -113,6 +117,7 @@ Coverage target in this repo:
   - Compatibility Test
   - Smoke Test
   - Concurrency Test
+  - Release workflow contract and release-consumer smoke
 
 ### Skill contract and adapters
 
@@ -149,6 +154,7 @@ Coverage target in this repo:
 
 - Automated tests for workflow logic, rule mapping, severity bands, citations, remediation strategy defaults, edge cases, CLI flows, install flows, scanner command/error paths, repo contracts, and matrix-completion scenarios.
 - Automated stability-ledger regression coverage for missing-history fallback, scanner capability drift downgrade, and fail-mode volatility gating.
+- Automated release packaging, release workflow contract, bootstrap installer, checksum, and clean release smoke coverage.
 - Static contract checks for all non-test repo files.
 - Scripted manual assets for inherently human-evaluated categories and for mixed-mode categories that still benefit from review checklists.
 - Root-level smoke coverage through repo discovery and validator execution.
@@ -167,4 +173,12 @@ Run the current automated suite:
 ```powershell
 python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"
 python scripts/validate_skill.py skills/libro-agent-wcag
+```
+
+Release-specific validation focus:
+
+```powershell
+python -m unittest skills.libro-agent-wcag.scripts.tests.test_release_packaging skills.libro-agent-wcag.scripts.tests.test_release_adoption skills.libro-agent-wcag.scripts.tests.test_release_workflow skills.libro-agent-wcag.scripts.tests.test_release_docs
+python scripts/package-release.py --output-dir .\dist\release --overwrite
+python scripts/run-release-adoption-smoke.py --release-dir .\dist\release --agent codex --summary-path .\dist\release\smoke-summary.json
 ```

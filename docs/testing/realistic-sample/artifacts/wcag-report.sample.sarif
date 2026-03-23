@@ -1,0 +1,599 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "libro-agent-wcag",
+          "version": "0.1.0",
+          "rules": [
+            {
+              "id": "link-name",
+              "name": "link-name",
+              "shortDescription": {
+                "text": "link-name"
+              },
+              "properties": {
+                "severity": "critical",
+                "wcag": [
+                  "2.4.4",
+                  "4.1.2"
+                ]
+              }
+            },
+            {
+              "id": "meta-viewport",
+              "name": "meta-viewport",
+              "shortDescription": {
+                "text": "meta-viewport"
+              },
+              "properties": {
+                "severity": "critical",
+                "wcag": [
+                  "1.4.4",
+                  "1.4.10"
+                ]
+              }
+            },
+            {
+              "id": "button-name",
+              "name": "button-name",
+              "shortDescription": {
+                "text": "button-name"
+              },
+              "properties": {
+                "severity": "serious",
+                "wcag": [
+                  "4.1.2"
+                ]
+              }
+            },
+            {
+              "id": "image-alt",
+              "name": "image-alt",
+              "shortDescription": {
+                "text": "image-alt"
+              },
+              "properties": {
+                "severity": "serious",
+                "wcag": [
+                  "1.1.1"
+                ]
+              }
+            },
+            {
+              "id": "heading-order",
+              "name": "heading-order",
+              "shortDescription": {
+                "text": "heading-order"
+              },
+              "properties": {
+                "severity": "moderate",
+                "wcag": [
+                  "1.3.1",
+                  "2.4.6"
+                ]
+              }
+            },
+            {
+              "id": "list",
+              "name": "list",
+              "shortDescription": {
+                "text": "list"
+              },
+              "properties": {
+                "severity": "moderate",
+                "wcag": [
+                  "1.3.1"
+                ]
+              }
+            },
+            {
+              "id": "wcag22-manual-2.4.11",
+              "name": "wcag22-manual-2.4.11",
+              "shortDescription": {
+                "text": "wcag22-manual-2.4.11"
+              },
+              "properties": {
+                "severity": "info",
+                "wcag": [
+                  "2.4.11"
+                ]
+              }
+            },
+            {
+              "id": "wcag22-manual-2.4.12",
+              "name": "wcag22-manual-2.4.12",
+              "shortDescription": {
+                "text": "wcag22-manual-2.4.12"
+              },
+              "properties": {
+                "severity": "info",
+                "wcag": [
+                  "2.4.12"
+                ]
+              }
+            },
+            {
+              "id": "wcag22-manual-2.4.13",
+              "name": "wcag22-manual-2.4.13",
+              "shortDescription": {
+                "text": "wcag22-manual-2.4.13"
+              },
+              "properties": {
+                "severity": "info",
+                "wcag": [
+                  "2.4.13"
+                ]
+              }
+            },
+            {
+              "id": "wcag22-manual-2.5.7",
+              "name": "wcag22-manual-2.5.7",
+              "shortDescription": {
+                "text": "wcag22-manual-2.5.7"
+              },
+              "properties": {
+                "severity": "info",
+                "wcag": [
+                  "2.5.7"
+                ]
+              }
+            },
+            {
+              "id": "wcag22-manual-2.5.8",
+              "name": "wcag22-manual-2.5.8",
+              "shortDescription": {
+                "text": "wcag22-manual-2.5.8"
+              },
+              "properties": {
+                "severity": "info",
+                "wcag": [
+                  "2.5.8"
+                ]
+              }
+            },
+            {
+              "id": "wcag22-manual-3.2.6",
+              "name": "wcag22-manual-3.2.6",
+              "shortDescription": {
+                "text": "wcag22-manual-3.2.6"
+              },
+              "properties": {
+                "severity": "info",
+                "wcag": [
+                  "3.2.6"
+                ]
+              }
+            },
+            {
+              "id": "wcag22-manual-3.3.7",
+              "name": "wcag22-manual-3.3.7",
+              "shortDescription": {
+                "text": "wcag22-manual-3.3.7"
+              },
+              "properties": {
+                "severity": "info",
+                "wcag": [
+                  "3.3.7"
+                ]
+              }
+            },
+            {
+              "id": "wcag22-manual-3.3.8",
+              "name": "wcag22-manual-3.3.8",
+              "shortDescription": {
+                "text": "wcag22-manual-3.3.8"
+              },
+              "properties": {
+                "severity": "info",
+                "wcag": [
+                  "3.3.8"
+                ]
+              }
+            },
+            {
+              "id": "wcag22-manual-3.3.9",
+              "name": "wcag22-manual-3.3.9",
+              "shortDescription": {
+                "text": "wcag22-manual-3.3.9"
+              },
+              "properties": {
+                "severity": "info",
+                "wcag": [
+                  "3.3.9"
+                ]
+              }
+            }
+          ],
+          "properties": {
+            "product_name": "Libro.AgentWCAG",
+            "source_revision": "40909dfb06f2ee93fca2b199abea26c4d7357117",
+            "report_schema_version": "1.0.0"
+          }
+        }
+      },
+      "results": [
+        {
+          "ruleId": "link-name",
+          "level": "error",
+          "message": {
+            "text": "Links have discernible text | selector: a.jump-link"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:/Source/Libro.AgentWCAG.clean/.tmp-realistic-smoke/run/mixed-findings.html"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "finding_id": "ISSUE-002",
+            "status": "open",
+            "sc": [
+              "2.4.4",
+              "4.1.2"
+            ],
+            "source_line": null,
+            "source_column": null
+          }
+        },
+        {
+          "ruleId": "meta-viewport",
+          "level": "error",
+          "message": {
+            "text": "User-scalable is not disabled | selector: meta[name=\"viewport\"]"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:/Source/Libro.AgentWCAG.clean/.tmp-realistic-smoke/run/mixed-findings.html"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "finding_id": "ISSUE-001",
+            "status": "open",
+            "sc": [
+              "1.4.4",
+              "1.4.10"
+            ],
+            "source_line": null,
+            "source_column": null
+          }
+        },
+        {
+          "ruleId": "button-name",
+          "level": "error",
+          "message": {
+            "text": "Buttons must have discernible text | selector: button.icon-only"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:/Source/Libro.AgentWCAG.clean/.tmp-realistic-smoke/run/mixed-findings.html"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "finding_id": "ISSUE-004",
+            "status": "open",
+            "sc": [
+              "4.1.2"
+            ],
+            "source_line": null,
+            "source_column": null
+          }
+        },
+        {
+          "ruleId": "image-alt",
+          "level": "error",
+          "message": {
+            "text": "Images must have alternate text | selector: img.hero"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:/Source/Libro.AgentWCAG.clean/.tmp-realistic-smoke/run/mixed-findings.html"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "finding_id": "ISSUE-003",
+            "status": "open",
+            "sc": [
+              "1.1.1"
+            ],
+            "source_line": null,
+            "source_column": null
+          }
+        },
+        {
+          "ruleId": "heading-order",
+          "level": "warning",
+          "message": {
+            "text": "Heading levels should only increase by one | selector: h3"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:/Source/Libro.AgentWCAG.clean/.tmp-realistic-smoke/run/mixed-findings.html"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "finding_id": "ISSUE-006",
+            "status": "open",
+            "sc": [
+              "1.3.1",
+              "2.4.6"
+            ],
+            "source_line": null,
+            "source_column": null
+          }
+        },
+        {
+          "ruleId": "list",
+          "level": "warning",
+          "message": {
+            "text": "Lists must contain only li elements | selector: ul.plain"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:/Source/Libro.AgentWCAG.clean/.tmp-realistic-smoke/run/mixed-findings.html"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "finding_id": "ISSUE-005",
+            "status": "open",
+            "sc": [
+              "1.3.1"
+            ],
+            "source_line": null,
+            "source_column": null
+          }
+        },
+        {
+          "ruleId": "wcag22-manual-2.4.11",
+          "level": "note",
+          "message": {
+            "text": "Review whether focused elements remain at least partially visible. | selector: manual-review"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:/Source/Libro.AgentWCAG.clean/.tmp-realistic-smoke/run/mixed-findings.html"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "finding_id": "ISSUE-007",
+            "status": "needs-review",
+            "sc": [
+              "2.4.11"
+            ],
+            "source_line": null,
+            "source_column": null
+          }
+        },
+        {
+          "ruleId": "wcag22-manual-2.4.12",
+          "level": "note",
+          "message": {
+            "text": "Review whether focused elements remain fully unobscured in enhanced scenarios. | selector: manual-review"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:/Source/Libro.AgentWCAG.clean/.tmp-realistic-smoke/run/mixed-findings.html"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "finding_id": "ISSUE-008",
+            "status": "needs-review",
+            "sc": [
+              "2.4.12"
+            ],
+            "source_line": null,
+            "source_column": null
+          }
+        },
+        {
+          "ruleId": "wcag22-manual-2.4.13",
+          "level": "note",
+          "message": {
+            "text": "Review whether focus appearance meets WCAG 2.2 requirements. | selector: manual-review"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:/Source/Libro.AgentWCAG.clean/.tmp-realistic-smoke/run/mixed-findings.html"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "finding_id": "ISSUE-009",
+            "status": "needs-review",
+            "sc": [
+              "2.4.13"
+            ],
+            "source_line": null,
+            "source_column": null
+          }
+        },
+        {
+          "ruleId": "wcag22-manual-2.5.7",
+          "level": "note",
+          "message": {
+            "text": "Review whether dragging interactions have a single-pointer alternative. | selector: manual-review"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:/Source/Libro.AgentWCAG.clean/.tmp-realistic-smoke/run/mixed-findings.html"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "finding_id": "ISSUE-010",
+            "status": "needs-review",
+            "sc": [
+              "2.5.7"
+            ],
+            "source_line": null,
+            "source_column": null
+          }
+        },
+        {
+          "ruleId": "wcag22-manual-2.5.8",
+          "level": "note",
+          "message": {
+            "text": "Review whether targets meet minimum target size requirements. | selector: manual-review"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:/Source/Libro.AgentWCAG.clean/.tmp-realistic-smoke/run/mixed-findings.html"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "finding_id": "ISSUE-011",
+            "status": "needs-review",
+            "sc": [
+              "2.5.8"
+            ],
+            "source_line": null,
+            "source_column": null
+          }
+        },
+        {
+          "ruleId": "wcag22-manual-3.2.6",
+          "level": "note",
+          "message": {
+            "text": "Review whether help mechanisms remain consistent across pages. | selector: manual-review"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:/Source/Libro.AgentWCAG.clean/.tmp-realistic-smoke/run/mixed-findings.html"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "finding_id": "ISSUE-012",
+            "status": "needs-review",
+            "sc": [
+              "3.2.6"
+            ],
+            "source_line": null,
+            "source_column": null
+          }
+        },
+        {
+          "ruleId": "wcag22-manual-3.3.7",
+          "level": "note",
+          "message": {
+            "text": "Review whether redundant-entry protections are provided where needed. | selector: manual-review"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:/Source/Libro.AgentWCAG.clean/.tmp-realistic-smoke/run/mixed-findings.html"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "finding_id": "ISSUE-013",
+            "status": "needs-review",
+            "sc": [
+              "3.3.7"
+            ],
+            "source_line": null,
+            "source_column": null
+          }
+        },
+        {
+          "ruleId": "wcag22-manual-3.3.8",
+          "level": "note",
+          "message": {
+            "text": "Review accessible authentication without cognitive function tests. | selector: manual-review"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:/Source/Libro.AgentWCAG.clean/.tmp-realistic-smoke/run/mixed-findings.html"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "finding_id": "ISSUE-014",
+            "status": "needs-review",
+            "sc": [
+              "3.3.8"
+            ],
+            "source_line": null,
+            "source_column": null
+          }
+        },
+        {
+          "ruleId": "wcag22-manual-3.3.9",
+          "level": "note",
+          "message": {
+            "text": "Review enhanced accessible authentication support. | selector: manual-review"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:/Source/Libro.AgentWCAG.clean/.tmp-realistic-smoke/run/mixed-findings.html"
+                }
+              }
+            }
+          ],
+          "properties": {
+            "finding_id": "ISSUE-015",
+            "status": "needs-review",
+            "sc": [
+              "3.3.9"
+            ],
+            "source_line": null,
+            "source_column": null
+          }
+        }
+      ]
+    }
+  ]
+}

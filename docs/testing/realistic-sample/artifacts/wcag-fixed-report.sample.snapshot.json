@@ -1,6 +1,6 @@
 {
   "run_meta": {
-    "generated_at": "2026-03-12T10:22:24.607392+00:00",
+    "generated_at": "2026-03-23T10:06:35.978542+00:00",
     "workflow_version": "1.0.0",
     "execution_mode": "apply-fixes",
     "output_language": "en",
@@ -8,11 +8,11 @@
     "modification_owner": "core-workflow",
     "diff_artifacts": [
       {
-        "path": "<repo>/.tmp-realistic-smoke/run/mixed-findings.html",
+        "path": "C:\\Source\\Libro.AgentWCAG.clean\\.tmp-realistic-smoke\\run\\mixed-findings.html",
         "type": "modified-file"
       },
       {
-        "path": "<repo>/.tmp-realistic-smoke/run/audit-output/wcag-fixes.diff",
+        "path": "C:\\Source\\Libro.AgentWCAG.clean\\.tmp-realistic-smoke\\run\\audit-output\\wcag-fixes.diff",
         "type": "unified-diff"
       }
     ],
@@ -59,8 +59,59 @@
     },
     "notes": [
       "Applied 5 safe auto-fix change(s) to the local target.",
-      "Saved auto-fix diff: <repo>/.tmp-realistic-smoke/run/audit-output/wcag-fixes.diff"
+      "Saved auto-fix diff: C:\\Source\\Libro.AgentWCAG.clean\\.tmp-realistic-smoke\\run\\audit-output\\wcag-fixes.diff"
     ],
+    "product": {
+      "name": "Libro.AgentWCAG",
+      "product_version": "0.1.0",
+      "version_source": "pyproject.toml",
+      "source_revision": "40909dfb06f2ee93fca2b199abea26c4d7357117",
+      "source_revision_source": "git-head",
+      "report_schema_version": "1.0.0"
+    },
+    "product_version": "0.1.0",
+    "source_revision": "40909dfb06f2ee93fca2b199abea26c4d7357117",
+    "preflight": {
+      "ok": true,
+      "checks": [
+        {
+          "tool": "runtime",
+          "status": "skipped",
+          "message": "scanner tooling preflight skipped due to mock or skip flags",
+          "command": "",
+          "resolved_command": "",
+          "version": "",
+          "version_provenance": {
+            "source": "skipped",
+            "command": "",
+            "resolved_command": "",
+            "version": ""
+          }
+        }
+      ],
+      "tools": {
+        "runtime": {
+          "status": "skipped",
+          "command": "",
+          "resolved_command": "",
+          "version": "",
+          "message": "scanner tooling preflight skipped due to mock or skip flags",
+          "version_provenance": {
+            "source": "skipped",
+            "command": "",
+            "resolved_command": "",
+            "version": ""
+          }
+        }
+      }
+    },
+    "report_schema_version": "1.0.0",
+    "report_schema_artifact": "C:\\Source\\Libro.AgentWCAG.clean\\.tmp-realistic-smoke\\run\\audit-output\\schemas\\wcag-report-1.0.0.schema.json",
+    "retry_policy": {
+      "attempts": 1,
+      "initial_backoff_seconds": 0.5,
+      "max_backoff_seconds": 5.0
+    },
     "applied_changes": [
       {
         "rule_id": "meta-viewport",
@@ -87,10 +138,37 @@
         "changed_target": "ul.plain",
         "description": "Wrapped list content with a list item element."
       }
+    ],
+    "mutation_telemetry": [
+      {
+        "path": "C:\\Source\\Libro.AgentWCAG.clean\\.tmp-realistic-smoke\\run\\mixed-findings.html",
+        "rule_id": "button-name",
+        "mutation_count": 1
+      },
+      {
+        "path": "C:\\Source\\Libro.AgentWCAG.clean\\.tmp-realistic-smoke\\run\\mixed-findings.html",
+        "rule_id": "image-alt",
+        "mutation_count": 1
+      },
+      {
+        "path": "C:\\Source\\Libro.AgentWCAG.clean\\.tmp-realistic-smoke\\run\\mixed-findings.html",
+        "rule_id": "link-name",
+        "mutation_count": 1
+      },
+      {
+        "path": "C:\\Source\\Libro.AgentWCAG.clean\\.tmp-realistic-smoke\\run\\mixed-findings.html",
+        "rule_id": "list",
+        "mutation_count": 1
+      },
+      {
+        "path": "C:\\Source\\Libro.AgentWCAG.clean\\.tmp-realistic-smoke\\run\\mixed-findings.html",
+        "rule_id": "meta-viewport",
+        "mutation_count": 1
+      }
     ]
   },
   "target": {
-    "value": "<repo>/.tmp-realistic-smoke/run/mixed-findings.html",
+    "value": "C:\\Source\\Libro.AgentWCAG.clean\\.tmp-realistic-smoke\\run\\mixed-findings.html",
     "task_mode": "modify"
   },
   "standard": {
@@ -113,6 +191,8 @@
       ],
       "current": "User-scalable is not disabled",
       "changed_target": "meta[name=\"viewport\"]",
+      "source_line": null,
+      "source_column": null,
       "status": "fixed",
       "fixability": "auto-fix",
       "verification_status": "diff-generated",
@@ -143,6 +223,8 @@
       ],
       "current": "Links have discernible text",
       "changed_target": "a.jump-link",
+      "source_line": null,
+      "source_column": null,
       "status": "fixed",
       "fixability": "auto-fix",
       "verification_status": "diff-generated",
@@ -172,6 +254,8 @@
       ],
       "current": "Images must have alternate text",
       "changed_target": "img.hero",
+      "source_line": null,
+      "source_column": null,
       "status": "fixed",
       "fixability": "auto-fix",
       "verification_status": "diff-generated",
@@ -201,6 +285,8 @@
       ],
       "current": "Buttons must have discernible text",
       "changed_target": "button.icon-only",
+      "source_line": null,
+      "source_column": null,
       "status": "fixed",
       "fixability": "auto-fix",
       "verification_status": "diff-generated",
@@ -230,6 +316,8 @@
       ],
       "current": "Lists must contain only li elements",
       "changed_target": "ul.plain",
+      "source_line": null,
+      "source_column": null,
       "status": "fixed",
       "fixability": "auto-fix",
       "verification_status": "diff-generated",
@@ -260,6 +348,8 @@
       ],
       "current": "Heading levels should only increase by one",
       "changed_target": "h3",
+      "source_line": null,
+      "source_column": null,
       "status": "open",
       "fixability": "assisted",
       "verification_status": "not-run",
@@ -283,6 +373,8 @@
       ],
       "current": "Review whether focused elements remain at least partially visible.",
       "changed_target": "manual-review",
+      "source_line": null,
+      "source_column": null,
       "status": "needs-review",
       "fixability": "manual",
       "verification_status": "manual-review",
@@ -306,6 +398,8 @@
       ],
       "current": "Review whether focused elements remain fully unobscured in enhanced scenarios.",
       "changed_target": "manual-review",
+      "source_line": null,
+      "source_column": null,
       "status": "needs-review",
       "fixability": "manual",
       "verification_status": "manual-review",
@@ -329,6 +423,8 @@
       ],
       "current": "Review whether focus appearance meets WCAG 2.2 requirements.",
       "changed_target": "manual-review",
+      "source_line": null,
+      "source_column": null,
       "status": "needs-review",
       "fixability": "manual",
       "verification_status": "manual-review",
@@ -352,6 +448,8 @@
       ],
       "current": "Review whether dragging interactions have a single-pointer alternative.",
       "changed_target": "manual-review",
+      "source_line": null,
+      "source_column": null,
       "status": "needs-review",
       "fixability": "manual",
       "verification_status": "manual-review",
@@ -375,6 +473,8 @@
       ],
       "current": "Review whether targets meet minimum target size requirements.",
       "changed_target": "manual-review",
+      "source_line": null,
+      "source_column": null,
       "status": "needs-review",
       "fixability": "manual",
       "verification_status": "manual-review",
@@ -398,6 +498,8 @@
       ],
       "current": "Review whether help mechanisms remain consistent across pages.",
       "changed_target": "manual-review",
+      "source_line": null,
+      "source_column": null,
       "status": "needs-review",
       "fixability": "manual",
       "verification_status": "manual-review",
@@ -421,6 +523,8 @@
       ],
       "current": "Review whether redundant-entry protections are provided where needed.",
       "changed_target": "manual-review",
+      "source_line": null,
+      "source_column": null,
       "status": "needs-review",
       "fixability": "manual",
       "verification_status": "manual-review",
@@ -444,6 +548,8 @@
       ],
       "current": "Review accessible authentication without cognitive function tests.",
       "changed_target": "manual-review",
+      "source_line": null,
+      "source_column": null,
       "status": "needs-review",
       "fixability": "manual",
       "verification_status": "manual-review",
@@ -467,6 +573,8 @@
       ],
       "current": "Review enhanced accessible authentication support.",
       "changed_target": "manual-review",
+      "source_line": null,
+      "source_column": null,
       "status": "needs-review",
       "fixability": "manual",
       "verification_status": "manual-review",
@@ -1579,5 +1687,11 @@
         ]
       }
     ]
+  },
+  "report_schema": {
+    "name": "libro-agent-wcag-report",
+    "version": "1.0.0",
+    "artifact": "C:\\Source\\Libro.AgentWCAG.clean\\.tmp-realistic-smoke\\run\\audit-output\\schemas\\wcag-report-1.0.0.schema.json",
+    "compatibility": "^1.0.0"
   }
 }

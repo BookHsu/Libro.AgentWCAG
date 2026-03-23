@@ -1,0 +1,176 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to publish (for example v0.1.0)."
+        required: true
+      retention_days:
+        description: "Retention days for staged release artifacts."
+        required: false
+        default: "14"
+
+env:
+  LIBRO_RELEASE_PYTHON_VERSION: "3.12"
+  LIBRO_RELEASE_NODE_VERSION: "20"
+  LIBRO_RELEASE_ARTIFACT_NAME: libro-agent-wcag-release-assets
+  LIBRO_RELEASE_ARTIFACT_DIR: dist/release
+  LIBRO_RELEASE_RETENTION_DAYS: "14"
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    name: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.LIBRO_RELEASE_PYTHON_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.LIBRO_RELEASE_NODE_VERSION }}
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml
+
+      - name: Run automated tests
+        run: python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"
+
+      - name: Validate repo skill contract
+        run: python scripts/validate_skill.py skills/libro-agent-wcag --validate-policy-bundles
+
+  package-release:
+    name: package-release
+    runs-on: ubuntu-latest
+    needs:
+      - validate
+    outputs:
+      release_tag: ${{ steps.release-meta.outputs.release_tag }}
+      release_version: ${{ steps.release-meta.outputs.release_version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.LIBRO_RELEASE_PYTHON_VERSION }}
+
+      - name: Resolve release metadata
+        id: release-meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            release_tag="${{ github.event.inputs.release_tag }}"
+          else
+            release_tag="${GITHUB_REF_NAME}"
+          fi
+          release_version="${release_tag#v}"
+          echo "release_tag=${release_tag}" >> "$GITHUB_OUTPUT"
+          echo "release_version=${release_version}" >> "$GITHUB_OUTPUT"
+
+      - name: Export provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "LIBRO_AGENTWCAG_SOURCE_REVISION=${GITHUB_SHA}" >> "$GITHUB_ENV"
+          echo "LIBRO_AGENTWCAG_BUILD_TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+
+      - name: Build release assets
+        run: python scripts/package-release.py --output-dir "${{ env.LIBRO_RELEASE_ARTIFACT_DIR }}" --overwrite
+
+      - name: Upload staged release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.LIBRO_RELEASE_ARTIFACT_NAME }}
+          path: ${{ env.LIBRO_RELEASE_ARTIFACT_DIR }}
+          retention-days: ${{ github.event.inputs.retention_days || env.LIBRO_RELEASE_RETENTION_DAYS }}
+
+  clean-release-smoke:
+    name: clean-release-smoke
+    runs-on: ubuntu-latest
+    needs:
+      - package-release
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.LIBRO_RELEASE_PYTHON_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.LIBRO_RELEASE_NODE_VERSION }}
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml
+
+      - name: Download staged release assets
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.LIBRO_RELEASE_ARTIFACT_NAME }}
+          path: ${{ env.LIBRO_RELEASE_ARTIFACT_DIR }}
+
+      - name: Run clean release smoke
+        run: |
+          python scripts/run-release-adoption-smoke.py \
+            --release-dir "${{ env.LIBRO_RELEASE_ARTIFACT_DIR }}" \
+            --agent codex \
+            --summary-path "${{ env.LIBRO_RELEASE_ARTIFACT_DIR }}/smoke-summary.json"
+
+      - name: Upload smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: libro-agent-wcag-release-smoke
+          path: |
+            ${{ env.LIBRO_RELEASE_ARTIFACT_DIR }}/smoke-summary.json
+            ${{ env.LIBRO_RELEASE_ARTIFACT_DIR }}
+          retention-days: ${{ github.event.inputs.retention_days || env.LIBRO_RELEASE_RETENTION_DAYS }}
+
+  publish-release:
+    name: publish-release
+    runs-on: ubuntu-latest
+    needs:
+      - package-release
+      - clean-release-smoke
+    steps:
+      - name: Download staged release assets
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.LIBRO_RELEASE_ARTIFACT_NAME }}
+          path: ${{ env.LIBRO_RELEASE_ARTIFACT_DIR }}
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.package-release.outputs.release_tag }}
+          name: Libro.AgentWCAG ${{ needs.package-release.outputs.release_version }}
+          generate_release_notes: false
+          fail_on_unmatched_files: true
+          files: |
+            ${{ env.LIBRO_RELEASE_ARTIFACT_DIR }}/*

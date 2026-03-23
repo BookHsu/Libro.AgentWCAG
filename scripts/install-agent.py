@@ -7,7 +7,14 @@ import argparse
 import hashlib
 import json
 import shutil
+import sys
 from pathlib import Path
+
+SCRIPT_ROOT = Path(__file__).resolve().parents[1] / "skills" / "libro-agent-wcag" / "scripts"
+if str(SCRIPT_ROOT) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_ROOT))
+
+from shared_constants import get_product_provenance
 
 SKILL_NAME = "libro-agent-wcag"
 SUPPORTED_AGENTS = ("codex", "claude", "gemini", "copilot")
@@ -61,6 +68,7 @@ def sha256_file(path: Path) -> str:
 
 
 def write_manifest(destination: Path, agent: str) -> None:
+    provenance = get_product_provenance()
     entrypoints = {
         "skill_entrypoint": Path("SKILL.md"),
         "adapter_prompt": Path(f"adapters/{adapter_name(agent)}/prompt-template.md"),
@@ -74,6 +82,9 @@ def write_manifest(destination: Path, agent: str) -> None:
 
     manifest = {
         "skill_name": SKILL_NAME,
+        "product_name": provenance["product_name"],
+        "product_version": provenance["product_version"],
+        "source_revision": provenance["source_revision"],
         "agent": agent,
         "skill_entrypoint": str(entrypoints["skill_entrypoint"]).replace("\\", "/"),
         "adapter_prompt": str(entrypoints["adapter_prompt"]).replace("\\", "/"),
@@ -88,6 +99,13 @@ def write_manifest(destination: Path, agent: str) -> None:
         "invoke_example": invoke_example(agent),
         "doctor_command": f"python scripts/doctor-agent.py --agent {agent}",
     }
+    manifest["provenance"] = {
+        "version_source": provenance["version_source"],
+        "source_revision_source": provenance["source_revision_source"],
+    }
+    if "build_timestamp" in provenance:
+        manifest["build_timestamp"] = provenance["build_timestamp"]
+        manifest["provenance"]["build_timestamp_source"] = provenance["build_timestamp_source"]
     (destination / "install-manifest.json").write_text(
         json.dumps(manifest, indent=2, ensure_ascii=False),
         encoding="utf-8",
@@ -122,16 +140,23 @@ def install_all(base_destination: Path | None, force: bool) -> list[Path]:
 
 def main() -> int:
     args = parse_args()
+    provenance = get_product_provenance()
     if args.agent == "all":
         base_destination = Path(args.dest) if args.dest else None
         installed = install_all(base_destination, args.force)
         for path in installed:
-            print(f"Installed at: {path}")
+            print(
+                f"Installed at: {path} "
+                f"(version {provenance['product_version']}, source_revision {provenance['source_revision']})"
+            )
         return 0
 
     destination = Path(args.dest) if args.dest else default_destination(args.agent)
     installed = install(args.agent, destination, args.force)
-    print(f"Installed {SKILL_NAME} for {args.agent} at: {installed}")
+    print(
+        f"Installed {SKILL_NAME} for {args.agent} at: {installed} "
+        f"(version {provenance['product_version']}, source_revision {provenance['source_revision']})"
+    )
     print(f"Installation manifest: {installed / 'install-manifest.json'}")
     return 0
 

@@ -411,17 +411,562 @@
 
 以下項目目前刻意暫緩，待前兩個主方向完成後，再作為下一輪討論 backlog。
 
-### 3. 補完整產品化輸出介面
+### 3. M39 Release Artifact And GA Packaging
 
-狀態：暫緩。目前尚未進入可發佈階段。
+狀態：下一輪完整產品化主項目。
 
-討論 TODO：
+目標：
 
-- [ ] 決定專案何時要從 repo-native 使用模式進入可發佈狀態
-- [ ] 定義穩定對外介面應該是 CLI、package entrypoint，或兩者都要
-- [ ] 決定是否需要補強 packaging metadata、extras、以及 install UX
-- [ ] 確認對外發佈前需要達到哪些 adoption 保證
-- [ ] 定義內部工程工具與對外產品介面的邊界
+- 將 `Libro.AgentWCAG` 從 repo-native 工程資產提升為可發版、可驗證、可回滾的正式產品交付物
+- 建立 GitHub Release artifact、版本 provenance、clean environment adoption smoke、以及 rollback runbook
+- 收斂 installer、doctor、audit report、release docs 與 CI workflow 的產品化契約
+
+細項 TODO：
+
+#### 3.0 已確認範圍與完成定義
+
+- [ ] 定義 M39 的正式完成條件
+- [ ] 明確列出 GA 必備交付物清單
+- [ ] 明確列出 GA 非目標與後續項目，避免 scope 膨脹
+- [ ] 定義「可發版」與「GA」之間的差異
+- [ ] 定義何時允許建立 release tag
+- [ ] 定義何時只允許 draft release，不允許 publish
+- [ ] 定義 blocker / non-blocker 缺陷分級
+- [ ] 明確列出哪些檔案、腳本、文件屬於 M39 改動範圍
+- [ ] 明確列出哪些既有契約不得破壞
+- [ ] 建立 M39 對應 issue / milestone / owner 映射
+
+#### 3.1 單一版本來源與 provenance 收斂
+
+- [x] 決定版本單一來源固定為 `pyproject.toml`
+- [x] 盤點 repo 內所有目前會顯示或應顯示版本資訊的輸出點
+- [x] 新增共用版本讀取 helper，避免各腳本重複解析版本
+- [ ] 定義版本字串格式與 tag 格式關係
+- [ ] 定義 dev version、release version、hotfix version 的表達方式
+- [x] 定義 source revision / commit SHA 的輸出策略
+- [x] 定義 build timestamp / packaged timestamp 的輸出策略
+- [x] 定義缺版本資訊時 CLI 的 fail-fast 行為
+- [ ] 定義缺 provenance 資訊時 release workflow 的 fail-fast 行為
+- [x] 補版本與 provenance 的回歸測試
+
+#### 3.2 Installer 版本資訊注入
+
+- [x] 盤點 `scripts/install-agent.py` 現有輸出與 manifest 欄位
+- [x] 在 installer 成功輸出中加入 `product_name`
+- [x] 在 installer 成功輸出中加入 `product_version`
+- [x] 在 installer 成功輸出中加入 `source_revision`
+- [ ] 在 installer 成功輸出中加入 `install_timestamp`
+- [x] 在 `install-manifest.json` 中加入 `product_version`
+- [x] 在 `install-manifest.json` 中加入 `source_revision`
+- [ ] 在 `install-manifest.json` 中加入 `packaged_at` 或等價欄位
+- [x] 確認 `--agent all` 的 manifest version 行為一致
+- [ ] 更新 wrapper scripts 成功訊息以顯示版本
+- [x] 為 installer version injection 補測試
+- [x] 為 manifest version contract 補測試
+
+#### 3.3 Doctor 版本與完整性契約
+
+- [x] 盤點 `scripts/doctor-agent.py` 現有 JSON 輸出欄位
+- [x] 在 doctor 輸出加入 `product_version`
+- [ ] 在 doctor 輸出加入 `installed_version`
+- [x] 在 doctor 輸出加入 `source_revision`
+- [x] 在 doctor 輸出加入 manifest provenance 資訊
+- [x] 定義 doctor 對 version mismatch 的錯誤行為
+- [x] 定義 doctor 對 manifest 缺 provenance 欄位的錯誤行為
+- [ ] 定義 doctor 對 partial install / corrupted install 的錯誤行為
+- [x] 將 `--verify-manifest-integrity` 擴充為同時驗證版本一致性
+- [ ] 更新 doctor 文件以說明 healthy / unhealthy 判準
+- [x] 為 doctor version consistency 補 regression tests
+- [x] 為 manifest mismatch 補 regression tests
+
+#### 3.4 Report artifacts 版本資訊注入
+
+- [x] 盤點 `run_accessibility_audit.py` 產出的 JSON / Markdown / SARIF / manifest 輸出
+- [x] 在 JSON report 中加入 tool version 欄位
+- [x] 在 Markdown report 中加入版本與 provenance 區塊
+- [x] 在 SARIF 中加入 tool version 或對應 metadata
+- [x] 在 `artifact-manifest.json` 中加入產品版本與 source revision
+- [x] 在 `summary-only` 輸出中加入最小必要版本資訊
+- [x] 定義 schema version 與 product version 的對應說明
+- [ ] 定義 timestamp 欄位如何避免 snapshot 測試漂移
+- [x] 更新 sample artifacts 以反映新 metadata
+- [x] 為 report version injection 補 regression tests
+- [x] 為 artifact-manifest provenance 補 regression tests
+
+#### 3.5 Release asset contract 設計
+
+- [x] 定義每次 release 必須產生的正式 assets 清單
+- [x] 定義 `codex` bundle ZIP 命名規則
+- [x] 定義 `claude` bundle ZIP 命名規則
+- [x] 定義 `gemini` bundle ZIP 命名規則
+- [x] 定義 `copilot` bundle ZIP 命名規則
+- [x] 定義 `all-in-one` bundle ZIP 命名規則
+- [x] 定義 checksum 檔命名規則
+- [x] 定義 release manifest 檔命名規則
+- [x] 定義哪些 assets 屬於公開交付物
+- [x] 定義哪些 artifacts 只屬於 CI triage，不應進 release
+- [x] 將 asset contract 文件化
+- [x] 為 asset naming 補 contract tests
+
+#### 3.6 Packaging script 與 bundle 內容規範
+
+- [x] 新增 `scripts/package-release.py`
+- [x] 實作 release staging directory 建立流程
+- [x] 實作 agent-specific bundle 組裝流程
+- [x] 實作 `all-in-one` bundle 組裝流程
+- [x] 實作 package completeness validation
+- [x] 定義 bundle 內根目錄結構
+- [x] 定義 bundle 是否包含 schema artifacts
+- [x] 定義 bundle 是否包含 policy bundles
+- [x] 定義 bundle 是否包含 archive docs
+- [x] 定義 bundle 最小必要內容清單
+- [x] 確保 bundle 不混入 tests 或開發期垃圾檔
+- [x] 輸出 machine-readable packaging summary
+- [x] 為 packaging script 補單元測試
+- [x] 為 bundle completeness 補測試
+- [x] 為 deterministic packaging 補測試
+
+#### 3.7 Checksum 與下載完整性驗證
+
+- [x] 決定 checksum 演算法固定為 `sha256`
+- [x] 決定 checksum file 格式為 plain text、JSON，或兩者並行
+- [x] 在 packaging script 中產出 checksum 檔
+- [x] 在 release manifest 中加入每個 asset 的 checksum
+- [x] 定義 downstream 使用者如何驗證 checksum
+- [x] 定義 checksum mismatch 的 triage 流程
+- [ ] 評估 doctor 是否需要支援下載後 asset checksum 驗證
+- [x] 補 checksum 文件範例
+- [x] 為 checksum file format 補測試
+- [ ] 為 checksum mismatch 補測試
+- [ ] 為遺漏檔案或錯誤順序補測試
+
+#### 3.8 GitHub Release workflow 自動化
+
+- [x] 在 `.github/workflows/` 新增正式 release workflow
+- [x] 定義 release workflow 觸發條件為 tag push
+- [x] 視需要加入 `workflow_dispatch`
+- [x] 定義 release workflow job 階段
+- [x] 加入 metadata validation step
+- [x] 加入測試執行 step
+- [x] 加入 packaging step
+- [x] 加入 clean smoke step
+- [x] 加入 checksum / manifest publish step
+- [x] 加入 GitHub Release 建立 step
+- [x] 加入 release asset upload step
+- [x] 定義任何 gate 失敗時不得 publish release
+- [x] 定義 release workflow logs / artifacts 保留策略
+- [x] 為 workflow 命名、觸發與 asset upload 補 contract tests
+
+#### 3.9 GitHub Release notes 與 metadata
+
+- [x] 定義 release title 格式
+- [x] 定義 release body 來源策略
+- [x] 決定從 `CHANGELOG.md` 擷取對應 version section，或由 workflow 生 draft notes
+- [x] 定義 release notes 必含 highlights
+- [x] 定義 release notes 必含 breaking changes
+- [x] 定義 release notes 必含 known limitations
+- [x] 定義 release notes 必含 install / verify 指令
+- [x] 定義 release notes 必含 checksum verification 說明
+- [x] 補 release note template
+- [x] 補 hotfix release note template
+- [x] 更新 changelog discipline 文件
+
+#### 3.10 One-click installer 體驗
+
+- [x] 定義「一鍵安裝」的正式交付方式
+- [x] 決定是否提供 `install-latest.ps1`
+- [x] 決定是否提供 `install-latest.sh`
+- [x] 定義 bootstrap script 支援的 flags
+- [x] 定義 bootstrap script 的 latest version resolution 行為
+- [x] 定義 bootstrap script 的指定版本下載行為
+- [x] 實作下載 release asset
+- [x] 實作 checksum 驗證
+- [x] 實作解壓到 temp dir
+- [x] 實作呼叫 installer
+- [x] 實作失敗後 temp 清理
+- [x] 實作成功後呼叫 doctor 或提示 doctor 驗證
+- [x] 定義 Python 缺失時的錯誤訊息
+- [x] 定義權限不足時的錯誤訊息
+- [x] 定義 network failure 時的錯誤訊息
+- [x] 為 bootstrap scripts 補測試或最少 smoke validation
+
+#### 3.11 Clean environment adoption smoke
+
+- [x] 定義 clean environment 的正式支援矩陣
+- [x] 在文件中列出 Windows 支援條件
+- [x] 在文件中列出 macOS 支援條件
+- [x] 在文件中列出 Linux 支援條件
+- [x] 定義 clean smoke 必須從 release asset 開始，不得偷用 repo 相對路徑
+- [x] 設計 release-consumer smoke 流程
+- [x] 新增 `scripts/run-release-adoption-smoke.py`
+- [x] 支援 `--version`
+- [x] 支援 `--agent`
+- [x] 支援 `--asset-dir` 或等價離線來源
+- [x] 支援 `--keep-temp`
+- [x] 產出 `smoke-summary.json`
+- [x] 驗證 download -> checksum -> install -> doctor -> audit -> uninstall 全流程
+- [x] 定義 smoke 成功判準
+- [x] 定義 smoke 失敗時必保留的 triage 資訊
+- [x] 將 clean smoke 接入 release workflow
+- [x] 為 smoke summary contract 補測試
+
+#### 3.12 Release workflow 與 rollback runbook
+
+- [x] 新增 `docs/release/ga-release-workflow.md`
+- [x] 補 pre-release checklist
+- [x] 補 version bump 流程
+- [x] 補 changelog finalize 流程
+- [x] 補 tag 建立流程
+- [x] 補 release workflow 觸發與監看流程
+- [x] 補 post-publish verification 流程
+- [x] 新增 `docs/release/rollback-playbook.md`
+- [x] 定義 rollback trigger 條件
+- [x] 定義 rollback owner / approver
+- [x] 定義 asset 壞檔時的處置
+- [x] 定義 installer 壞掉時的處置
+- [x] 定義 schema 相容性破壞時的處置
+- [x] 定義是否允許 yank release
+- [x] 定義不允許直接覆寫既有 tag 內容
+- [x] 定義 hotfix release 的命名與流程
+- [x] 補 rollback communication template
+- [x] 補 rollback 後 postmortem 要求
+
+#### 3.13 GA definition 與相容性政策
+
+- [x] 新增 `docs/release/ga-definition.md`
+- [x] 定義 product scope
+- [x] 定義 intended user
+- [x] 定義 supported environments
+- [x] 定義 support boundaries
+- [x] 定義 non-goals
+- [x] 定義 GA quality gates
+- [x] 定義 compatibility promises
+- [x] 定義 known limitations 的允收標準
+- [x] 定義 semantic versioning 是否正式採用
+- [x] 定義 breaking change 的分類
+- [x] 定義 deprecation policy
+- [x] 定義 report schema versioning policy
+- [x] 定義 install-manifest 相容性政策
+- [x] 定義 adapter entrypoint path 相容性政策
+
+#### 3.14 文件整併與入口收斂
+
+- [x] 更新 `README.md` 的產品化入口段落
+- [x] 在 `README.md` 補從 GitHub Release 安裝的最短路徑
+- [x] 在 `README.md` 補 install -> doctor -> first audit -> uninstall quickstart
+- [x] 更新 `docs/release/release-playbook.md` 以反映 M39 gate
+- [x] 更新 `docs/release/adoption-smoke-guide.md`
+- [x] 更新 `docs/release/supported-environments.md`
+- [ ] 視需要新增 `docs/release/README.md` 或 release docs 索引
+- [x] 補 release-consumer smoke 與 repo-native smoke 的差異說明
+- [ ] 收斂重複規則，避免同一決策散在多份文件
+- [x] 更新 `CHANGELOG.md` 的發版紀律說明
+
+#### 3.15 測試矩陣與回歸覆蓋
+
+- [x] 更新 `TESTING-PLAN.md`，加入 M39 測試類別
+- [x] 新增 package manifest contract tests
+- [x] 新增 release asset naming tests
+- [x] 新增 bootstrap install tests
+- [x] 新增 version injection tests
+- [x] 新增 doctor version consistency tests
+- [x] 新增 release smoke tests
+- [x] 新增 checksum contract tests
+- [x] 新增 workflow contract tests
+- [ ] 新增 non-happy-path 測試
+- [ ] 為 snapshot 中的 timestamp / version 欄位建立 normalization 策略
+- [ ] 驗證新增 metadata 不會讓既有 snapshot 不穩定
+- [ ] 驗證 M39 新增測試與既有 real-scanner / CLI tests 不衝突
+
+#### 3.16 建議實作順序
+
+- [x] 第一步：先完成版本單一來源與 provenance helper
+- [x] 第二步：完成 installer / doctor / report 的版本資訊注入
+- [x] 第三步：完成 packaging script 與 bundle contract
+- [x] 第四步：完成 checksum 與 release asset verification
+- [x] 第五步：完成 one-click installer 與 clean smoke
+- [x] 第六步：完成 GitHub Release workflow
+- [x] 第七步：完成 GA definition、rollback、docs 收斂
+- [x] 每一步完成後都更新測試與文件
+
+#### 3.17 最小交付標準
+
+- [x] tag push 可自動產生正式 release assets
+- [x] 所有 installer / doctor / report artifacts 帶一致版本資訊
+- [x] release assets 可被 checksum 驗證
+- [x] clean environment adoption smoke 可成功執行
+- [x] rollback playbook 可供非作者依文件操作
+- [x] GA definition 文件已完成且與實作一致
+- [x] README 與 release docs 已反映正式產品化入口
+- [x] M39 新增測試已納入測試矩陣
+
+#### 3.18 最終驗收條件
+
+- [ ] 任一正式版本可從 GitHub Release 下載、驗證、安裝、doctor、執行 smoke、解除安裝
+- [ ] release workflow 能在沒有人工補洞的情況下穩定產生完整 assets
+- [ ] 版本、schema、manifest、checksum、artifact provenance 全部可追溯
+- [ ] 發版失敗與發版後故障都有明確 rollback 路徑
+- [ ] 外部 adopter 不需要依賴 repo 內部知識即可完成 first-run
+
+#### 3.19 AI 執行批次總則
+
+以下批次不是給人類 PM/工程師分派用，而是給 agent 直接執行的工作包。
+
+每個 batch 都必須遵守：
+
+- [ ] 只修改該 batch 明列允許的檔案範圍
+- [ ] 不可破壞既有 CLI flags、exit codes、artifact 檔名、report schema version 契約
+- [ ] 一律補對應測試或 contract validation
+- [ ] 若變更輸出結構，必須同步更新文件與 sample artifacts
+- [ ] 完成後必須留下可驗證證據：測試命令、輸出 artifact、或文件更新
+- [ ] 若遇到需跨 batch 才能安全決定的契約，先補文件定義，再實作
+
+#### 3.20 Agent Batch A: Version And Provenance Foundation
+
+批次目標：
+
+- 建立 M39 的共同基礎，讓 installer、doctor、report、packaging 共用同一套版本與 provenance 來源
+
+允許修改檔案：
+
+- [ ] `pyproject.toml`
+- [x] `skills/libro-agent-wcag/scripts/shared_constants.py`
+- [x] `skills/libro-agent-wcag/scripts/report_artifacts.py`
+- [x] `scripts/install-agent.py`
+- [x] `scripts/doctor-agent.py`
+- [x] `skills/libro-agent-wcag/scripts/tests/`
+- [x] `README.md`
+- [x] `docs/release/release-playbook.md`
+
+主要工作：
+
+- [x] 盤點目前版本讀取與 provenance 來源
+- [x] 新增共用 helper，統一讀取 `product_version`
+- [x] 定義 `source_revision`、`build_timestamp` 或等價欄位
+- [x] 定義缺版本或缺 provenance 時的 fail-fast 行為
+- [x] 補單元測試與 contract tests
+
+禁止事項：
+
+- [ ] 不在這一批加入 release packaging
+- [ ] 不在這一批新增 bootstrap installer
+- [ ] 不重命名既有 artifacts
+
+完成證據：
+
+- [x] 有共用 version/provenance helper 可被後續批次重用
+- [x] 測試可證明版本來源不再分散解析
+- [x] 文件已寫明版本與 provenance 來源
+
+建議驗證命令：
+
+- [ ] `python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"`
+
+#### 3.21 Agent Batch B: Installer / Doctor / Report Version Injection
+
+批次目標：
+
+- 將 version/provenance 注入所有對外輸出與 machine-readable artifacts
+
+允許修改檔案：
+
+- [ ] `scripts/install-agent.py`
+- [ ] `scripts/install-agent.ps1`
+- [ ] `scripts/install-agent.sh`
+- [x] `scripts/doctor-agent.py`
+- [x] `skills/libro-agent-wcag/scripts/run_accessibility_audit.py`
+- [x] `skills/libro-agent-wcag/scripts/report_artifacts.py`
+- [x] `docs/testing/realistic-sample/artifacts/`
+- [x] `skills/libro-agent-wcag/scripts/tests/`
+- [x] `README.md`
+- [x] `docs/release/adoption-smoke-guide.md`
+
+主要工作：
+
+- [x] installer success output 補 `product_version`、`source_revision`
+- [x] `install-manifest.json` 補版本與 provenance 欄位
+- [x] doctor JSON 輸出補版本一致性資訊
+- [x] report JSON / Markdown / SARIF / artifact manifest 補版本 metadata
+- [x] `summary-only` 輸出補最小必要版本資訊
+- [x] 更新 sample artifacts 與 snapshots
+
+禁止事項：
+
+- [ ] 不在這一批建立 release workflow
+- [ ] 不在這一批建立 package ZIP
+- [ ] 不改動 report schema version 命名策略，除非已有明確文件變更
+
+完成證據：
+
+- [x] installer、doctor、report 都能輸出一致版本資訊
+- [x] sample artifacts 已反映新欄位
+- [x] regression tests 通過
+
+建議驗證命令：
+
+- [ ] `python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"`
+
+#### 3.22 Agent Batch C: Release Packaging And Checksum
+
+批次目標：
+
+- 建立可重複的 release bundle、checksum、release manifest 產生流程
+
+允許修改檔案：
+
+- [x] `scripts/package-release.py`
+- [x] `README.md`
+- [x] `docs/release/release-playbook.md`
+- [x] `docs/release/supported-environments.md`
+- [x] `docs/release/adoption-smoke-guide.md`
+- [x] `skills/libro-agent-wcag/scripts/tests/`
+
+主要工作：
+
+- [x] 定義 release assets 清單與命名規則
+- [x] 實作 agent-specific bundle 組裝
+- [x] 實作 `all-in-one` bundle 組裝
+- [x] 產出 `sha256` checksum 檔
+- [x] 產出 release manifest
+- [x] 補 package completeness / deterministic packaging tests
+
+禁止事項：
+
+- [ ] 不在這一批接 GitHub Release API 或 workflow publish
+- [ ] 不在這一批加入 remote download installer
+- [ ] 不把 tests 或 archive docs 混入正式 bundle，除非文件先定義為必要內容
+
+完成證據：
+
+- [x] 從 repo 根目錄可產出完整 release assets
+- [x] bundle 命名、checksum、manifest 與文件一致
+- [x] packaging tests 通過
+
+建議驗證命令：
+
+- [ ] `python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"`
+
+#### 3.23 Agent Batch D: Bootstrap Installers And Clean Release Smoke
+
+批次目標：
+
+- 讓外部 adopter 以 release consumer 路徑完成下載、驗證、安裝、doctor、audit、解除安裝
+
+允許修改檔案：
+
+- [x] `scripts/install-latest.ps1`
+- [x] `scripts/install-latest.sh`
+- [x] `scripts/run-release-adoption-smoke.py`
+- [x] `docs/release/adoption-smoke-guide.md`
+- [x] `docs/release/supported-environments.md`
+- [x] `README.md`
+- [x] `skills/libro-agent-wcag/scripts/tests/`
+
+主要工作：
+
+- [x] 實作 latest / pinned version 下載流程
+- [x] 串接 checksum verify -> install -> doctor -> audit -> uninstall
+- [x] 產出 `smoke-summary.json`
+- [x] 定義 clean environment 成功判準
+- [x] 補 bootstrap / smoke tests
+
+禁止事項：
+
+- [ ] 不在這一批改 release workflow publish 策略
+- [ ] 不跳過 checksum 驗證
+- [ ] 不直接依賴 repo 相對路徑冒充 release-consumer flow
+
+完成證據：
+
+- [x] clean release smoke 可在 release asset 路徑下成功執行
+- [x] 失敗時能保留 triage artifacts
+- [x] 文件已能描述 release-consumer flow
+
+建議驗證命令：
+
+- [ ] `python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"`
+
+#### 3.24 Agent Batch E: GitHub Release Workflow, GA Definition, Rollback
+
+批次目標：
+
+- 將 release 流程正式化，形成可自動 publish、可回滾、可驗收的 GA 產品化交付鏈
+
+允許修改檔案：
+
+- [x] `.github/workflows/release.yml`
+- [x] `README.md`
+- [x] `CHANGELOG.md`
+- [x] `TESTING-PLAN.md`
+- [x] `docs/release/ga-definition.md`
+- [x] `docs/release/ga-release-workflow.md`
+- [x] `docs/release/rollback-playbook.md`
+- [x] `docs/release/release-playbook.md`
+- [x] `docs/release/adoption-smoke-guide.md`
+- [x] `docs/release/supported-environments.md`
+- [x] `skills/libro-agent-wcag/scripts/tests/`
+
+主要工作：
+
+- [x] 新增 release workflow
+- [x] 接上 test -> package -> clean smoke -> publish 流程
+- [x] 定義 publish gate 與 artifact retention
+- [x] 補 GA definition
+- [x] 補 rollback runbook 與禁止直接覆寫 tag 的政策
+- [x] 更新 README / changelog discipline / testing plan
+
+禁止事項：
+
+- [ ] 不改掉既有 required real-scanner lane 契約
+- [ ] 不繞過失敗 gate 強行 publish
+- [ ] 不用未文件化的人工步驟取代正式 workflow
+
+完成證據：
+
+- [x] tag push 可自動建立正式 release
+- [x] workflow contract tests 通過
+- [x] GA definition 與 rollback 文件可支持非作者操作
+
+建議驗證命令：
+
+- [ ] `python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"`
+
+#### 3.25 AI 執行順序
+
+- [x] 先執行 Batch A
+- [x] 再執行 Batch B
+- [x] 再執行 Batch C
+- [x] 再執行 Batch D
+- [x] 最後執行 Batch E
+- [x] 每個 batch 完成後都要更新相鄰文件與測試
+
+#### 3.26 文件先行 / Code 先行原則
+
+文件先行：
+
+- [x] release asset 清單與命名規則
+- [x] checksum / release manifest 格式
+- [x] GA blocker / non-blocker 定義
+- [x] rollback 禁止事項與 hotfix 原則
+- [x] clean environment 成功判準
+
+Code 先行：
+
+- [x] version/provenance helper
+- [x] installer / doctor / report version injection
+- [x] `scripts/package-release.py`
+- [x] `scripts/install-latest.ps1`
+- [x] `scripts/install-latest.sh`
+- [x] `scripts/run-release-adoption-smoke.py`
+- [x] `.github/workflows/release.yml`
+
+同步收斂：
+
+- [x] `README.md`
+- [x] `docs/release/release-playbook.md`
+- [x] `docs/release/adoption-smoke-guide.md`
+- [x] `docs/release/supported-environments.md`
+- [x] `TESTING-PLAN.md`
 
 ### 4. 提升高價值但目前仍屬 manual/assisted 的 remediation 能力
 

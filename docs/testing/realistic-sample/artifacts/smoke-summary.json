@@ -50,11 +50,21 @@
     }
   ],
   "artifacts": [
+    "<repo>/docs/testing/realistic-sample/artifacts/install-manifest.sample.json",
+    "<repo>/docs/testing/realistic-sample/artifacts/doctor.sample.json",
     "<repo>/docs/testing/realistic-sample/artifacts/wcag-report.sample.json",
     "<repo>/docs/testing/realistic-sample/artifacts/wcag-report.sample.md",
+    "<repo>/docs/testing/realistic-sample/artifacts/wcag-report.sample.sarif",
+    "<repo>/docs/testing/realistic-sample/artifacts/artifact-manifest.sample.json",
     "<repo>/docs/testing/realistic-sample/artifacts/wcag-fixes.sample.diff",
     "<repo>/docs/testing/realistic-sample/artifacts/wcag-fixed-report.sample.snapshot.json"
   ],
+  "installed_product_version": "0.1.0",
+  "installed_source_revision": "40909dfb06f2ee93fca2b199abea26c4d7357117",
+  "doctor_version_consistency_verified": true,
+  "report_product_version": "0.1.0",
+  "report_source_revision": "40909dfb06f2ee93fca2b199abea26c4d7357117",
+  "report_schema_version": "1.0.0",
   "fixed_findings": 5,
   "manual_required_count": 9,
   "auto_fixed_count": 5,

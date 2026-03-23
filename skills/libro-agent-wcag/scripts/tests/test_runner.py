@@ -670,12 +670,21 @@ class RunnerPolicyTests(unittest.TestCase):
             ]
         }
 
-        sarif = runner._report_to_sarif(report, 'https://example.com', None)
+        product_metadata = {
+            'name': 'Libro.AgentWCAG',
+            'product_version': '0.1.0',
+            'source_revision': 'a' * 40,
+            'report_schema_version': '1.0.0',
+        }
+        sarif = runner._report_to_sarif(report, 'https://example.com', None, product_metadata)
         result = sarif['runs'][0]['results'][0]
+        driver = sarif['runs'][0]['tool']['driver']
         self.assertEqual(result['ruleId'], 'image-alt')
         self.assertIn('selector: img.hero', result['message']['text'])
         self.assertEqual(result['locations'][0]['physicalLocation']['region']['startLine'], 17)
         self.assertEqual(result['locations'][0]['physicalLocation']['region']['startColumn'], 5)
+        self.assertEqual(driver['version'], '0.1.0')
+        self.assertEqual(driver['properties']['source_revision'], 'a' * 40)
 
     def test_build_baseline_diff_returns_introduced_and_resolved(self) -> None:
         current = {
