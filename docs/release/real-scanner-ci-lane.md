@@ -48,4 +48,4 @@ This keeps local `--summary-only` output expectations and CI lane outputs aligne
 
 ## Sample caller workflow
 
-See [`docs/release/github-actions-wcag-ci-sample.yml`](./github-actions-wcag-ci-sample.yml) for a full pipeline that calls the reusable lane.
+See [`docs/examples/ci/github-actions-wcag-ci-sample.yml`](../examples/ci/github-actions-wcag-ci-sample.yml) for a full pipeline that calls the reusable lane.
