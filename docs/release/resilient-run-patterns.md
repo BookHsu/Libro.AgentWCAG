@@ -155,7 +155,7 @@ The output report includes `run_meta.baseline_diff` with introduced/resolved/per
 ## GitHub Actions integration (artifacts + PR annotation)
 
 A reusable workflow example is available at `docs/examples/ci/github-actions-wcag-ci-sample.yml`.
-For optional real-scanner productization and evidence contracts, see `docs/release/real-scanner-ci-lane.md` and `.github/workflows/reusable-real-scanner-lane.yml`.
+For the formal live real-scanner PR gate and evidence contract, see `docs/release/real-scanner-ci-lane.md` and `.github/workflows/libro-agent-wcag-real-scanner.yml`.
 
 Key integration points:
 
