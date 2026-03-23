@@ -18,11 +18,11 @@ This run re-validated post-M20 behavior for deterministic smoke and real-scanner
 
 ## Evidence Artifacts
 
-- `automation-work/m20-validation-batch3/tooling-check.json`
-- `automation-work/m20-validation-batch3/deterministic-smoke.log`
-- `automation-work/m20-validation-batch3/real-scanner-validation.log`
-- `automation-work/m20-validation-batch3/real-scanner-apply-fixes-comparison.json`
-- `automation-work/m20-validation-batch3/real-scanner-manual/*/command.log`
+- `.tmp-test/m20-validation-batch3/tooling-check.json`
+- `.tmp-test/m20-validation-batch3/deterministic-smoke.log`
+- `.tmp-test/m20-validation-batch3/real-scanner-validation.log`
+- `.tmp-test/m20-validation-batch3/real-scanner-apply-fixes-comparison.json`
+- `.tmp-test/m20-validation-batch3/real-scanner-manual/*/command.log`
 
 ## Results Summary
 
@@ -42,7 +42,7 @@ This run re-validated post-M20 behavior for deterministic smoke and real-scanner
 ## Preflight Snapshot
 
 - Command:
-  - `python skills/libro-agent-wcag/scripts/run_accessibility_audit.py --target docs/testing/realistic-sample/mixed-findings.html --preflight-only --output-dir automation-work/m20-validation-batch3/preflight-only`
+- `python skills/libro-agent-wcag/scripts/run_accessibility_audit.py --target docs/testing/realistic-sample/mixed-findings.html --preflight-only --output-dir .tmp-test/m20-validation-batch3/preflight-only`
 - Result:
   - `npx`: ok (`npx.cmd --version`)
   - `lighthouse`: ok (`npx.cmd --no-install lighthouse --version`)
