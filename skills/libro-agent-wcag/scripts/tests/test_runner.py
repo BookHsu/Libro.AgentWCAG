@@ -330,7 +330,7 @@ class RunnerTests(unittest.TestCase):
         axe_data = {'violations': [{'id': 'image-alt'}, {'id': 'button-name'}]}
         lighthouse_data = None
 
-        capabilities = runner._build_scanner_capabilities(preflight, report, args, axe_data, lighthouse_data)
+        capabilities = scanner_runtime._build_scanner_capabilities(preflight, report, args, axe_data, lighthouse_data)
         self.assertTrue(capabilities['scanners']['axe']['available'])
         self.assertEqual(capabilities['scanners']['axe']['input_mode'], 'mock')
         self.assertFalse(capabilities['scanners']['lighthouse']['available'])
