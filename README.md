@@ -156,7 +156,7 @@ python scripts/validate_skill.py skills/libro-agent-wcag --validate-policy-bundl
 - `docs/release/prompt-invocation-templates.md`:  reusable contract and adapter invocation templates
 - `docs/release/resilient-run-patterns.md`:  resilient scanner retry/backoff, policy gates, baseline-diff CLI patterns, and triage workflow checklists for CI handoff
 - `docs/examples/ci/github-actions-wcag-ci-sample.yml`:  GitHub Actions sample with artifact retention and SARIF PR annotation
-- `docs/release/real-scanner-ci-lane.md`:  reusable optional real-scanner CI lane, evidence artifact conventions, and triage handoff contract
+- `docs/release/real-scanner-ci-lane.md`:  formal `libro-agent-wcag-real-scanner` PR gate, evidence artifact conventions, and triage handoff contract
 - `docs/release/baseline-governance.md`:  baseline debt governance, waiver lifecycle, and provenance verification
 - `docs/release/advanced-ci-gates.md`:  risk calibration, replay verification, and scanner stability gate guidance
 - `docs/policy-bundles/*.json`:  reusable policy-bundle templates (`strict-web-app`, `legacy-content`, `marketing-site`) for multi-repo adoption
