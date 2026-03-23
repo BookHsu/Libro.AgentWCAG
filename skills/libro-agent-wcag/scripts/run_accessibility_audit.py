@@ -101,7 +101,7 @@ from scanner_runtime import (
     _try_run_lighthouse,
     run_preflight_checks,
 )
-from shared_constants import REPORT_SCHEMA_VERSION
+from shared_constants import REPORT_SCHEMA_VERSION, get_product_provenance
 from wcag_workflow import normalize_report, resolve_contract, to_markdown_table, write_report_files
 
 DEFAULT_TIMEOUT_SECONDS = 120
@@ -235,7 +235,46 @@ def _sarif_level_from_severity(severity: str) -> str:
     if severity == 'moderate':
         return 'warning'
     return 'note'
-def _report_to_sarif(report: dict[str, Any], contract_target: str, local_target: Path | None) -> dict[str, Any]:
+
+
+def _build_report_product_metadata() -> dict[str, Any]:
+    product_provenance = get_product_provenance()
+    metadata: dict[str, Any] = {
+        'name': product_provenance['product_name'],
+        'product_version': product_provenance['product_version'],
+        'version_source': product_provenance['version_source'],
+        'source_revision': product_provenance['source_revision'],
+        'source_revision_source': product_provenance['source_revision_source'],
+        'report_schema_version': REPORT_SCHEMA_VERSION,
+    }
+    if 'build_timestamp' in product_provenance:
+        metadata['build_timestamp'] = product_provenance['build_timestamp']
+        metadata['build_timestamp_source'] = product_provenance['build_timestamp_source']
+    return metadata
+
+
+def _append_markdown_report_metadata(output_md: Path, product_metadata: dict[str, Any]) -> None:
+    lines = [
+        '',
+        '## Report Metadata',
+        '',
+        f"- Product: {product_metadata['name']}",
+        f"- Product version: {product_metadata['product_version']}",
+        f"- Source revision: {product_metadata['source_revision']}",
+        f"- Report schema version: {product_metadata['report_schema_version']}",
+    ]
+    if product_metadata.get('build_timestamp'):
+        lines.append(f"- Build timestamp: {product_metadata['build_timestamp']}")
+    existing = output_md.read_text(encoding='utf-8').rstrip()
+    output_md.write_text(existing + '\n' + '\n'.join(lines) + '\n', encoding='utf-8')
+
+
+def _report_to_sarif(
+    report: dict[str, Any],
+    contract_target: str,
+    local_target: Path | None,
+    product_metadata: dict[str, Any],
+) -> dict[str, Any]:
     rules: dict[str, dict[str, Any]] = {}
     results: list[dict[str, Any]] = []
     location_uri = local_target.as_posix() if local_target else contract_target
@@ -298,7 +337,13 @@ def _report_to_sarif(report: dict[str, Any], contract_target: str, local_target:
                 'tool': {
                     'driver': {
                         'name': 'libro-agent-wcag',
+                        'version': product_metadata['product_version'],
                         'rules': list(rules.values()),
+                        'properties': {
+                            'product_name': product_metadata['name'],
+                            'source_revision': product_metadata['source_revision'],
+                            'report_schema_version': product_metadata['report_schema_version'],
+                        },
                     }
                 },
                 'results': results,
@@ -327,17 +372,24 @@ def _write_machine_report_outputs(
     machine_output: Path,
     contract_target: str,
     local_target: Path | None,
+    product_metadata: dict[str, Any],
 ) -> None:
     if report_format == 'json':
         write_report_files(report, str(output_json), str(output_md))
+        _append_markdown_report_metadata(output_md, product_metadata)
         return
 
     machine_output.write_text(
-        json.dumps(_report_to_sarif(report, contract_target, local_target), ensure_ascii=False, indent=2),
+        json.dumps(
+            _report_to_sarif(report, contract_target, local_target, product_metadata),
+            ensure_ascii=False,
+            indent=2,
+        ),
         encoding='utf-8',
     )
     output_md.parent.mkdir(parents=True, exist_ok=True)
     output_md.write_text(to_markdown_table(report), encoding='utf-8')
+    _append_markdown_report_metadata(output_md, product_metadata)
 
 
 def parse_args() -> argparse.Namespace:
@@ -745,6 +797,10 @@ def main() -> int:
         axe_skipped=args.skip_axe,
         lighthouse_skipped=args.skip_lighthouse,
     )
+    product_metadata = _build_report_product_metadata()
+    report['run_meta']['product'] = product_metadata
+    report['run_meta']['product_version'] = product_metadata['product_version']
+    report['run_meta']['source_revision'] = product_metadata['source_revision']
     report['run_meta']['preflight'] = preflight
     report['report_schema'] = schema_metadata
     report['run_meta']['report_schema_version'] = REPORT_SCHEMA_VERSION
@@ -1089,6 +1145,7 @@ def main() -> int:
         machine_output=machine_output,
         contract_target=contract.target,
         local_target=local_target,
+        product_metadata=product_metadata,
     )
 
     if fail_on:
@@ -1122,6 +1179,7 @@ def main() -> int:
             machine_output=machine_output,
             contract_target=contract.target,
             local_target=local_target,
+            product_metadata=product_metadata,
         )
     else:
         should_fail, exit_code = False, 0
@@ -1209,6 +1267,7 @@ def main() -> int:
         machine_output=machine_output,
         contract_target=contract.target,
         local_target=local_target,
+        product_metadata=product_metadata,
     )
 
     axe_raw = output_dir / 'axe.raw.json'

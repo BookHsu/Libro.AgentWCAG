@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from baseline_governance import _sha256_file, _utc_timestamp
-from shared_constants import REPORT_SCHEMA_VERSION
+from shared_constants import REPORT_SCHEMA_VERSION, get_product_provenance
 
 REPORT_SCHEMA_NAME = 'libro-agent-wcag-report'
 REPORT_SCHEMA_FILENAME = f'wcag-report-{REPORT_SCHEMA_VERSION}.schema.json'
@@ -96,6 +96,7 @@ def _build_artifact_manifest(
     artifact_paths: dict[str, Path],
     baseline_evidence: dict[str, Any] | None,
 ) -> tuple[dict[str, Any], Path]:
+    product_provenance = get_product_provenance()
     artifacts: list[dict[str, Any]] = []
     for kind in sorted(artifact_paths):
         path = artifact_paths[kind]
@@ -114,13 +115,22 @@ def _build_artifact_manifest(
         'generated_at': _utc_timestamp(),
         'generator': {
             'name': 'run_accessibility_audit.py',
+            'product_name': product_provenance['product_name'],
             'version': REPORT_SCHEMA_VERSION,
+            'product_version': product_provenance['product_version'],
+            'version_source': product_provenance['version_source'],
+            'source_revision': product_provenance['source_revision'],
+            'source_revision_source': product_provenance['source_revision_source'],
+            'report_schema_version': REPORT_SCHEMA_VERSION,
         },
         'target': target,
         'report_format': report_format,
         'artifact_count': len(artifacts),
         'artifacts': artifacts,
     }
+    if 'build_timestamp' in product_provenance:
+        manifest['generator']['build_timestamp'] = product_provenance['build_timestamp']
+        manifest['generator']['build_timestamp_source'] = product_provenance['build_timestamp_source']
     if baseline_evidence:
         manifest['baseline_evidence'] = {
             'mode': baseline_evidence.get('mode'),
@@ -145,6 +155,7 @@ def _build_compact_summary(
     exit_code: int,
 ) -> dict[str, Any]:
     summary = report.get('summary', {})
+    product_metadata = report.get('run_meta', {}).get('product', {})
     compact: dict[str, Any] = {
         'status': 'failed' if should_fail else 'ok',
         'report_format': report_format,
@@ -154,6 +165,15 @@ def _build_compact_summary(
         'fixed_findings': summary.get('fixed_findings', 0),
         'manual_required_count': summary.get('manual_required_count', 0),
     }
+    if product_metadata:
+        compact['product'] = {
+            'name': product_metadata.get('name'),
+            'product_version': product_metadata.get('product_version'),
+            'source_revision': product_metadata.get('source_revision'),
+            'report_schema_version': product_metadata.get('report_schema_version'),
+        }
+        if 'build_timestamp' in product_metadata:
+            compact['product']['build_timestamp'] = product_metadata.get('build_timestamp')
     if fail_on:
         policy_gate = report.get('run_meta', {}).get('policy_gate', {})
         compact['policy_gate'] = {
