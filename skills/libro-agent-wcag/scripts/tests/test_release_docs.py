@@ -82,6 +82,8 @@ class ReleaseDocsTests(unittest.TestCase):
         self.assertIn('package-release.py', content)
         self.assertIn('libro-agent-wcag-<version>-all-in-one.zip', content)
         self.assertIn('libro-agent-wcag-<version>-sha256sums.txt', content)
+        self.assertIn('install-latest.ps1', content)
+        self.assertIn('run-release-adoption-smoke.py', content)
         self.assertIn('docs/release/release-playbook.md', content)
         self.assertIn('docs/release/adoption-smoke-guide.md', content)
         self.assertIn('docs/release/apply-fixes-scope.md', content)
@@ -108,6 +110,15 @@ class ReleaseDocsTests(unittest.TestCase):
         self.assertIn('source_revision', content)
         self.assertIn('package-release.py', content)
         self.assertIn('latest-release.json', content)
+        self.assertIn('install-latest.ps1', content)
+        self.assertIn('smoke-summary.json', content)
+
+    def test_supported_environments_document_clean_release_consumer_requirements(self) -> None:
+        content = (self.repo_root / 'docs' / 'release' / 'supported-environments.md').read_text(encoding='utf-8')
+        self.assertIn('Windows', content)
+        self.assertIn('macOS', content)
+        self.assertIn('Linux', content)
+        self.assertIn('temporary-directory write access', content)
 
     def test_realistic_sample_artifacts_capture_provenance_metadata(self) -> None:
         smoke = json.loads(

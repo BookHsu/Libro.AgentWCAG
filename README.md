@@ -17,6 +17,16 @@ Libro.AgentWCAG is a cross-agent WCAG web accessibility skill repository for cre
 
 Recommended installation uses the repo-native installer instead of a Codex-internal helper path.
 
+Release-consumer installs can bootstrap from packaged assets with:
+
+```powershell
+pwsh -File .\scripts\install-latest.ps1 -ReleaseBase .\dist\release -Agent codex
+```
+
+```sh
+sh ./scripts/install-latest.sh --release-base ./dist/release --agent codex
+```
+
 ### Install a single agent bundle
 
 ```powershell
@@ -156,6 +166,8 @@ python scripts/validate_skill.py skills/libro-agent-wcag --validate-policy-bundl
 - Packaging emits deterministic bundle names: `libro-agent-wcag-<version>-codex.zip`, `libro-agent-wcag-<version>-claude.zip`, `libro-agent-wcag-<version>-gemini.zip`, `libro-agent-wcag-<version>-copilot.zip`, and `libro-agent-wcag-<version>-all-in-one.zip`.
 - Companion release artifacts are `libro-agent-wcag-<version>-release-manifest.json`, `libro-agent-wcag-<version>-sha256sums.txt`, and `latest-release.json`.
 - Release bundles intentionally exclude `skills/libro-agent-wcag/scripts/tests/`, `docs/testing/`, and `docs/archive/`; use the versioned release manifest and checksum file for downstream verification.
+- Release-consumer bootstrap entrypoints are `scripts/install-latest.ps1` and `scripts/install-latest.sh`; both resolve `latest-release.json` or a pinned `--version`, verify `sha256`, then invoke the packaged installer from the extracted bundle.
+- Clean release-consumer validation is available via `python .\scripts\run-release-adoption-smoke.py --release-dir .\dist\release --agent codex`.
 - `docs/release/release-playbook.md`: packaging, validation, publish gate checklist, and release-notes workflow
 - `CHANGELOG.md`:  versioned release notes baseline
 - `docs/release/supported-environments.md`:  supported runtime and toolchain matrix

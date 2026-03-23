@@ -21,6 +21,35 @@ Expected release assets:
 - `libro-agent-wcag-<version>-sha256sums.txt`
 - `latest-release.json`
 
+## Release Consumer Flow
+
+Use the packaged bootstrap installers instead of repo-relative source paths:
+
+- `pwsh -File .\scripts\install-latest.ps1 -ReleaseBase .\dist\release -Agent codex`
+- `sh ./scripts/install-latest.sh --release-base ./dist/release --agent codex`
+
+Both flows support latest resolution through `latest-release.json` and pinned installs through `--version <semver>`. They must verify `libro-agent-wcag-<version>-sha256sums.txt` before invoking the packaged installer.
+
+Clean-environment scripted smoke:
+
+- `python .\scripts\run-release-adoption-smoke.py --release-dir .\dist\release --agent codex`
+
+Success criteria for clean release smoke:
+
+- starts from the packaged release asset directory, not repo-relative skill sources
+- verifies the selected bundle hash against both `sha256sums.txt` and the release manifest
+- installs from the extracted bundle with release provenance exported through environment variables
+- runs `doctor-agent.py --verify-manifest-integrity`
+- runs a mock-backed audit from the extracted bundle
+- uninstalls cleanly
+- writes `smoke-summary.json`
+
+Failure triage must preserve:
+
+- install / doctor / audit / uninstall logs
+- the resolved release manifest and bundle filename
+- the generated `smoke-summary.json`
+
 Run the scripted realistic validation flow:
 
 - `python .\scripts\run-realistic-validation-smoke.py --agent codex`
