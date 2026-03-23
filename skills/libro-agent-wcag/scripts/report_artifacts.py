@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from baseline_governance import _sha256_file, _utc_timestamp
-from shared_constants import REPORT_SCHEMA_VERSION
+from shared_constants import REPORT_SCHEMA_VERSION, get_product_provenance
 
 REPORT_SCHEMA_NAME = 'libro-agent-wcag-report'
 REPORT_SCHEMA_FILENAME = f'wcag-report-{REPORT_SCHEMA_VERSION}.schema.json'
@@ -96,6 +96,7 @@ def _build_artifact_manifest(
     artifact_paths: dict[str, Path],
     baseline_evidence: dict[str, Any] | None,
 ) -> tuple[dict[str, Any], Path]:
+    product_provenance = get_product_provenance()
     artifacts: list[dict[str, Any]] = []
     for kind in sorted(artifact_paths):
         path = artifact_paths[kind]
@@ -114,13 +115,22 @@ def _build_artifact_manifest(
         'generated_at': _utc_timestamp(),
         'generator': {
             'name': 'run_accessibility_audit.py',
+            'product_name': product_provenance['product_name'],
             'version': REPORT_SCHEMA_VERSION,
+            'product_version': product_provenance['product_version'],
+            'version_source': product_provenance['version_source'],
+            'source_revision': product_provenance['source_revision'],
+            'source_revision_source': product_provenance['source_revision_source'],
+            'report_schema_version': REPORT_SCHEMA_VERSION,
         },
         'target': target,
         'report_format': report_format,
         'artifact_count': len(artifacts),
         'artifacts': artifacts,
     }
+    if 'build_timestamp' in product_provenance:
+        manifest['generator']['build_timestamp'] = product_provenance['build_timestamp']
+        manifest['generator']['build_timestamp_source'] = product_provenance['build_timestamp_source']
     if baseline_evidence:
         manifest['baseline_evidence'] = {
             'mode': baseline_evidence.get('mode'),

@@ -73,6 +73,8 @@ class ReleaseDocsTests(unittest.TestCase):
     def test_readme_links_release_readiness(self) -> None:
         content = (self.repo_root / 'README.md').read_text(encoding='utf-8')
         self.assertIn('## Release readiness', content)
+        self.assertIn('product_version', content)
+        self.assertIn('source_revision', content)
         self.assertIn('docs/release/release-playbook.md', content)
         self.assertIn('docs/release/adoption-smoke-guide.md', content)
         self.assertIn('docs/release/apply-fixes-scope.md', content)
@@ -83,6 +85,12 @@ class ReleaseDocsTests(unittest.TestCase):
         self.assertIn('docs/release/baseline-governance.md', content)
         self.assertIn('docs/release/advanced-ci-gates.md', content)
         self.assertIn('docs/policy-bundles/', content)
+
+    def test_release_playbook_documents_version_and_provenance_sources(self) -> None:
+        content = (self.repo_root / 'docs' / 'release' / 'release-playbook.md').read_text(encoding='utf-8')
+        self.assertIn('pyproject.toml', content)
+        self.assertIn('LIBRO_AGENTWCAG_SOURCE_REVISION', content)
+        self.assertIn('fail fast', content.lower())
 
 
 if __name__ == '__main__':

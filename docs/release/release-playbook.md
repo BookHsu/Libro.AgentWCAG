@@ -8,6 +8,9 @@ Use this playbook as the primary release-readiness document for `libro-agent-wca
 - Confirm adapter prompt templates and usage examples are synchronized across supported agents.
 - Confirm `scripts/install-agent.py`, wrapper scripts, and uninstall flow remain aligned.
 - Confirm `skills/libro-agent-wcag/agents/openai.yaml` and manifest references are valid.
+- Confirm `pyproject.toml` remains the single source for `product_version`.
+- Confirm release automation sets `LIBRO_AGENTWCAG_SOURCE_REVISION`; if not set, verify the build runs from a git checkout where `HEAD` resolves cleanly.
+- If release packaging needs a pinned timestamp, set `LIBRO_AGENTWCAG_BUILD_TIMESTAMP` as a UTC ISO-8601 value; invalid or missing required provenance must fail fast rather than writing partial metadata.
 
 ## Validation Readiness
 
@@ -21,7 +24,7 @@ Use this playbook as the primary release-readiness document for `libro-agent-wca
 - Verify the real-scanner lane still retains artifacts for `14` days and uploads `wcag-report.sarif`.
 - Run dependency-audit lane (`pip-audit --strict` and `npm audit --audit-level=high`) with archived logs.
 - Capture and archive `--preflight-only` output, including `version_provenance`.
-- Verify `artifact-manifest.json` is generated for the release candidate and includes checksums for machine and markdown outputs.
+- Verify `artifact-manifest.json` is generated for the release candidate and includes checksums for machine and markdown outputs plus generator `product_version`, `source_revision`, and report schema metadata.
 - Run the adoption smoke flow in `docs/release/adoption-smoke-guide.md`.
 - Verify release notes and changelog entries match the tested behavior.
 

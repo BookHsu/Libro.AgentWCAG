@@ -1502,6 +1502,11 @@ class CliFlowTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         manifest = json.loads((output_dir / 'artifact-manifest.json').read_text(encoding='utf-8'))
         self.assertEqual(manifest['generator']['name'], 'run_accessibility_audit.py')
+        self.assertEqual(manifest['generator']['product_name'], 'Libro.AgentWCAG')
+        self.assertEqual(manifest['generator']['version'], '1.0.0')
+        self.assertEqual(manifest['generator']['product_version'], '0.1.0')
+        self.assertEqual(manifest['generator']['report_schema_version'], '1.0.0')
+        self.assertRegex(manifest['generator']['source_revision'], r'^[0-9a-f]{40}$')
         self.assertGreaterEqual(manifest['artifact_count'], 3)
         kinds = [item['kind'] for item in manifest['artifacts']]
         self.assertIn('machine-report-json', kinds)
