@@ -146,3 +146,8 @@ python .\scripts\package-release.py --output-dir .\dist\release --overwrite
 
 - 深入的技術文件目前多數仍以英文撰寫，中文首頁先負責安裝、發佈與管理入口整理。
 - 如果要把整套 release / testing / governance 文件全部改成雙語，下一步應該是先決定是 `README + docs/zh-TW/`，還是每份文件中英分檔。
+
+## Codex Automation
+
+- Use `docs/automations/test-plan-automation.md` as the execution spec for scheduled Codex test-development automation. This lane focuses only on test development, testing-plan updates, commits, and pushes.
+- Use `docs/automations/test-plan-review-policy.md` as the review policy before accepting automation-generated changes.
