@@ -35,15 +35,13 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('Automated', content)
 
     def test_manual_testing_assets_exist_for_non_automated_matrix_types(self) -> None:
-        manual = self._read(self.repo_root / 'docs' / 'testing' / 'manual-checklists.md')
-        scenarios = self._read(self.repo_root / 'docs' / 'testing' / 'scenario-assets.md')
-        nonfunctional = self._read(self.repo_root / 'docs' / 'testing' / 'nonfunctional-checks.md')
-        self.assertIn('Acceptance Test / UAT', manual)
-        self.assertIn('Beta Test', manual)
-        self.assertIn('Decision Table', scenarios)
-        self.assertIn('End-to-End Test', scenarios)
-        self.assertIn('Performance Test', nonfunctional)
-        self.assertIn('Concurrency Test', nonfunctional)
+        playbook = self._read(self.repo_root / 'docs' / 'testing' / 'testing-playbook.md')
+        self.assertIn('Acceptance Test / UAT', playbook)
+        self.assertIn('Beta Test', playbook)
+        self.assertIn('Decision Table', playbook)
+        self.assertIn('End-to-End Test', playbook)
+        self.assertIn('Performance Test', playbook)
+        self.assertIn('Concurrency Test', playbook)
 
     def test_pyproject_declares_repo_metadata_and_test_path(self) -> None:
         content = self._read(self.repo_root / 'pyproject.toml')
@@ -126,9 +124,7 @@ class RepoContractTests(unittest.TestCase):
             'TESTING-PLAN.md',
             'docs/automations/test-plan-automation.md',
             'docs/automations/test-plan-review-policy.md',
-            'docs/testing/manual-checklists.md',
-            'docs/testing/nonfunctional-checks.md',
-            'docs/testing/scenario-assets.md',
+            'docs/testing/testing-playbook.md',
             'pyproject.toml',
             'scripts/doctor-agent.py',
             'scripts/install-agent.ps1',
