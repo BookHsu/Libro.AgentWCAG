@@ -249,135 +249,135 @@
 
 #### 2.1 Workflow 事件與 Gate 形態
 
-- [ ] 新增 real-scanner workflow 檔案
-- [ ] 將 workflow `name` 固定為 `libro-agent-wcag-real-scanner`
-- [ ] 將主要 job `name` 固定為 `libro-agent-wcag-real-scanner`
-- [ ] workflow 加入 `pull_request` trigger
-- [ ] workflow 加入 `workflow_dispatch` trigger
-- [ ] 文件中明確記錄 branch protection required check 名稱為 `libro-agent-wcag-real-scanner`
-- [ ] 確保 workflow 與 job 名稱不會因 artifact/step 調整而改動
-- [ ] 在文件中明確定義此 lane 失敗即阻擋 PR merge
+- [x] 新增 real-scanner workflow 檔案
+- [x] 將 workflow `name` 固定為 `libro-agent-wcag-real-scanner`
+- [x] 將主要 job `name` 固定為 `libro-agent-wcag-real-scanner`
+- [x] workflow 加入 `pull_request` trigger
+- [x] workflow 加入 `workflow_dispatch` trigger
+- [x] 文件中明確記錄 branch protection required check 名稱為 `libro-agent-wcag-real-scanner`
+- [x] 確保 workflow 與 job 名稱不會因 artifact/step 調整而改動
+- [x] 在文件中明確定義此 lane 失敗即阻擋 PR merge
 
 #### 2.2 Scanner 工具安裝與版本固定
 
-- [ ] 固定 workflow 使用的 Python 版本
-- [ ] 固定 workflow 使用的 Node.js 版本
-- [ ] 固定 `@axe-core/cli` 版本字串
-- [ ] 固定 `lighthouse` 版本字串
-- [ ] 將 Python 版本設定寫入 workflow 單一位置
-- [ ] 將 Node.js 版本設定寫入 workflow 單一位置
-- [ ] 將 scanner 版本設定寫入 workflow 單一位置
-- [ ] workflow 加入 Python 依賴安裝 step
-- [ ] workflow 加入固定版本 scanner 安裝 step
-- [ ] workflow 加入版本輸出 step，記錄 Python/Node/axe/lighthouse 版本
-- [ ] 版本資訊納入 triage artifact 或 preflight log
-- [ ] 確保 scanner 升級只需修改單一設定區塊
+- [x] 固定 workflow 使用的 Python 版本
+- [x] 固定 workflow 使用的 Node.js 版本
+- [x] 固定 `@axe-core/cli` 版本字串
+- [x] 固定 `lighthouse` 版本字串
+- [x] 將 Python 版本設定寫入 workflow 單一位置
+- [x] 將 Node.js 版本設定寫入 workflow 單一位置
+- [x] 將 scanner 版本設定寫入 workflow 單一位置
+- [x] workflow 加入 Python 依賴安裝 step
+- [x] workflow 加入固定版本 scanner 安裝 step
+- [x] workflow 加入版本輸出 step，記錄 Python/Node/axe/lighthouse 版本
+- [x] 版本資訊納入 triage artifact 或 preflight log
+- [x] 確保 scanner 升級只需修改單一設定區塊
 
 #### 2.3 Live Scanner 環境要求
 
-- [ ] workflow runner 固定為 `ubuntu-latest`
-- [ ] 新增 browser availability 驗證 step
-- [ ] browser 驗證 step 只檢查可用性，不額外安裝 Chrome
-- [ ] 明確驗證 headless Chrome/Chromium 可供 Lighthouse 啟動
-- [ ] 明確驗證 `npx --no-install @axe-core/cli --version`
-- [ ] 明確驗證 `npx --no-install lighthouse --version`
-- [ ] 若 browser 不可用，workflow 直接 fail
-- [ ] 若 axe 不可用，workflow 直接 fail
-- [ ] 若 lighthouse 不可用，workflow 直接 fail
-- [ ] 將「browser/scanner 不可用即 fail」規則寫入文件
+- [x] workflow runner 固定為 `ubuntu-latest`
+- [x] 新增 browser availability 驗證 step
+- [x] browser 驗證 step 只檢查可用性，不額外安裝 Chrome
+- [x] 明確驗證 headless Chrome/Chromium 可供 Lighthouse 啟動
+- [x] 明確驗證 `npx --no-install @axe-core/cli --version`
+- [x] 明確驗證 `npx --no-install lighthouse --version`
+- [x] 若 browser 不可用，workflow 直接 fail
+- [x] 若 axe 不可用，workflow 直接 fail
+- [x] 若 lighthouse 不可用，workflow 直接 fail
+- [x] 將「browser/scanner 不可用即 fail」規則寫入文件
 
 #### 2.4 掃描目標與範圍
 
-- [ ] 將 live scanner target 固定為 `docs/testing/realistic-sample/mixed-findings.html`
-- [ ] workflow 內 target 路徑集中在單一 env 或單一 step 變數
-- [ ] 測試與文件共用同一個 target 路徑字串
-- [ ] 初期只掃描單一 fixture，不擴展第二個 target
-- [ ] 文件中註明此 target 旨在覆蓋 mixed findings / manual review / apply-fixes 行為
-- [ ] 若要新增第二個 target，必須另開 TODO，不在本輪順手加入
+- [x] 將 live scanner target 固定為 `docs/testing/realistic-sample/mixed-findings.html`
+- [x] workflow 內 target 路徑集中在單一 env 或單一 step 變數
+- [x] 測試與文件共用同一個 target 路徑字串
+- [x] 初期只掃描單一 fixture，不擴展第二個 target
+- [x] 文件中註明此 target 旨在覆蓋 mixed findings / manual review / apply-fixes 行為
+- [x] 若要新增第二個 target，必須另開 TODO，不在本輪順手加入
 
 #### 2.5 Workflow 內的執行步驟
 
-- [ ] 加入 repository checkout step
-- [ ] 加入 Python setup step
-- [ ] 加入 Node.js setup step
-- [ ] 加入 Python dependencies install step
-- [ ] 加入固定版本 scanner install step
-- [ ] 加入 browser availability verify step
-- [ ] 加入 scanner preflight step
-- [ ] scanner preflight step 執行 `--preflight-only`
-- [ ] 加入 live audit step
-- [ ] live audit step 指向固定 mixed-findings target
-- [ ] live audit step 產出 `wcag-report.json`
-- [ ] live audit step 產出 `wcag-report.md`
-- [ ] live audit step 產出 `wcag-report.sarif`
-- [ ] live audit step 產出 raw scanner outputs
-- [ ] live audit step 產出 capability negotiation 相關 artifact
-- [ ] 加入 artifact upload step
-- [ ] 任一步驟非零退出時 job 直接 fail，不做 fallback
+- [x] 加入 repository checkout step
+- [x] 加入 Python setup step
+- [x] 加入 Node.js setup step
+- [x] 加入 Python dependencies install step
+- [x] 加入固定版本 scanner install step
+- [x] 加入 browser availability verify step
+- [x] 加入 scanner preflight step
+- [x] scanner preflight step 執行 `--preflight-only`
+- [x] 加入 live audit step
+- [x] live audit step 指向固定 mixed-findings target
+- [x] live audit step 產出 `wcag-report.json`
+- [x] live audit step 產出 `wcag-report.md`
+- [x] live audit step 產出 `wcag-report.sarif`
+- [x] live audit step 產出 raw scanner outputs
+- [x] live audit step 產出 capability negotiation 相關 artifact
+- [x] 加入 artifact upload step
+- [x] 任一步驟非零退出時 job 直接 fail，不做 fallback
 
 #### 2.6 Artifact 與 Triage 輸出
 
-- [ ] upload `axe.raw.json`
-- [ ] upload `lighthouse.raw.json`
-- [ ] upload `normalized-summary.live.json`
-- [ ] upload `capability-negotiation.json`
-- [ ] upload `wcag-report.json`
-- [ ] upload `wcag-report.md`
-- [ ] upload `wcag-report.sarif`
-- [ ] upload preflight log 或版本輸出 artifact
-- [ ] artifact retention 固定為 `14` 天
-- [ ] upload step 使用 `if: always()` 以保留失敗時 triage 資訊
-- [ ] artifact 名稱在 workflow 與文件中保持一致
-- [ ] 文件列出每個 artifact 的用途
+- [x] upload `axe.raw.json`
+- [x] upload `lighthouse.raw.json`
+- [x] upload `normalized-summary.live.json`
+- [x] upload `capability-negotiation.json`
+- [x] upload `wcag-report.json`
+- [x] upload `wcag-report.md`
+- [x] upload `wcag-report.sarif`
+- [x] upload preflight log 或版本輸出 artifact
+- [x] artifact retention 固定為 `14` 天
+- [x] upload step 使用 `if: always()` 以保留失敗時 triage 資訊
+- [x] artifact 名稱在 workflow 與文件中保持一致
+- [x] 文件列出每個 artifact 的用途
 
 #### 2.7 Fail-Fast 與阻擋條件
 
-- [ ] 定義 Python/Node/scanner install 失敗即 fail
-- [ ] 定義 browser verification 失敗即 fail
-- [ ] 定義 scanner preflight 失敗即 fail
-- [ ] 定義 axe 執行失敗即 fail
-- [ ] 定義 lighthouse 執行失敗即 fail
-- [ ] 定義 report artifact 缺失即 fail
-- [ ] 定義 artifact upload step 自身失敗即 fail
-- [ ] 明確禁止 mock/fallback 取代 live scanner gate
-- [ ] 文件化 fail-fast matrix 與對應 triage artifact
+- [x] 定義 Python/Node/scanner install 失敗即 fail
+- [x] 定義 browser verification 失敗即 fail
+- [x] 定義 scanner preflight 失敗即 fail
+- [x] 定義 axe 執行失敗即 fail
+- [x] 定義 lighthouse 執行失敗即 fail
+- [x] 定義 report artifact 缺失即 fail
+- [x] 定義 artifact upload step 自身失敗即 fail
+- [x] 明確禁止 mock/fallback 取代 live scanner gate
+- [x] 文件化 fail-fast matrix 與對應 triage artifact
 
 #### 2.8 與現有 Deterministic Lane 的關係
 
-- [ ] 保留既有 deterministic lane workflow 不刪除
-- [ ] 文件明確區分 deterministic lane 與 live lane 用途
-- [ ] 確保 deterministic lane 不是 required check
-- [ ] 確保 `libro-agent-wcag-real-scanner` 是 required check
-- [ ] 確保兩條 lane 的 artifact 名稱不衝突
-- [ ] 確保 reviewer 能從名稱分辨 mock lane 與 live lane
-- [ ] 補測試或文件以防止之後把兩條 lane 混成同一條
+- [x] 保留既有 deterministic lane workflow 不刪除
+- [x] 文件明確區分 deterministic lane 與 live lane 用途
+- [x] 確保 deterministic lane 不是 required check
+- [x] 確保 `libro-agent-wcag-real-scanner` 是 required check
+- [x] 確保兩條 lane 的 artifact 名稱不衝突
+- [x] 確保 reviewer 能從名稱分辨 mock lane 與 live lane
+- [x] 補測試或文件以防止之後把兩條 lane 混成同一條
 
 #### 2.9 文件與 Repo 契約同步
 
-- [ ] 更新 `docs/release/real-scanner-ci-lane.md`
-- [ ] 在文件中寫明 workflow / job / required check 名稱
-- [ ] 在文件中寫明 runner 為 `ubuntu-latest`
-- [ ] 在文件中寫明 browser 策略為「驗證可用，不額外安裝」
-- [ ] 在文件中寫明 target 固定為 mixed-findings fixture
-- [ ] 在文件中寫明 artifact retention 為 `14` 天
-- [ ] 在文件中寫明固定保留 `wcag-report.sarif`
-- [ ] 更新 `docs/release/resilient-run-patterns.md`
+- [x] 更新 `docs/release/real-scanner-ci-lane.md`
+- [x] 在文件中寫明 workflow / job / required check 名稱
+- [x] 在文件中寫明 runner 為 `ubuntu-latest`
+- [x] 在文件中寫明 browser 策略為「驗證可用，不額外安裝」
+- [x] 在文件中寫明 target 固定為 mixed-findings fixture
+- [x] 在文件中寫明 artifact retention 為 `14` 天
+- [x] 在文件中寫明固定保留 `wcag-report.sarif`
+- [x] 更新 `docs/release/resilient-run-patterns.md`
 - [ ] 視需要更新 `docs/release/release-playbook.md`
 - [ ] 視需要更新 `README.md`
-- [ ] 確保文件反映「PR gate、live-only、scanner 不可用即 fail」最終決策
+- [x] 確保文件反映「PR gate、live-only、scanner 不可用即 fail」最終決策
 
 #### 2.10 測試與驗證
 
-- [ ] 更新 `test_real_scanner_ci_lane.py`
-- [ ] 新增/更新 workflow 名稱與 job 名稱 contract 測試
-- [ ] 新增/更新 required check 名稱 contract 測試
-- [ ] 新增/更新 artifact retention contract 測試
-- [ ] 新增/更新 `wcag-report.sarif` artifact contract 測試
-- [ ] 視需要更新 `test_release_docs.py`
-- [ ] 視需要更新 workflow contract 測試
-- [ ] 驗證 workflow 路徑與 repo 內實際檔案一致
-- [ ] 驗證 artifact 名稱與文件一致
-- [ ] 驗證 required check 名稱與 workflow 定義一致
+- [x] 更新 `test_real_scanner_ci_lane.py`
+- [x] 新增/更新 workflow 名稱與 job 名稱 contract 測試
+- [x] 新增/更新 required check 名稱 contract 測試
+- [x] 新增/更新 artifact retention contract 測試
+- [x] 新增/更新 `wcag-report.sarif` artifact contract 測試
+- [x] 視需要更新 `test_release_docs.py`
+- [x] 視需要更新 workflow contract 測試
+- [x] 驗證 workflow 路徑與 repo 內實際檔案一致
+- [x] 驗證 artifact 名稱與文件一致
+- [x] 驗證 required check 名稱與 workflow 定義一致
 
 #### 2.11 建議實作順序
 

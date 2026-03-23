@@ -56,14 +56,3 @@ jobs:
           mkdir -p .ci/scanner-toolchain
           npm install --prefix .ci/scanner-toolchain --package-lock-only @axe-core/cli@4.10.2 lighthouse@12.3.0
           npm audit --prefix .ci/scanner-toolchain --audit-level=high
-
-  real-scanner-lane:
-    if: ${{ vars.LIBRO_RUN_REAL_SCANNERS == '1' }}
-    needs: validate
-    uses: ./.github/workflows/reusable-real-scanner-lane.yml
-    with:
-      enabled: true
-      target: docs/testing/realistic-sample/mixed-findings.html
-      output-dir: out/real-scanner
-      python-version: "3.12"
-      node-version: "20"
