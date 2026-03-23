@@ -438,60 +438,60 @@
 
 #### 3.1 單一版本來源與 provenance 收斂
 
-- [ ] 決定版本單一來源固定為 `pyproject.toml`
-- [ ] 盤點 repo 內所有目前會顯示或應顯示版本資訊的輸出點
-- [ ] 新增共用版本讀取 helper，避免各腳本重複解析版本
+- [x] 決定版本單一來源固定為 `pyproject.toml`
+- [x] 盤點 repo 內所有目前會顯示或應顯示版本資訊的輸出點
+- [x] 新增共用版本讀取 helper，避免各腳本重複解析版本
 - [ ] 定義版本字串格式與 tag 格式關係
 - [ ] 定義 dev version、release version、hotfix version 的表達方式
-- [ ] 定義 source revision / commit SHA 的輸出策略
-- [ ] 定義 build timestamp / packaged timestamp 的輸出策略
-- [ ] 定義缺版本資訊時 CLI 的 fail-fast 行為
+- [x] 定義 source revision / commit SHA 的輸出策略
+- [x] 定義 build timestamp / packaged timestamp 的輸出策略
+- [x] 定義缺版本資訊時 CLI 的 fail-fast 行為
 - [ ] 定義缺 provenance 資訊時 release workflow 的 fail-fast 行為
-- [ ] 補版本與 provenance 的回歸測試
+- [x] 補版本與 provenance 的回歸測試
 
 #### 3.2 Installer 版本資訊注入
 
-- [ ] 盤點 `scripts/install-agent.py` 現有輸出與 manifest 欄位
-- [ ] 在 installer 成功輸出中加入 `product_name`
-- [ ] 在 installer 成功輸出中加入 `product_version`
-- [ ] 在 installer 成功輸出中加入 `source_revision`
+- [x] 盤點 `scripts/install-agent.py` 現有輸出與 manifest 欄位
+- [x] 在 installer 成功輸出中加入 `product_name`
+- [x] 在 installer 成功輸出中加入 `product_version`
+- [x] 在 installer 成功輸出中加入 `source_revision`
 - [ ] 在 installer 成功輸出中加入 `install_timestamp`
-- [ ] 在 `install-manifest.json` 中加入 `product_version`
-- [ ] 在 `install-manifest.json` 中加入 `source_revision`
+- [x] 在 `install-manifest.json` 中加入 `product_version`
+- [x] 在 `install-manifest.json` 中加入 `source_revision`
 - [ ] 在 `install-manifest.json` 中加入 `packaged_at` 或等價欄位
-- [ ] 確認 `--agent all` 的 manifest version 行為一致
+- [x] 確認 `--agent all` 的 manifest version 行為一致
 - [ ] 更新 wrapper scripts 成功訊息以顯示版本
-- [ ] 為 installer version injection 補測試
-- [ ] 為 manifest version contract 補測試
+- [x] 為 installer version injection 補測試
+- [x] 為 manifest version contract 補測試
 
 #### 3.3 Doctor 版本與完整性契約
 
-- [ ] 盤點 `scripts/doctor-agent.py` 現有 JSON 輸出欄位
-- [ ] 在 doctor 輸出加入 `product_version`
+- [x] 盤點 `scripts/doctor-agent.py` 現有 JSON 輸出欄位
+- [x] 在 doctor 輸出加入 `product_version`
 - [ ] 在 doctor 輸出加入 `installed_version`
-- [ ] 在 doctor 輸出加入 `source_revision`
-- [ ] 在 doctor 輸出加入 manifest provenance 資訊
-- [ ] 定義 doctor 對 version mismatch 的錯誤行為
-- [ ] 定義 doctor 對 manifest 缺 provenance 欄位的錯誤行為
+- [x] 在 doctor 輸出加入 `source_revision`
+- [x] 在 doctor 輸出加入 manifest provenance 資訊
+- [x] 定義 doctor 對 version mismatch 的錯誤行為
+- [x] 定義 doctor 對 manifest 缺 provenance 欄位的錯誤行為
 - [ ] 定義 doctor 對 partial install / corrupted install 的錯誤行為
-- [ ] 將 `--verify-manifest-integrity` 擴充為同時驗證版本一致性
+- [x] 將 `--verify-manifest-integrity` 擴充為同時驗證版本一致性
 - [ ] 更新 doctor 文件以說明 healthy / unhealthy 判準
-- [ ] 為 doctor version consistency 補 regression tests
-- [ ] 為 manifest mismatch 補 regression tests
+- [x] 為 doctor version consistency 補 regression tests
+- [x] 為 manifest mismatch 補 regression tests
 
 #### 3.4 Report artifacts 版本資訊注入
 
-- [ ] 盤點 `run_accessibility_audit.py` 產出的 JSON / Markdown / SARIF / manifest 輸出
-- [ ] 在 JSON report 中加入 tool version 欄位
-- [ ] 在 Markdown report 中加入版本與 provenance 區塊
-- [ ] 在 SARIF 中加入 tool version 或對應 metadata
-- [ ] 在 `artifact-manifest.json` 中加入產品版本與 source revision
-- [ ] 在 `summary-only` 輸出中加入最小必要版本資訊
-- [ ] 定義 schema version 與 product version 的對應說明
+- [x] 盤點 `run_accessibility_audit.py` 產出的 JSON / Markdown / SARIF / manifest 輸出
+- [x] 在 JSON report 中加入 tool version 欄位
+- [x] 在 Markdown report 中加入版本與 provenance 區塊
+- [x] 在 SARIF 中加入 tool version 或對應 metadata
+- [x] 在 `artifact-manifest.json` 中加入產品版本與 source revision
+- [x] 在 `summary-only` 輸出中加入最小必要版本資訊
+- [x] 定義 schema version 與 product version 的對應說明
 - [ ] 定義 timestamp 欄位如何避免 snapshot 測試漂移
-- [ ] 更新 sample artifacts 以反映新 metadata
-- [ ] 為 report version injection 補 regression tests
-- [ ] 為 artifact-manifest provenance 補 regression tests
+- [x] 更新 sample artifacts 以反映新 metadata
+- [x] 為 report version injection 補 regression tests
+- [x] 為 artifact-manifest provenance 補 regression tests
 
 #### 3.5 Release asset contract 設計
 
@@ -730,21 +730,21 @@
 允許修改檔案：
 
 - [ ] `pyproject.toml`
-- [ ] `skills/libro-agent-wcag/scripts/shared_constants.py`
-- [ ] `skills/libro-agent-wcag/scripts/report_artifacts.py`
-- [ ] `scripts/install-agent.py`
-- [ ] `scripts/doctor-agent.py`
-- [ ] `skills/libro-agent-wcag/scripts/tests/`
-- [ ] `README.md`
-- [ ] `docs/release/release-playbook.md`
+- [x] `skills/libro-agent-wcag/scripts/shared_constants.py`
+- [x] `skills/libro-agent-wcag/scripts/report_artifacts.py`
+- [x] `scripts/install-agent.py`
+- [x] `scripts/doctor-agent.py`
+- [x] `skills/libro-agent-wcag/scripts/tests/`
+- [x] `README.md`
+- [x] `docs/release/release-playbook.md`
 
 主要工作：
 
-- [ ] 盤點目前版本讀取與 provenance 來源
-- [ ] 新增共用 helper，統一讀取 `product_version`
-- [ ] 定義 `source_revision`、`build_timestamp` 或等價欄位
-- [ ] 定義缺版本或缺 provenance 時的 fail-fast 行為
-- [ ] 補單元測試與 contract tests
+- [x] 盤點目前版本讀取與 provenance 來源
+- [x] 新增共用 helper，統一讀取 `product_version`
+- [x] 定義 `source_revision`、`build_timestamp` 或等價欄位
+- [x] 定義缺版本或缺 provenance 時的 fail-fast 行為
+- [x] 補單元測試與 contract tests
 
 禁止事項：
 
@@ -754,9 +754,9 @@
 
 完成證據：
 
-- [ ] 有共用 version/provenance helper 可被後續批次重用
-- [ ] 測試可證明版本來源不再分散解析
-- [ ] 文件已寫明版本與 provenance 來源
+- [x] 有共用 version/provenance helper 可被後續批次重用
+- [x] 測試可證明版本來源不再分散解析
+- [x] 文件已寫明版本與 provenance 來源
 
 建議驗證命令：
 
@@ -773,22 +773,22 @@
 - [ ] `scripts/install-agent.py`
 - [ ] `scripts/install-agent.ps1`
 - [ ] `scripts/install-agent.sh`
-- [ ] `scripts/doctor-agent.py`
-- [ ] `skills/libro-agent-wcag/scripts/run_accessibility_audit.py`
-- [ ] `skills/libro-agent-wcag/scripts/report_artifacts.py`
-- [ ] `docs/testing/realistic-sample/artifacts/`
-- [ ] `skills/libro-agent-wcag/scripts/tests/`
-- [ ] `README.md`
-- [ ] `docs/release/adoption-smoke-guide.md`
+- [x] `scripts/doctor-agent.py`
+- [x] `skills/libro-agent-wcag/scripts/run_accessibility_audit.py`
+- [x] `skills/libro-agent-wcag/scripts/report_artifacts.py`
+- [x] `docs/testing/realistic-sample/artifacts/`
+- [x] `skills/libro-agent-wcag/scripts/tests/`
+- [x] `README.md`
+- [x] `docs/release/adoption-smoke-guide.md`
 
 主要工作：
 
-- [ ] installer success output 補 `product_version`、`source_revision`
-- [ ] `install-manifest.json` 補版本與 provenance 欄位
-- [ ] doctor JSON 輸出補版本一致性資訊
-- [ ] report JSON / Markdown / SARIF / artifact manifest 補版本 metadata
-- [ ] `summary-only` 輸出補最小必要版本資訊
-- [ ] 更新 sample artifacts 與 snapshots
+- [x] installer success output 補 `product_version`、`source_revision`
+- [x] `install-manifest.json` 補版本與 provenance 欄位
+- [x] doctor JSON 輸出補版本一致性資訊
+- [x] report JSON / Markdown / SARIF / artifact manifest 補版本 metadata
+- [x] `summary-only` 輸出補最小必要版本資訊
+- [x] 更新 sample artifacts 與 snapshots
 
 禁止事項：
 
@@ -798,9 +798,9 @@
 
 完成證據：
 
-- [ ] installer、doctor、report 都能輸出一致版本資訊
-- [ ] sample artifacts 已反映新欄位
-- [ ] regression tests 通過
+- [x] installer、doctor、report 都能輸出一致版本資訊
+- [x] sample artifacts 已反映新欄位
+- [x] regression tests 通過
 
 建議驗證命令：
 
