@@ -573,42 +573,42 @@
 
 #### 3.10 One-click installer 體驗
 
-- [ ] 定義「一鍵安裝」的正式交付方式
-- [ ] 決定是否提供 `install-latest.ps1`
-- [ ] 決定是否提供 `install-latest.sh`
-- [ ] 定義 bootstrap script 支援的 flags
-- [ ] 定義 bootstrap script 的 latest version resolution 行為
-- [ ] 定義 bootstrap script 的指定版本下載行為
-- [ ] 實作下載 release asset
-- [ ] 實作 checksum 驗證
-- [ ] 實作解壓到 temp dir
-- [ ] 實作呼叫 installer
-- [ ] 實作失敗後 temp 清理
+- [x] 定義「一鍵安裝」的正式交付方式
+- [x] 決定是否提供 `install-latest.ps1`
+- [x] 決定是否提供 `install-latest.sh`
+- [x] 定義 bootstrap script 支援的 flags
+- [x] 定義 bootstrap script 的 latest version resolution 行為
+- [x] 定義 bootstrap script 的指定版本下載行為
+- [x] 實作下載 release asset
+- [x] 實作 checksum 驗證
+- [x] 實作解壓到 temp dir
+- [x] 實作呼叫 installer
+- [x] 實作失敗後 temp 清理
 - [ ] 實作成功後呼叫 doctor 或提示 doctor 驗證
 - [ ] 定義 Python 缺失時的錯誤訊息
 - [ ] 定義權限不足時的錯誤訊息
 - [ ] 定義 network failure 時的錯誤訊息
-- [ ] 為 bootstrap scripts 補測試或最少 smoke validation
+- [x] 為 bootstrap scripts 補測試或最少 smoke validation
 
 #### 3.11 Clean environment adoption smoke
 
-- [ ] 定義 clean environment 的正式支援矩陣
-- [ ] 在文件中列出 Windows 支援條件
-- [ ] 在文件中列出 macOS 支援條件
-- [ ] 在文件中列出 Linux 支援條件
-- [ ] 定義 clean smoke 必須從 release asset 開始，不得偷用 repo 相對路徑
-- [ ] 設計 release-consumer smoke 流程
-- [ ] 新增 `scripts/run-release-adoption-smoke.py`
-- [ ] 支援 `--version`
-- [ ] 支援 `--agent`
-- [ ] 支援 `--asset-dir` 或等價離線來源
-- [ ] 支援 `--keep-temp`
-- [ ] 產出 `smoke-summary.json`
-- [ ] 驗證 download -> checksum -> install -> doctor -> audit -> uninstall 全流程
-- [ ] 定義 smoke 成功判準
-- [ ] 定義 smoke 失敗時必保留的 triage 資訊
+- [x] 定義 clean environment 的正式支援矩陣
+- [x] 在文件中列出 Windows 支援條件
+- [x] 在文件中列出 macOS 支援條件
+- [x] 在文件中列出 Linux 支援條件
+- [x] 定義 clean smoke 必須從 release asset 開始，不得偷用 repo 相對路徑
+- [x] 設計 release-consumer smoke 流程
+- [x] 新增 `scripts/run-release-adoption-smoke.py`
+- [x] 支援 `--version`
+- [x] 支援 `--agent`
+- [x] 支援 `--asset-dir` 或等價離線來源
+- [x] 支援 `--keep-temp`
+- [x] 產出 `smoke-summary.json`
+- [x] 驗證 download -> checksum -> install -> doctor -> audit -> uninstall 全流程
+- [x] 定義 smoke 成功判準
+- [x] 定義 smoke 失敗時必保留的 triage 資訊
 - [ ] 將 clean smoke 接入 release workflow
-- [ ] 為 smoke summary contract 補測試
+- [x] 為 smoke summary contract 補測試
 
 #### 3.12 Release workflow 與 rollback runbook
 
@@ -651,12 +651,12 @@
 
 #### 3.14 文件整併與入口收斂
 
-- [ ] 更新 `README.md` 的產品化入口段落
+- [x] 更新 `README.md` 的產品化入口段落
 - [ ] 在 `README.md` 補從 GitHub Release 安裝的最短路徑
 - [ ] 在 `README.md` 補 install -> doctor -> first audit -> uninstall quickstart
 - [ ] 更新 `docs/release/release-playbook.md` 以反映 M39 gate
-- [ ] 更新 `docs/release/adoption-smoke-guide.md`
-- [ ] 更新 `docs/release/supported-environments.md`
+- [x] 更新 `docs/release/adoption-smoke-guide.md`
+- [x] 更新 `docs/release/supported-environments.md`
 - [ ] 視需要新增 `docs/release/README.md` 或 release docs 索引
 - [ ] 補 release-consumer smoke 與 repo-native smoke 的差異說明
 - [ ] 收斂重複規則，避免同一決策散在多份文件
@@ -665,13 +665,13 @@
 #### 3.15 測試矩陣與回歸覆蓋
 
 - [ ] 更新 `TESTING-PLAN.md`，加入 M39 測試類別
-- [ ] 新增 package manifest contract tests
-- [ ] 新增 release asset naming tests
-- [ ] 新增 bootstrap install tests
+- [x] 新增 package manifest contract tests
+- [x] 新增 release asset naming tests
+- [x] 新增 bootstrap install tests
 - [ ] 新增 version injection tests
 - [ ] 新增 doctor version consistency tests
-- [ ] 新增 release smoke tests
-- [ ] 新增 checksum contract tests
+- [x] 新增 release smoke tests
+- [x] 新增 checksum contract tests
 - [ ] 新增 workflow contract tests
 - [ ] 新增 non-happy-path 測試
 - [ ] 為 snapshot 中的 timestamp / version 欄位建立 normalization 策略
@@ -854,21 +854,21 @@
 
 允許修改檔案：
 
-- [ ] `scripts/install-latest.ps1`
-- [ ] `scripts/install-latest.sh`
-- [ ] `scripts/run-release-adoption-smoke.py`
-- [ ] `docs/release/adoption-smoke-guide.md`
-- [ ] `docs/release/supported-environments.md`
-- [ ] `README.md`
-- [ ] `skills/libro-agent-wcag/scripts/tests/`
+- [x] `scripts/install-latest.ps1`
+- [x] `scripts/install-latest.sh`
+- [x] `scripts/run-release-adoption-smoke.py`
+- [x] `docs/release/adoption-smoke-guide.md`
+- [x] `docs/release/supported-environments.md`
+- [x] `README.md`
+- [x] `skills/libro-agent-wcag/scripts/tests/`
 
 主要工作：
 
-- [ ] 實作 latest / pinned version 下載流程
-- [ ] 串接 checksum verify -> install -> doctor -> audit -> uninstall
-- [ ] 產出 `smoke-summary.json`
-- [ ] 定義 clean environment 成功判準
-- [ ] 補 bootstrap / smoke tests
+- [x] 實作 latest / pinned version 下載流程
+- [x] 串接 checksum verify -> install -> doctor -> audit -> uninstall
+- [x] 產出 `smoke-summary.json`
+- [x] 定義 clean environment 成功判準
+- [x] 補 bootstrap / smoke tests
 
 禁止事項：
 
@@ -878,9 +878,9 @@
 
 完成證據：
 
-- [ ] clean release smoke 可在 release asset 路徑下成功執行
-- [ ] 失敗時能保留 triage artifacts
-- [ ] 文件已能描述 release-consumer flow
+- [x] clean release smoke 可在 release asset 路徑下成功執行
+- [x] 失敗時能保留 triage artifacts
+- [x] 文件已能描述 release-consumer flow
 
 建議驗證命令：
 
@@ -933,39 +933,39 @@
 
 #### 3.25 AI 執行順序
 
-- [ ] 先執行 Batch A
-- [ ] 再執行 Batch B
-- [ ] 再執行 Batch C
-- [ ] 再執行 Batch D
+- [x] 先執行 Batch A
+- [x] 再執行 Batch B
+- [x] 再執行 Batch C
+- [x] 再執行 Batch D
 - [ ] 最後執行 Batch E
-- [ ] 每個 batch 完成後都要更新相鄰文件與測試
+- [x] 每個 batch 完成後都要更新相鄰文件與測試
 
 #### 3.26 文件先行 / Code 先行原則
 
 文件先行：
 
-- [ ] release asset 清單與命名規則
-- [ ] checksum / release manifest 格式
+- [x] release asset 清單與命名規則
+- [x] checksum / release manifest 格式
 - [ ] GA blocker / non-blocker 定義
 - [ ] rollback 禁止事項與 hotfix 原則
-- [ ] clean environment 成功判準
+- [x] clean environment 成功判準
 
 Code 先行：
 
-- [ ] version/provenance helper
-- [ ] installer / doctor / report version injection
-- [ ] `scripts/package-release.py`
-- [ ] `scripts/install-latest.ps1`
-- [ ] `scripts/install-latest.sh`
-- [ ] `scripts/run-release-adoption-smoke.py`
+- [x] version/provenance helper
+- [x] installer / doctor / report version injection
+- [x] `scripts/package-release.py`
+- [x] `scripts/install-latest.ps1`
+- [x] `scripts/install-latest.sh`
+- [x] `scripts/run-release-adoption-smoke.py`
 - [ ] `.github/workflows/release.yml`
 
 同步收斂：
 
-- [ ] `README.md`
-- [ ] `docs/release/release-playbook.md`
-- [ ] `docs/release/adoption-smoke-guide.md`
-- [ ] `docs/release/supported-environments.md`
+- [x] `README.md`
+- [x] `docs/release/release-playbook.md`
+- [x] `docs/release/adoption-smoke-guide.md`
+- [x] `docs/release/supported-environments.md`
 - [ ] `TESTING-PLAN.md`
 
 ### 4. 提升高價值但目前仍屬 manual/assisted 的 remediation 能力

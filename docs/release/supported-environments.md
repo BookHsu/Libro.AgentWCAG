@@ -18,6 +18,13 @@ This matrix defines the currently supported runtime and scanner prerequisites.
 - Node.js and `npx` are installed and callable from terminal.
 - Network and local file permissions allow scanner invocation on target files.
 
+## Clean release-consumer support
+
+- Windows: PowerShell with `Expand-Archive`, `Get-FileHash`, and `python` in `PATH`.
+- macOS: POSIX shell plus `python` in `PATH`; release bootstrap uses Python stdlib for download, zip extraction, and checksum verification.
+- Linux: POSIX shell plus `python` in `PATH`; release bootstrap uses Python stdlib for download, zip extraction, and checksum verification.
+- All clean-smoke environments must allow temporary-directory write access for bundle extraction, installer staging, audit artifacts, and smoke-summary output.
+
 ## Dependency lock and version-capture guidance
 
 ### Local workflow

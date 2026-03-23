@@ -65,7 +65,10 @@ class ReleasePackagingTests(unittest.TestCase):
             "libro-agent-wcag-0.1.0-copilot.zip",
             "libro-agent-wcag-0.1.0-all-in-one.zip",
         }
-        self.assertEqual(expected_bundles, asset_names)
+        self.assertTrue(expected_bundles.issubset(asset_names))
+        self.assertIn("libro-agent-wcag-0.1.0-install-latest.ps1", asset_names)
+        self.assertIn("libro-agent-wcag-0.1.0-install-latest.sh", asset_names)
+        self.assertIn("libro-agent-wcag-0.1.0-run-release-adoption-smoke.py", asset_names)
         self.assertEqual(manifest["checksum_file"], checksum_path.name)
         self.assertEqual(manifest["latest_pointer"], latest_path.name)
 
@@ -106,6 +109,9 @@ class ReleasePackagingTests(unittest.TestCase):
             "libro-agent-wcag-0.1.0-gemini.zip",
             "libro-agent-wcag-0.1.0-copilot.zip",
             "libro-agent-wcag-0.1.0-all-in-one.zip",
+            "libro-agent-wcag-0.1.0-install-latest.ps1",
+            "libro-agent-wcag-0.1.0-install-latest.sh",
+            "libro-agent-wcag-0.1.0-run-release-adoption-smoke.py",
             "libro-agent-wcag-0.1.0-release-manifest.json",
             "libro-agent-wcag-0.1.0-sha256sums.txt",
             "latest-release.json",
