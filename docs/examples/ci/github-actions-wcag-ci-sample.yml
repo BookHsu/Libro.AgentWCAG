@@ -100,14 +100,3 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: out/ci/wcag-report.sarif
-
-  real-scanner-lane:
-    if: ${{ vars.LIBRO_RUN_REAL_SCANNERS == '1' }}
-    needs: wcag-audit
-    uses: ./.github/workflows/reusable-real-scanner-lane.yml
-    with:
-      enabled: true
-      target: docs/testing/realistic-sample/mixed-findings.html
-      output-dir: out/real-scanner
-      python-version: "3.12"
-      node-version: "20"

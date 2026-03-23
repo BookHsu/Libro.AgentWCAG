@@ -1,51 +1,92 @@
-# Real-Scanner CI Lane Productization
+# Real-Scanner CI Lane
 
-This guide defines the reusable optional real-scanner lane for GitHub Actions and the artifact contract used for triage handoff.
+This guide defines the live real-scanner GitHub Actions lane used as the formal PR gate for scanner-backed validation.
 
-## Reusable workflow template
+## Workflow contract
 
-Use [`.github/workflows/reusable-real-scanner-lane.yml`](../../.github/workflows/reusable-real-scanner-lane.yml) through `workflow_call`.
+- Workflow path: [`.github/workflows/libro-agent-wcag-real-scanner.yml`](../../.github/workflows/libro-agent-wcag-real-scanner.yml)
+- Workflow name: `libro-agent-wcag-real-scanner`
+- Job name: `libro-agent-wcag-real-scanner`
+- Trigger events:
+  - `pull_request`
+  - `workflow_dispatch`
+- Required check name for branch protection: `libro-agent-wcag-real-scanner`
 
-Key behaviors:
+This lane is live-only. It does not fall back to mock scanner payloads.
 
-- Optional gate: lane only runs when caller passes `enabled: true`.
-- Matrix lane modes: `live` and `fallback`.
-- Clear skip semantics:
-  - `live` runs only when both `@axe-core/cli` and `lighthouse` are available.
-  - `fallback` always runs with mock fixtures to keep report contract checks deterministic.
+## Runtime policy
 
-## Evidence artifact conventions
+- Runner: `ubuntu-latest`
+- Browser strategy: verify a supported Chrome/Chromium binary is available on the runner; do not install Chrome in the workflow
+- Fixed scanner versions:
+  - `@axe-core/cli@4.10.2`
+  - `lighthouse@12.3.0`
+- Fixed target:
+  - `docs/testing/realistic-sample/mixed-findings.html`
 
-Store lane evidence under one root (`out/real-scanner` by default):
+## Fail-fast policy
 
-- Raw scanner logs:
+The workflow fails immediately when any of the following happens:
+
+- Python or Node.js setup fails
+- fixed scanner toolchain installation fails
+- browser availability verification fails
+- scanner preflight fails
+- `axe` execution fails
+- `lighthouse` execution fails
+- expected report artifacts are not produced
+- artifact upload step fails
+
+Mock payloads and deterministic fallback are not permitted in this PR gate.
+
+## Artifact contract
+
+Store lane evidence under `out/real-scanner`.
+
+Always retain artifacts for `14` days.
+
+Expected triage artifacts:
+
+- raw logs:
+  - `raw/python.version.log`
+  - `raw/node.version.log`
   - `raw/axe.version.log`
   - `raw/lighthouse.version.log`
-  - `raw/scanner-unavailable.log` (only when real scanners are unavailable)
-- Normalized summaries:
+  - `raw/browser.version.log`
+- preflight:
+  - `preflight.json`
+- normalized summary:
   - `normalized-summary.live.json`
-  - `normalized-summary.fallback.json`
-- Capability negotiation:
+- capability negotiation:
   - `capability-negotiation.json`
+- normalized report outputs:
+  - `live/wcag-report.json`
+  - `live/wcag-report.md`
+  - `live/wcag-report.sarif`
+  - `live/artifact-manifest.json`
 
-`capability-negotiation.json` is the handoff index artifact and must include:
+The uploaded GitHub artifact name is `libro-agent-wcag-real-scanner-artifacts`.
 
-- `lane_mode` (`live` or `fallback`)
-- `scanners_available` (`true`/`false`)
-- `matrix_modes` (`["live", "fallback"]`)
+## Capability negotiation artifact
+
+`capability-negotiation.json` acts as the handoff index and must include:
+
+- `lane_mode`
+- `scanners_available`
+- `required_check`
+- `target`
 - `summary_artifacts`
+- `report_artifacts`
 - `raw_scanner_logs`
 
-## Triage handoff references
+## Triage handoff
 
 When opening a triage item, include:
 
-1. `capability-negotiation.json` path
-2. Chosen summary artifact path (`normalized-summary.live.json` or `normalized-summary.fallback.json`)
-3. Any raw scanner logs used for decision context
+1. `capability-negotiation.json`
+2. `normalized-summary.live.json`
+3. `live/wcag-report.json`
+4. `live/wcag-report.sarif`
+5. any raw version/browser logs needed for runtime diagnosis
 
-This keeps local `--summary-only` output expectations and CI lane outputs aligned for review.
-
-## Sample caller workflow
-
-See [`docs/examples/ci/github-actions-wcag-ci-sample.yml`](../examples/ci/github-actions-wcag-ci-sample.yml) for a full pipeline that calls the reusable lane.
+This keeps PR review, code scanning, and local reproduction aligned.
