@@ -15,6 +15,14 @@ class CliFlowTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.repo_root = Path(__file__).resolve().parents[4]
+        cls.test_workspace_root = cls.repo_root / '.tmp-test' / 'cli-flows'
+
+    def _workspace(self, name: str) -> Path:
+        workspace = self.test_workspace_root / name
+        if workspace.exists():
+            shutil.rmtree(workspace, ignore_errors=True)
+        workspace.mkdir(parents=True, exist_ok=True)
+        return workspace
 
     def test_run_accessibility_audit_with_skip_flags_generates_report(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -86,10 +94,7 @@ class CliFlowTests(unittest.TestCase):
         self.assertIn('ignore_rules', key_names)
 
     def test_run_accessibility_audit_strict_rule_overlap_fails_fast(self) -> None:
-        workspace = self.repo_root / 'automation-work' / 'm26-cli-overlap-test'
-        if workspace.exists():
-            shutil.rmtree(workspace, ignore_errors=True)
-        workspace.mkdir(parents=True, exist_ok=True)
+        workspace = self._workspace('m26-cli-overlap-test')
         html_path = workspace / 'sample.html'
         output_dir = workspace / 'out'
         axe_json = workspace / 'axe.json'
@@ -847,10 +852,7 @@ class CliFlowTests(unittest.TestCase):
             self.assertIn('債務趨勢: new=0, accepted=1, retired=0, regressed=1 (window=4)', markdown)
 
     def test_run_accessibility_audit_waiver_expiry_warn_mode_keeps_exit_zero(self) -> None:
-        test_dir = self.repo_root / 'automation-work' / 'm32-waiver-warn'
-        if test_dir.exists():
-            shutil.rmtree(test_dir, ignore_errors=True)
-        test_dir.mkdir(parents=True, exist_ok=True)
+        test_dir = self._workspace('m32-waiver-warn')
         html_path = test_dir / 'sample.html'
         output_dir = test_dir / 'out'
         axe_json = test_dir / 'axe.json'
@@ -913,10 +915,7 @@ class CliFlowTests(unittest.TestCase):
         self.assertFalse(payload['run_meta']['waiver_gate']['failed'])
 
     def test_run_accessibility_audit_waiver_expiry_fail_mode_blocks_release_gate(self) -> None:
-        test_dir = self.repo_root / 'automation-work' / 'm32-waiver-fail'
-        if test_dir.exists():
-            shutil.rmtree(test_dir, ignore_errors=True)
-        test_dir.mkdir(parents=True, exist_ok=True)
+        test_dir = self._workspace('m32-waiver-fail')
         html_path = test_dir / 'sample.html'
         output_dir = test_dir / 'out'
         axe_json = test_dir / 'axe.json'
@@ -1190,10 +1189,7 @@ class CliFlowTests(unittest.TestCase):
 
 
     def test_run_accessibility_audit_cli_contract_for_summary_sarif_baseline_and_cap(self) -> None:
-        test_dir = self.repo_root / 'automation-work' / 'm23-cli-contract-test'
-        if test_dir.exists():
-            shutil.rmtree(test_dir, ignore_errors=True)
-        test_dir.mkdir(parents=True, exist_ok=True)
+        test_dir = self._workspace('m23-cli-contract-test')
 
         html_path = test_dir / 'sample.html'
         output_dir = test_dir / 'out'
@@ -1270,10 +1266,7 @@ class CliFlowTests(unittest.TestCase):
         self.assertEqual(sarif['runs'][0]['results'][0]['ruleId'], 'button-name')
 
     def test_run_accessibility_audit_summary_only_prints_compact_json(self) -> None:
-        test_dir = self.repo_root / 'automation-work' / 'm23-summary-only-test'
-        if test_dir.exists():
-            shutil.rmtree(test_dir, ignore_errors=True)
-        test_dir.mkdir(parents=True, exist_ok=True)
+        test_dir = self._workspace('m23-summary-only-test')
 
         html_path = test_dir / 'sample.html'
         output_dir = test_dir / 'out'
@@ -1307,10 +1300,7 @@ class CliFlowTests(unittest.TestCase):
         self.assertIn('machine_output', compact)
 
     def test_run_accessibility_audit_lists_policy_presets_without_target(self) -> None:
-        test_dir = self.repo_root / 'automation-work' / 'm24-policy-presets-test'
-        if test_dir.exists():
-            shutil.rmtree(test_dir, ignore_errors=True)
-        test_dir.mkdir(parents=True, exist_ok=True)
+        test_dir = self._workspace('m24-policy-presets-test')
 
         completed = subprocess.run(
             [
@@ -1330,10 +1320,7 @@ class CliFlowTests(unittest.TestCase):
         self.assertIn('legacy', names)
 
     def test_run_accessibility_audit_summary_only_includes_policy_effective_when_requested(self) -> None:
-        test_dir = self.repo_root / 'automation-work' / 'm24-explain-policy-test'
-        if test_dir.exists():
-            shutil.rmtree(test_dir, ignore_errors=True)
-        test_dir.mkdir(parents=True, exist_ok=True)
+        test_dir = self._workspace('m24-explain-policy-test')
 
         html_path = test_dir / 'sample.html'
         output_dir = test_dir / 'out'
@@ -1380,10 +1367,7 @@ class CliFlowTests(unittest.TestCase):
         self.assertIn('policy_effective', payload['run_meta'])
 
     def test_run_accessibility_audit_policy_bundle_is_reflected_in_effective_policy(self) -> None:
-        test_dir = self.repo_root / 'automation-work' / 'm30-policy-bundle-effective-test'
-        if test_dir.exists():
-            shutil.rmtree(test_dir, ignore_errors=True)
-        test_dir.mkdir(parents=True, exist_ok=True)
+        test_dir = self._workspace('m30-policy-bundle-effective-test')
 
         html_path = test_dir / 'sample.html'
         output_dir = test_dir / 'out'
@@ -1418,10 +1402,7 @@ class CliFlowTests(unittest.TestCase):
         self.assertEqual(payload['run_meta']['policy_bundle']['name'], 'legacy-content')
 
     def test_run_accessibility_audit_policy_config_rejects_unknown_keys(self) -> None:
-        test_dir = self.repo_root / 'automation-work' / 'm25-policy-config-validation-test'
-        if test_dir.exists():
-            shutil.rmtree(test_dir, ignore_errors=True)
-        test_dir.mkdir(parents=True, exist_ok=True)
+        test_dir = self._workspace('m25-policy-config-validation-test')
 
         html_path = test_dir / 'sample.html'
         output_dir = test_dir / 'out'
@@ -1453,10 +1434,7 @@ class CliFlowTests(unittest.TestCase):
         self.assertIn('unsupported keys: unknown_key', completed.stderr + completed.stdout)
 
     def test_run_accessibility_audit_writes_effective_policy_artifact(self) -> None:
-        test_dir = self.repo_root / 'automation-work' / 'm25-effective-policy-artifact-test'
-        if test_dir.exists():
-            shutil.rmtree(test_dir, ignore_errors=True)
-        test_dir.mkdir(parents=True, exist_ok=True)
+        test_dir = self._workspace('m25-effective-policy-artifact-test')
 
         html_path = test_dir / 'sample.html'
         output_dir = test_dir / 'out'
@@ -1499,10 +1477,7 @@ class CliFlowTests(unittest.TestCase):
         self.assertEqual(payload['run_meta']['effective_policy_artifact'], str(artifact_path))
 
     def test_run_accessibility_audit_emits_artifact_manifest_with_checksums(self) -> None:
-        test_dir = self.repo_root / 'automation-work' / 'm31-artifact-manifest-test'
-        if test_dir.exists():
-            shutil.rmtree(test_dir, ignore_errors=True)
-        test_dir.mkdir(parents=True, exist_ok=True)
+        test_dir = self._workspace('m31-artifact-manifest-test')
 
         html_path = test_dir / 'sample.html'
         output_dir = test_dir / 'out'
@@ -1536,10 +1511,7 @@ class CliFlowTests(unittest.TestCase):
             self.assertGreaterEqual(item['size_bytes'], 1)
 
     def test_run_accessibility_audit_baseline_hash_chain_verification_passes(self) -> None:
-        test_dir = self.repo_root / 'automation-work' / 'm31-baseline-hash-chain-pass'
-        if test_dir.exists():
-            shutil.rmtree(test_dir, ignore_errors=True)
-        test_dir.mkdir(parents=True, exist_ok=True)
+        test_dir = self._workspace('m31-baseline-hash-chain-pass')
 
         html_path = test_dir / 'sample.html'
         baseline_out = test_dir / 'baseline-out'
@@ -1606,10 +1578,7 @@ class CliFlowTests(unittest.TestCase):
         self.assertIn('chain_hash', payload['run_meta']['baseline_evidence'])
 
     def test_run_accessibility_audit_baseline_hash_verification_rejects_tampered_report(self) -> None:
-        test_dir = self.repo_root / 'automation-work' / 'm31-baseline-hash-fail'
-        if test_dir.exists():
-            shutil.rmtree(test_dir, ignore_errors=True)
-        test_dir.mkdir(parents=True, exist_ok=True)
+        test_dir = self._workspace('m31-baseline-hash-fail')
 
         html_path = test_dir / 'sample.html'
         baseline_out = test_dir / 'baseline-out'
@@ -1681,10 +1650,7 @@ class CliFlowTests(unittest.TestCase):
 
 
     def test_run_accessibility_audit_risk_calibration_strict_fails_on_unstable_high_severity_rules(self) -> None:
-        test_dir = self.repo_root / 'automation-work' / 'm36-risk-calibration-strict-fail'
-        if test_dir.exists():
-            shutil.rmtree(test_dir, ignore_errors=True)
-        test_dir.mkdir(parents=True, exist_ok=True)
+        test_dir = self._workspace('m36-risk-calibration-strict-fail')
 
         html_path = test_dir / 'sample.html'
         output_dir = test_dir / 'out'
@@ -1746,10 +1712,7 @@ class CliFlowTests(unittest.TestCase):
         self.assertIn('image-alt', payload['run_meta']['risk_calibration']['unstable_high_severity_rules'])
 
     def test_run_accessibility_audit_risk_calibration_warn_downgrades_on_missing_evidence(self) -> None:
-        test_dir = self.repo_root / 'automation-work' / 'm36-risk-calibration-warn-downgrade'
-        if test_dir.exists():
-            shutil.rmtree(test_dir, ignore_errors=True)
-        test_dir.mkdir(parents=True, exist_ok=True)
+        test_dir = self._workspace('m36-risk-calibration-warn-downgrade')
 
         html_path = test_dir / 'sample.html'
         output_dir = test_dir / 'out'
@@ -1784,10 +1747,7 @@ class CliFlowTests(unittest.TestCase):
 
 
     def test_run_accessibility_audit_replay_verification_fails_on_high_severity_regression(self) -> None:
-        test_dir = self.repo_root / 'automation-work' / 'm37-replay-regression-fail'
-        if test_dir.exists():
-            shutil.rmtree(test_dir, ignore_errors=True)
-        test_dir.mkdir(parents=True, exist_ok=True)
+        test_dir = self._workspace('m37-replay-regression-fail')
 
         html_path = test_dir / 'sample.html'
         output_dir = test_dir / 'out'
@@ -1854,10 +1814,7 @@ class CliFlowTests(unittest.TestCase):
         self.assertTrue(payload['run_meta']['replay_verification']['gate']['failed'])
 
     def test_run_accessibility_audit_replay_verification_downgrades_on_scanner_drift(self) -> None:
-        test_dir = self.repo_root / 'automation-work' / 'm37-replay-scanner-drift'
-        if test_dir.exists():
-            shutil.rmtree(test_dir, ignore_errors=True)
-        test_dir.mkdir(parents=True, exist_ok=True)
+        test_dir = self._workspace('m37-replay-scanner-drift')
 
         html_path = test_dir / 'sample.html'
         output_dir = test_dir / 'out'
@@ -1925,10 +1882,7 @@ class CliFlowTests(unittest.TestCase):
 
 
     def test_run_accessibility_audit_stability_mode_fail_blocks_on_breach(self) -> None:
-        test_dir = self.repo_root / 'automation-work' / 'm38-stability-fail-gate'
-        if test_dir.exists():
-            shutil.rmtree(test_dir, ignore_errors=True)
-        test_dir.mkdir(parents=True, exist_ok=True)
+        test_dir = self._workspace('m38-stability-fail-gate')
 
         html_path = test_dir / 'sample.html'
         output_dir = test_dir / 'out'
@@ -1997,10 +1951,7 @@ class CliFlowTests(unittest.TestCase):
         self.assertEqual(payload['run_meta']['scanner_stability']['comparison']['breach_count'], 1)
 
     def test_run_accessibility_audit_stability_downgrades_on_scanner_capability_change(self) -> None:
-        test_dir = self.repo_root / 'automation-work' / 'm38-stability-capability-drift'
-        if test_dir.exists():
-            shutil.rmtree(test_dir, ignore_errors=True)
-        test_dir.mkdir(parents=True, exist_ok=True)
+        test_dir = self._workspace('m38-stability-capability-drift')
 
         html_path = test_dir / 'sample.html'
         output_dir = test_dir / 'out'
