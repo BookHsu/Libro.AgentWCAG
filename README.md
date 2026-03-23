@@ -69,6 +69,13 @@ python .\scripts\doctor-agent.py --agent codex --verify-manifest-integrity
 python .\scripts\doctor-agent.py --agent all
 ```
 
+## 卸載
+
+```powershell
+python .\scripts\uninstall-agent.py --agent codex
+python .\scripts\uninstall-agent.py --agent all
+```
+
 ## 使用方式
 
 共用 contract 位於：
@@ -88,12 +95,16 @@ python .\scripts\doctor-agent.py --agent all
 - `create`: 對草稿、模板、未上線頁面做檢查
 - `modify`: 對既有頁面先稽核再修正
 
+初次在 Codex 使用時可直接呼叫 `$libro-agent-wcag`。
+
 ## 本地驗證
 
 ```powershell
 python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"
 python scripts/validate_skill.py skills/libro-agent-wcag --validate-policy-bundles
 ```
+
+- 測試策略與覆蓋矩陣見 `TESTING-PLAN.md`
 
 ## 發佈
 
@@ -121,6 +132,41 @@ python .\scripts\package-release.py --output-dir .\dist\release --overwrite
   - 手動執行 `workflow_dispatch`
   - 在 GitHub UI 將 Release 設為 `published`
 - 這代表如果先在 GitHub 手動發佈 release，也會自動補上 zip 與其他 release assets
+
+## Release-consumer shortest path
+
+1. Download the published release assets for `vX.Y.Z`.
+2. Verify `libro-agent-wcag-X.Y.Z-sha256sums.txt`.
+3. Run `install-latest.ps1` or `install-latest.sh` against the release asset directory or URL.
+
+## Release-consumer quickstart
+
+1. Install from release assets.
+2. `install-latest.ps1` / `install-latest.sh` automatically runs `doctor-agent.py --verify-manifest-integrity` after install succeeds.
+3. Run a first audit with `python .\skills\libro-agent-wcag\scripts\run_accessibility_audit.py --target <file-or-url> --output-dir out`.
+4. Remove the skill with `python .\scripts\uninstall-agent.py --agent codex`.
+
+## Release readiness
+
+- `scripts/install-agent.py`, `scripts/doctor-agent.py`, and report artifacts derive `product_version` from `pyproject.toml`.
+- `source_revision` resolves from `LIBRO_AGENTWCAG_SOURCE_REVISION` when provided, otherwise from local git `HEAD`.
+- Package release assets with `python .\scripts\package-release.py --output-dir .\dist\release --overwrite`.
+- Packaging emits `libro-agent-wcag-<version>-all-in-one.zip` and `libro-agent-wcag-<version>-sha256sums.txt` alongside the agent bundles.
+- Clean release-consumer validation is available via `python .\scripts\run-release-adoption-smoke.py --release-dir .\dist\release --agent codex`.
+- Key release references:
+  - `docs/release/release-playbook.md`
+  - `docs/release/ga-release-workflow.md`
+  - `docs/release/ga-definition.md`
+  - `docs/release/rollback-playbook.md`
+  - `docs/release/adoption-smoke-guide.md`
+  - `docs/release/apply-fixes-scope.md`
+  - `docs/release/prompt-invocation-templates.md`
+  - `docs/release/resilient-run-patterns.md`
+  - `docs/examples/ci/github-actions-wcag-ci-sample.yml`
+  - `docs/release/real-scanner-ci-lane.md`
+  - `docs/release/baseline-governance.md`
+  - `docs/release/advanced-ci-gates.md`
+  - `docs/policy-bundles/`
 
 ## PR 規則與 owner bypass
 
