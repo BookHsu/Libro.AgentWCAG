@@ -55,9 +55,7 @@ from baseline_governance import (
     _empty_debt_trend_counts,
     _evaluate_debt_waiver_review,
     _load_baseline_report,
-    _sha256_file,
     _tag_findings_with_debt_state,
-    _utc_timestamp,
     _validate_debt_waivers,
 )
 from policy_controls import (
@@ -77,6 +75,15 @@ from policy_controls import (
     _resolve_effective_policy_path,
     _resolve_policy_bundle,
     _resolve_policy_preset,
+)
+from report_artifacts import (
+    REPORT_SCHEMA_VERSION,
+    _build_artifact_manifest,
+    _build_compact_summary,
+    _build_report_output_paths,
+    _collect_artifact_paths,
+    _emit_summary_only_stdout,
+    _stage_report_schema_artifact,
 )
 from scanner_runtime import (
     DEFAULT_SCANNER_RETRY_ATTEMPTS,
@@ -103,60 +110,9 @@ SEVERITY_RANK = {"critical": 4, "serious": 3, "moderate": 2, "minor": 1, "info":
 FAIL_ON_EXIT_CODES = {"critical": 42, "serious": 43, "moderate": 44}
 FINDING_SORT_MODES = {"severity", "rule", "target"}
 DEFAULT_DEBT_TREND_WINDOW = 5
-REPORT_SCHEMA_NAME = "libro-agent-wcag-report"
-REPORT_SCHEMA_VERSION = "1.0.0"
-REPORT_SCHEMA_FILENAME = f"wcag-report-{REPORT_SCHEMA_VERSION}.schema.json"
-REPORT_SCHEMA_SOURCE_PATH = Path(__file__).resolve().parents[1] / "schemas" / REPORT_SCHEMA_FILENAME
 def _remove_if_exists(path: Path) -> None:
     if path.exists():
         path.unlink()
-
-
-def _build_artifact_manifest(
-    *,
-    output_dir: Path,
-    report_format: str,
-    target: str,
-    artifact_paths: dict[str, Path],
-    baseline_evidence: dict[str, Any] | None,
-) -> tuple[dict[str, Any], Path]:
-    artifacts: list[dict[str, Any]] = []
-    for kind in sorted(artifact_paths):
-        path = artifact_paths[kind]
-        if not path.exists() or not path.is_file():
-            continue
-        artifacts.append(
-            {
-                'kind': kind,
-                'path': str(path),
-                'size_bytes': path.stat().st_size,
-                'sha256': _sha256_file(path),
-            }
-        )
-
-    manifest: dict[str, Any] = {
-        'generated_at': _utc_timestamp(),
-        'generator': {
-            'name': 'run_accessibility_audit.py',
-            'version': REPORT_SCHEMA_VERSION,
-        },
-        'target': target,
-        'report_format': report_format,
-        'artifact_count': len(artifacts),
-        'artifacts': artifacts,
-    }
-    if baseline_evidence:
-        manifest['baseline_evidence'] = {
-            'mode': baseline_evidence.get('mode'),
-            'report_hash': baseline_evidence.get('report_hash'),
-            'chain_hash': baseline_evidence.get('chain_hash'),
-            'baseline_report_hash': baseline_evidence.get('baseline_report_hash'),
-            'baseline_verification': baseline_evidence.get('baseline_verification', {}),
-        }
-
-    manifest_path = output_dir / 'artifact-manifest.json'
-    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
-    return manifest, manifest_path
 
 def _collect_scanner_rule_ids(axe_data: dict[str, Any] | None, lighthouse_data: dict[str, Any] | None) -> list[str]:
     rule_ids: set[str] = set()
@@ -311,97 +267,6 @@ def _cap_report_findings(report: dict[str, Any], max_findings: int) -> dict[str,
     _rebuild_summary(report)
     return {'before': before_count, 'after': len(capped), 'truncated': before_count - len(capped)}
 
-
-def _build_compact_summary(
-    report: dict[str, Any],
-    report_format: str,
-    machine_output: Path,
-    output_md: Path,
-    should_fail: bool,
-    fail_on: str | None,
-    exit_code: int,
-) -> dict[str, Any]:
-    summary = report.get('summary', {})
-    compact: dict[str, Any] = {
-        'status': 'failed' if should_fail else 'ok',
-        'report_format': report_format,
-        'machine_output': str(machine_output),
-        'markdown_output': str(output_md),
-        'total_findings': summary.get('total_findings', 0),
-        'fixed_findings': summary.get('fixed_findings', 0),
-        'manual_required_count': summary.get('manual_required_count', 0),
-    }
-    if fail_on:
-        policy_gate = report.get('run_meta', {}).get('policy_gate', {})
-        compact['policy_gate'] = {
-            'fail_on': fail_on,
-            'failed': bool(policy_gate.get('failed', False)),
-            'exit_code': int(policy_gate.get('exit_code', 0)),
-            'scope': policy_gate.get('scope', 'all-unresolved'),
-        }
-    baseline_diff = report.get('run_meta', {}).get('baseline_diff')
-    if baseline_diff:
-        compact['baseline_diff'] = {
-            'introduced_count': baseline_diff.get('introduced_count', 0),
-            'resolved_count': baseline_diff.get('resolved_count', 0),
-            'persistent_count': baseline_diff.get('persistent_count', 0),
-        }
-        waiver_review = baseline_diff.get('waiver_review')
-        if waiver_review:
-            compact['waiver_review'] = {
-                'accepted_count': waiver_review.get('accepted_count', 0),
-                'expired_count': waiver_review.get('expired_count', 0),
-                'missing_count': waiver_review.get('missing_count', 0),
-                'valid_count': waiver_review.get('valid_count', 0),
-            }
-    findings_cap = report.get('run_meta', {}).get('findings_cap')
-    if findings_cap:
-        compact['findings_cap'] = findings_cap
-    scanner_capabilities = summary.get('scanner_capabilities')
-    if scanner_capabilities:
-        compact['scanner_capabilities'] = scanner_capabilities
-    effective_policy = report.get('run_meta', {}).get('policy_effective')
-    if effective_policy:
-        compact['policy_effective'] = effective_policy
-    policy_rule_overlap = report.get('run_meta', {}).get('policy_rule_overlap')
-    if policy_rule_overlap:
-        compact['policy_rule_overlap'] = policy_rule_overlap
-    baseline_evidence = report.get('run_meta', {}).get('baseline_evidence')
-    if baseline_evidence:
-        compact['baseline_evidence'] = {
-            'mode': baseline_evidence.get('mode'),
-            'baseline_verification': baseline_evidence.get('baseline_verification', {}),
-        }
-    artifact_manifest = report.get('run_meta', {}).get('artifact_manifest')
-    if artifact_manifest:
-        compact['artifact_manifest'] = artifact_manifest
-    waiver_gate = report.get('run_meta', {}).get('waiver_gate')
-    if waiver_gate:
-        compact['waiver_gate'] = waiver_gate
-    debt_trend = summary.get('debt_trend')
-    if debt_trend:
-        compact['debt_trend'] = debt_trend
-    risk_calibration = report.get('run_meta', {}).get('risk_calibration')
-    if risk_calibration:
-        compact['risk_calibration'] = {
-            'mode': risk_calibration.get('mode'),
-            'applied': bool(risk_calibration.get('applied')),
-            'downgrade_reason': risk_calibration.get('downgrade_reason'),
-            'unstable_high_severity_rules': risk_calibration.get('unstable_high_severity_rules', []),
-        }
-    replay_verification = report.get('run_meta', {}).get('replay_verification')
-    if replay_verification:
-        compact['replay_verification'] = replay_verification
-    scanner_stability = report.get('run_meta', {}).get('scanner_stability')
-    if scanner_stability:
-        compact['scanner_stability'] = {
-            'mode': scanner_stability.get('mode'),
-            'window': scanner_stability.get('window'),
-            'comparison': scanner_stability.get('comparison', {}),
-            'gate': scanner_stability.get('gate', {}),
-        }
-    return compact
-
 def _apply_rule_policy(
     report: dict[str, Any],
     include_rules: list[str],
@@ -437,22 +302,6 @@ def _sarif_level_from_severity(severity: str) -> str:
     if severity == 'moderate':
         return 'warning'
     return 'note'
-
-def _stage_report_schema_artifact(output_dir: Path) -> tuple[dict[str, Any], Path]:
-    if not REPORT_SCHEMA_SOURCE_PATH.exists():
-        raise FileNotFoundError(f'report schema file is missing: {REPORT_SCHEMA_SOURCE_PATH}')
-    schema_dir = output_dir / 'schemas'
-    schema_dir.mkdir(parents=True, exist_ok=True)
-    staged_path = schema_dir / REPORT_SCHEMA_FILENAME
-    staged_path.write_text(REPORT_SCHEMA_SOURCE_PATH.read_text(encoding='utf-8'), encoding='utf-8')
-    metadata = {
-        'name': REPORT_SCHEMA_NAME,
-        'version': REPORT_SCHEMA_VERSION,
-        'artifact': str(staged_path),
-        'compatibility': f"^{REPORT_SCHEMA_VERSION.split('.')[0]}.0.0",
-    }
-    return metadata, staged_path
-
 def _report_to_sarif(report: dict[str, Any], contract_target: str, local_target: Path | None) -> dict[str, Any]:
     rules: dict[str, dict[str, Any]] = {}
     results: list[dict[str, Any]] = []
@@ -1273,20 +1122,20 @@ def main() -> int:
                 'Scanner stability warning: volatility exceeds approved bounds under --stability-mode=warn.'
             )
 
-    output_json = output_dir / 'wcag-report.json'
-    output_md = output_dir / 'wcag-report.md'
+    report_output_paths = _build_report_output_paths(output_dir, report_format)
+    output_json = report_output_paths['output_json']
+    output_md = report_output_paths['output_md']
+    machine_output = report_output_paths['machine_output']
     if report_format == 'json':
         write_report_files(report, str(output_json), str(output_md))
-        machine_output = output_json
     else:
-        output_sarif = output_dir / 'wcag-report.sarif'
+        output_sarif = machine_output
         output_sarif.write_text(
             json.dumps(_report_to_sarif(report, contract.target, local_target), ensure_ascii=False, indent=2),
             encoding='utf-8',
         )
         output_md.parent.mkdir(parents=True, exist_ok=True)
         output_md.write_text(to_markdown_table(report), encoding='utf-8')
-        machine_output = output_sarif
 
     if fail_on:
         gate_report = {'findings': gate_findings}
@@ -1408,32 +1257,24 @@ def main() -> int:
         )
         output_md.write_text(to_markdown_table(report), encoding='utf-8')
 
-    artifact_paths: dict[str, Path] = {
-        'markdown-report': output_md,
-        'report-schema': staged_schema_path,
-    }
-    if report_format == 'json':
-        artifact_paths['machine-report-json'] = output_json
-    else:
-        artifact_paths['machine-report-sarif'] = machine_output
-
-    if effective_policy_output is not None:
-        artifact_paths['effective-policy'] = effective_policy_output
-    artifact_paths['debt-trend'] = debt_trend_path
-    artifact_paths['scanner-stability'] = scanner_stability_path
-    if replay_summary_path is not None:
-        artifact_paths['replay-summary'] = replay_summary_path
-    if replay_diff_path is not None:
-        artifact_paths['replay-diff'] = replay_diff_path
-    if diff_path is not None:
-        artifact_paths['fixes-diff'] = diff_path
-    if snapshot_path is not None:
-        artifact_paths['fixes-snapshot'] = snapshot_path
-
     axe_raw = output_dir / 'axe.raw.json'
     lighthouse_raw = output_dir / 'lighthouse.raw.json'
-    artifact_paths['axe-raw'] = axe_raw
-    artifact_paths['lighthouse-raw'] = lighthouse_raw
+    artifact_paths = _collect_artifact_paths(
+        report_format=report_format,
+        machine_output=machine_output,
+        output_json=output_json,
+        output_md=output_md,
+        staged_schema_path=staged_schema_path,
+        debt_trend_path=debt_trend_path,
+        scanner_stability_path=scanner_stability_path,
+        axe_raw=axe_raw,
+        lighthouse_raw=lighthouse_raw,
+        effective_policy_output=effective_policy_output,
+        replay_summary_path=replay_summary_path,
+        replay_diff_path=replay_diff_path,
+        diff_path=diff_path,
+        snapshot_path=snapshot_path,
+    )
 
     _, manifest_path = _build_artifact_manifest(
         output_dir=output_dir,
@@ -1454,7 +1295,7 @@ def main() -> int:
             fail_on=fail_on,
             exit_code=exit_code,
         )
-        print(json.dumps(compact_summary, ensure_ascii=False))
+        _emit_summary_only_stdout(compact_summary)
     else:
         print(f'Saved machine-readable report ({report_format}): {machine_output}')
         print(f'Saved Markdown table: {output_md}')
