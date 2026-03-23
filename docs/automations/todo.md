@@ -392,7 +392,7 @@
 
 - [x] PR 開啟時會自動觸發 `libro-agent-wcag-real-scanner`
 - [x] `workflow_dispatch` 可手動重跑 `libro-agent-wcag-real-scanner`
-- [ ] lane 失敗時會阻擋 PR
+- [x] lane 失敗時會阻擋 PR
 - [x] browser / scanner 不可用時不降級為 mock，直接 fail
 - [x] mixed-findings target 可穩定執行
 - [x] `wcag-report.sarif` 與其他 triage artifact 皆可保留
@@ -401,7 +401,7 @@
 
 #### 2.13 最終驗收條件
 
-- [ ] `libro-agent-wcag-real-scanner` 已成為正式 required PR check
+- [x] `libro-agent-wcag-real-scanner` 已成為正式 required PR check
 - [x] 固定版本的 scanner toolchain 可重現
 - [x] scanner / browser / preflight 失敗時有足夠 artifact 可排查
 - [x] 現有 deterministic lane 仍可正常運作
