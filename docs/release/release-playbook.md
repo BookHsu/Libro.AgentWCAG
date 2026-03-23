@@ -42,11 +42,16 @@ Use this playbook as the primary release-readiness document for `libro-agent-wca
 - Confirm target version tag and release title are finalized.
 - Ensure `CHANGELOG.md` has a dated version section with highlights and known limits.
 - Confirm all blocking defects are closed or explicitly listed as known limitations.
+- Confirm `.github/workflows/release.yml` still uses the documented validate -> package-release -> clean-release-smoke -> publish-release gate order.
 - For significant remediation changes, attach baseline refresh evidence and approver context.
 - Run baseline governance checks described in `docs/release/baseline-governance.md`.
 - Run advanced CI gate reviews described in `docs/release/advanced-ci-gates.md`.
 - For any policy preset or bundle change, attach policy-bundle drift evidence and reviewer sign-off before merge.
 - Push `master` and create release artifacts or tags per project policy.
+- Confirm GA/rollback references remain current:
+  - `docs/release/ga-definition.md`
+  - `docs/release/ga-release-workflow.md`
+  - `docs/release/rollback-playbook.md`
 
 ## Release Notes Workflow
 

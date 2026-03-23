@@ -19,6 +19,9 @@ class ReleaseDocsTests(unittest.TestCase):
             self.repo_root / 'docs' / 'release' / 'release-playbook.md',
             self.repo_root / 'docs' / 'release' / 'supported-environments.md',
             self.repo_root / 'docs' / 'release' / 'adoption-smoke-guide.md',
+            self.repo_root / 'docs' / 'release' / 'ga-definition.md',
+            self.repo_root / 'docs' / 'release' / 'ga-release-workflow.md',
+            self.repo_root / 'docs' / 'release' / 'rollback-playbook.md',
             self.repo_root / 'docs' / 'release' / 'apply-fixes-scope.md',
             self.repo_root / 'docs' / 'release' / 'prompt-invocation-templates.md',
             self.repo_root / 'docs' / 'release' / 'resilient-run-patterns.md',
@@ -84,6 +87,11 @@ class ReleaseDocsTests(unittest.TestCase):
         self.assertIn('libro-agent-wcag-<version>-sha256sums.txt', content)
         self.assertIn('install-latest.ps1', content)
         self.assertIn('run-release-adoption-smoke.py', content)
+        self.assertIn('docs/release/ga-release-workflow.md', content)
+        self.assertIn('docs/release/ga-definition.md', content)
+        self.assertIn('docs/release/rollback-playbook.md', content)
+        self.assertIn('Release-consumer shortest path', content)
+        self.assertIn('Release-consumer quickstart', content)
         self.assertIn('docs/release/release-playbook.md', content)
         self.assertIn('docs/release/adoption-smoke-guide.md', content)
         self.assertIn('docs/release/apply-fixes-scope.md', content)
@@ -112,6 +120,7 @@ class ReleaseDocsTests(unittest.TestCase):
         self.assertIn('latest-release.json', content)
         self.assertIn('install-latest.ps1', content)
         self.assertIn('smoke-summary.json', content)
+        self.assertIn('Repo-native smoke vs release-consumer smoke', content)
 
     def test_supported_environments_document_clean_release_consumer_requirements(self) -> None:
         content = (self.repo_root / 'docs' / 'release' / 'supported-environments.md').read_text(encoding='utf-8')
@@ -119,6 +128,19 @@ class ReleaseDocsTests(unittest.TestCase):
         self.assertIn('macOS', content)
         self.assertIn('Linux', content)
         self.assertIn('temporary-directory write access', content)
+
+    def test_ga_and_rollback_docs_define_operator_contracts(self) -> None:
+        ga_definition = (self.repo_root / 'docs' / 'release' / 'ga-definition.md').read_text(encoding='utf-8')
+        ga_workflow = (self.repo_root / 'docs' / 'release' / 'ga-release-workflow.md').read_text(encoding='utf-8')
+        rollback = (self.repo_root / 'docs' / 'release' / 'rollback-playbook.md').read_text(encoding='utf-8')
+        self.assertIn('GA Quality Gates', ga_definition)
+        self.assertIn('Blocker', ga_definition)
+        self.assertIn('validate', ga_workflow)
+        self.assertIn('clean-release-smoke', ga_workflow)
+        self.assertIn('Release title format', ga_workflow)
+        self.assertIn('checksum verification guidance', ga_workflow)
+        self.assertIn('Never rewrite or force-move an existing published tag.', rollback)
+        self.assertIn('hotfix', rollback.lower())
 
     def test_realistic_sample_artifacts_capture_provenance_metadata(self) -> None:
         smoke = json.loads(

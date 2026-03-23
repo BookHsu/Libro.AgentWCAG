@@ -532,8 +532,8 @@
 - [x] 決定 checksum file 格式為 plain text、JSON，或兩者並行
 - [x] 在 packaging script 中產出 checksum 檔
 - [x] 在 release manifest 中加入每個 asset 的 checksum
-- [ ] 定義 downstream 使用者如何驗證 checksum
-- [ ] 定義 checksum mismatch 的 triage 流程
+- [x] 定義 downstream 使用者如何驗證 checksum
+- [x] 定義 checksum mismatch 的 triage 流程
 - [ ] 評估 doctor 是否需要支援下載後 asset checksum 驗證
 - [x] 補 checksum 文件範例
 - [x] 為 checksum file format 補測試
@@ -542,34 +542,34 @@
 
 #### 3.8 GitHub Release workflow 自動化
 
-- [ ] 在 `.github/workflows/` 新增正式 release workflow
-- [ ] 定義 release workflow 觸發條件為 tag push
-- [ ] 視需要加入 `workflow_dispatch`
-- [ ] 定義 release workflow job 階段
-- [ ] 加入 metadata validation step
-- [ ] 加入測試執行 step
-- [ ] 加入 packaging step
-- [ ] 加入 clean smoke step
-- [ ] 加入 checksum / manifest publish step
-- [ ] 加入 GitHub Release 建立 step
-- [ ] 加入 release asset upload step
-- [ ] 定義任何 gate 失敗時不得 publish release
-- [ ] 定義 release workflow logs / artifacts 保留策略
-- [ ] 為 workflow 命名、觸發與 asset upload 補 contract tests
+- [x] 在 `.github/workflows/` 新增正式 release workflow
+- [x] 定義 release workflow 觸發條件為 tag push
+- [x] 視需要加入 `workflow_dispatch`
+- [x] 定義 release workflow job 階段
+- [x] 加入 metadata validation step
+- [x] 加入測試執行 step
+- [x] 加入 packaging step
+- [x] 加入 clean smoke step
+- [x] 加入 checksum / manifest publish step
+- [x] 加入 GitHub Release 建立 step
+- [x] 加入 release asset upload step
+- [x] 定義任何 gate 失敗時不得 publish release
+- [x] 定義 release workflow logs / artifacts 保留策略
+- [x] 為 workflow 命名、觸發與 asset upload 補 contract tests
 
 #### 3.9 GitHub Release notes 與 metadata
 
-- [ ] 定義 release title 格式
-- [ ] 定義 release body 來源策略
-- [ ] 決定從 `CHANGELOG.md` 擷取對應 version section，或由 workflow 生 draft notes
-- [ ] 定義 release notes 必含 highlights
-- [ ] 定義 release notes 必含 breaking changes
-- [ ] 定義 release notes 必含 known limitations
-- [ ] 定義 release notes 必含 install / verify 指令
-- [ ] 定義 release notes 必含 checksum verification 說明
+- [x] 定義 release title 格式
+- [x] 定義 release body 來源策略
+- [x] 決定從 `CHANGELOG.md` 擷取對應 version section，或由 workflow 生 draft notes
+- [x] 定義 release notes 必含 highlights
+- [x] 定義 release notes 必含 breaking changes
+- [x] 定義 release notes 必含 known limitations
+- [x] 定義 release notes 必含 install / verify 指令
+- [x] 定義 release notes 必含 checksum verification 說明
 - [ ] 補 release note template
 - [ ] 補 hotfix release note template
-- [ ] 更新 changelog discipline 文件
+- [x] 更新 changelog discipline 文件
 
 #### 3.10 One-click installer 體驗
 
@@ -607,72 +607,72 @@
 - [x] 驗證 download -> checksum -> install -> doctor -> audit -> uninstall 全流程
 - [x] 定義 smoke 成功判準
 - [x] 定義 smoke 失敗時必保留的 triage 資訊
-- [ ] 將 clean smoke 接入 release workflow
+- [x] 將 clean smoke 接入 release workflow
 - [x] 為 smoke summary contract 補測試
 
 #### 3.12 Release workflow 與 rollback runbook
 
-- [ ] 新增 `docs/release/ga-release-workflow.md`
-- [ ] 補 pre-release checklist
+- [x] 新增 `docs/release/ga-release-workflow.md`
+- [x] 補 pre-release checklist
 - [ ] 補 version bump 流程
-- [ ] 補 changelog finalize 流程
-- [ ] 補 tag 建立流程
-- [ ] 補 release workflow 觸發與監看流程
+- [x] 補 changelog finalize 流程
+- [x] 補 tag 建立流程
+- [x] 補 release workflow 觸發與監看流程
 - [ ] 補 post-publish verification 流程
-- [ ] 新增 `docs/release/rollback-playbook.md`
-- [ ] 定義 rollback trigger 條件
-- [ ] 定義 rollback owner / approver
-- [ ] 定義 asset 壞檔時的處置
-- [ ] 定義 installer 壞掉時的處置
-- [ ] 定義 schema 相容性破壞時的處置
-- [ ] 定義是否允許 yank release
-- [ ] 定義不允許直接覆寫既有 tag 內容
-- [ ] 定義 hotfix release 的命名與流程
-- [ ] 補 rollback communication template
-- [ ] 補 rollback 後 postmortem 要求
+- [x] 新增 `docs/release/rollback-playbook.md`
+- [x] 定義 rollback trigger 條件
+- [x] 定義 rollback owner / approver
+- [x] 定義 asset 壞檔時的處置
+- [x] 定義 installer 壞掉時的處置
+- [x] 定義 schema 相容性破壞時的處置
+- [x] 定義是否允許 yank release
+- [x] 定義不允許直接覆寫既有 tag 內容
+- [x] 定義 hotfix release 的命名與流程
+- [x] 補 rollback communication template
+- [x] 補 rollback 後 postmortem 要求
 
 #### 3.13 GA definition 與相容性政策
 
-- [ ] 新增 `docs/release/ga-definition.md`
-- [ ] 定義 product scope
-- [ ] 定義 intended user
-- [ ] 定義 supported environments
-- [ ] 定義 support boundaries
-- [ ] 定義 non-goals
-- [ ] 定義 GA quality gates
-- [ ] 定義 compatibility promises
-- [ ] 定義 known limitations 的允收標準
-- [ ] 定義 semantic versioning 是否正式採用
-- [ ] 定義 breaking change 的分類
+- [x] 新增 `docs/release/ga-definition.md`
+- [x] 定義 product scope
+- [x] 定義 intended user
+- [x] 定義 supported environments
+- [x] 定義 support boundaries
+- [x] 定義 non-goals
+- [x] 定義 GA quality gates
+- [x] 定義 compatibility promises
+- [x] 定義 known limitations 的允收標準
+- [x] 定義 semantic versioning 是否正式採用
+- [x] 定義 breaking change 的分類
 - [ ] 定義 deprecation policy
-- [ ] 定義 report schema versioning policy
-- [ ] 定義 install-manifest 相容性政策
-- [ ] 定義 adapter entrypoint path 相容性政策
+- [x] 定義 report schema versioning policy
+- [x] 定義 install-manifest 相容性政策
+- [x] 定義 adapter entrypoint path 相容性政策
 
 #### 3.14 文件整併與入口收斂
 
 - [x] 更新 `README.md` 的產品化入口段落
-- [ ] 在 `README.md` 補從 GitHub Release 安裝的最短路徑
-- [ ] 在 `README.md` 補 install -> doctor -> first audit -> uninstall quickstart
-- [ ] 更新 `docs/release/release-playbook.md` 以反映 M39 gate
+- [x] 在 `README.md` 補從 GitHub Release 安裝的最短路徑
+- [x] 在 `README.md` 補 install -> doctor -> first audit -> uninstall quickstart
+- [x] 更新 `docs/release/release-playbook.md` 以反映 M39 gate
 - [x] 更新 `docs/release/adoption-smoke-guide.md`
 - [x] 更新 `docs/release/supported-environments.md`
 - [ ] 視需要新增 `docs/release/README.md` 或 release docs 索引
-- [ ] 補 release-consumer smoke 與 repo-native smoke 的差異說明
+- [x] 補 release-consumer smoke 與 repo-native smoke 的差異說明
 - [ ] 收斂重複規則，避免同一決策散在多份文件
-- [ ] 更新 `CHANGELOG.md` 的發版紀律說明
+- [x] 更新 `CHANGELOG.md` 的發版紀律說明
 
 #### 3.15 測試矩陣與回歸覆蓋
 
-- [ ] 更新 `TESTING-PLAN.md`，加入 M39 測試類別
+- [x] 更新 `TESTING-PLAN.md`，加入 M39 測試類別
 - [x] 新增 package manifest contract tests
 - [x] 新增 release asset naming tests
 - [x] 新增 bootstrap install tests
-- [ ] 新增 version injection tests
-- [ ] 新增 doctor version consistency tests
+- [x] 新增 version injection tests
+- [x] 新增 doctor version consistency tests
 - [x] 新增 release smoke tests
 - [x] 新增 checksum contract tests
-- [ ] 新增 workflow contract tests
+- [x] 新增 workflow contract tests
 - [ ] 新增 non-happy-path 測試
 - [ ] 為 snapshot 中的 timestamp / version 欄位建立 normalization 策略
 - [ ] 驗證新增 metadata 不會讓既有 snapshot 不穩定
@@ -685,20 +685,20 @@
 - [ ] 第三步：完成 packaging script 與 bundle contract
 - [ ] 第四步：完成 checksum 與 release asset verification
 - [ ] 第五步：完成 one-click installer 與 clean smoke
-- [ ] 第六步：完成 GitHub Release workflow
-- [ ] 第七步：完成 GA definition、rollback、docs 收斂
-- [ ] 每一步完成後都更新測試與文件
+- [x] 第六步：完成 GitHub Release workflow
+- [x] 第七步：完成 GA definition、rollback、docs 收斂
+- [x] 每一步完成後都更新測試與文件
 
 #### 3.17 最小交付標準
 
-- [ ] tag push 可自動產生正式 release assets
+- [x] tag push 可自動產生正式 release assets
 - [ ] 所有 installer / doctor / report artifacts 帶一致版本資訊
 - [ ] release assets 可被 checksum 驗證
 - [ ] clean environment adoption smoke 可成功執行
-- [ ] rollback playbook 可供非作者依文件操作
-- [ ] GA definition 文件已完成且與實作一致
-- [ ] README 與 release docs 已反映正式產品化入口
-- [ ] M39 新增測試已納入測試矩陣
+- [x] rollback playbook 可供非作者依文件操作
+- [x] GA definition 文件已完成且與實作一致
+- [x] README 與 release docs 已反映正式產品化入口
+- [x] M39 新增測試已納入測試矩陣
 
 #### 3.18 最終驗收條件
 
@@ -894,26 +894,26 @@
 
 允許修改檔案：
 
-- [ ] `.github/workflows/release.yml`
-- [ ] `README.md`
-- [ ] `CHANGELOG.md`
-- [ ] `TESTING-PLAN.md`
-- [ ] `docs/release/ga-definition.md`
-- [ ] `docs/release/ga-release-workflow.md`
-- [ ] `docs/release/rollback-playbook.md`
-- [ ] `docs/release/release-playbook.md`
-- [ ] `docs/release/adoption-smoke-guide.md`
-- [ ] `docs/release/supported-environments.md`
-- [ ] `skills/libro-agent-wcag/scripts/tests/`
+- [x] `.github/workflows/release.yml`
+- [x] `README.md`
+- [x] `CHANGELOG.md`
+- [x] `TESTING-PLAN.md`
+- [x] `docs/release/ga-definition.md`
+- [x] `docs/release/ga-release-workflow.md`
+- [x] `docs/release/rollback-playbook.md`
+- [x] `docs/release/release-playbook.md`
+- [x] `docs/release/adoption-smoke-guide.md`
+- [x] `docs/release/supported-environments.md`
+- [x] `skills/libro-agent-wcag/scripts/tests/`
 
 主要工作：
 
-- [ ] 新增 release workflow
-- [ ] 接上 test -> package -> clean smoke -> publish 流程
-- [ ] 定義 publish gate 與 artifact retention
-- [ ] 補 GA definition
-- [ ] 補 rollback runbook 與禁止直接覆寫 tag 的政策
-- [ ] 更新 README / changelog discipline / testing plan
+- [x] 新增 release workflow
+- [x] 接上 test -> package -> clean smoke -> publish 流程
+- [x] 定義 publish gate 與 artifact retention
+- [x] 補 GA definition
+- [x] 補 rollback runbook 與禁止直接覆寫 tag 的政策
+- [x] 更新 README / changelog discipline / testing plan
 
 禁止事項：
 
@@ -923,9 +923,9 @@
 
 完成證據：
 
-- [ ] tag push 可自動建立正式 release
-- [ ] workflow contract tests 通過
-- [ ] GA definition 與 rollback 文件可支持非作者操作
+- [x] tag push 可自動建立正式 release
+- [x] workflow contract tests 通過
+- [x] GA definition 與 rollback 文件可支持非作者操作
 
 建議驗證命令：
 
@@ -937,7 +937,7 @@
 - [x] 再執行 Batch B
 - [x] 再執行 Batch C
 - [x] 再執行 Batch D
-- [ ] 最後執行 Batch E
+- [x] 最後執行 Batch E
 - [x] 每個 batch 完成後都要更新相鄰文件與測試
 
 #### 3.26 文件先行 / Code 先行原則
@@ -946,8 +946,8 @@
 
 - [x] release asset 清單與命名規則
 - [x] checksum / release manifest 格式
-- [ ] GA blocker / non-blocker 定義
-- [ ] rollback 禁止事項與 hotfix 原則
+- [x] GA blocker / non-blocker 定義
+- [x] rollback 禁止事項與 hotfix 原則
 - [x] clean environment 成功判準
 
 Code 先行：
@@ -958,7 +958,7 @@ Code 先行：
 - [x] `scripts/install-latest.ps1`
 - [x] `scripts/install-latest.sh`
 - [x] `scripts/run-release-adoption-smoke.py`
-- [ ] `.github/workflows/release.yml`
+- [x] `.github/workflows/release.yml`
 
 同步收斂：
 
@@ -966,7 +966,7 @@ Code 先行：
 - [x] `docs/release/release-playbook.md`
 - [x] `docs/release/adoption-smoke-guide.md`
 - [x] `docs/release/supported-environments.md`
-- [ ] `TESTING-PLAN.md`
+- [x] `TESTING-PLAN.md`
 
 ### 4. 提升高價值但目前仍屬 manual/assisted 的 remediation 能力
 
