@@ -16,6 +16,7 @@ if str(SCRIPT_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPT_ROOT))
 
 import run_accessibility_audit as runner
+import advanced_gates
 import baseline_governance
 import scanner_runtime
 
@@ -940,7 +941,7 @@ class RunnerPolicyTests(unittest.TestCase):
                 {'rule_id': 'image-alt', 'severity': 'serious', 'status': 'open'},
             ]
         }
-        calibration = runner._evaluate_risk_calibration(
+        calibration = advanced_gates._evaluate_risk_calibration(
             report=report,
             source_path='missing-calibration-source.json',
             mode='warn',
@@ -968,7 +969,7 @@ class RunnerPolicyTests(unittest.TestCase):
                 {'rule_id': 'image-alt', 'severity': 'serious', 'status': 'open'},
             ]
         }
-        calibration = runner._evaluate_risk_calibration(
+        calibration = advanced_gates._evaluate_risk_calibration(
             report=report,
             source_path=str(source),
             mode='warn',
@@ -1001,7 +1002,7 @@ class RunnerPolicyTests(unittest.TestCase):
                 {'rule_id': 'image-alt', 'severity': 'serious', 'status': 'open'},
             ]
         }
-        calibration = runner._evaluate_risk_calibration(
+        calibration = advanced_gates._evaluate_risk_calibration(
             report=report,
             source_path=str(source),
             mode='strict',
@@ -1040,7 +1041,7 @@ class RunnerPolicyTests(unittest.TestCase):
                 {'rule_id': 'button-name', 'changed_target': 'button.icon', 'severity': 'serious', 'status': 'open'},
             ],
         }
-        replay = runner._build_replay_verification_summary(
+        replay = advanced_gates._build_replay_verification_summary(
             current_report=current_report,
             replay_source_report=source_report,
             replay_source_path=Path('source/wcag-report.json'),
@@ -1090,7 +1091,7 @@ class RunnerPolicyTests(unittest.TestCase):
                 }
             ],
         }
-        stability = runner._build_scanner_stability_payload(
+        stability = advanced_gates._build_scanner_stability_payload(
             now_utc=datetime.fromisoformat('2026-03-13T00:00:00+00:00'),
             mode='warn',
             current_report=report,
@@ -1163,7 +1164,7 @@ class RunnerPolicyTests(unittest.TestCase):
                 }
             ],
         }
-        stability = runner._build_scanner_stability_payload(
+        stability = advanced_gates._build_scanner_stability_payload(
             now_utc=datetime.fromisoformat('2026-03-12T00:00:00+00:00'),
             mode='warn',
             current_report=report,
@@ -1228,7 +1229,7 @@ class RunnerPolicyTests(unittest.TestCase):
                 },
             ],
         }
-        stability = runner._build_scanner_stability_payload(
+        stability = advanced_gates._build_scanner_stability_payload(
             now_utc=datetime.fromisoformat('2026-03-12T00:00:00+00:00'),
             mode='fail',
             current_report=report,
@@ -1237,6 +1238,23 @@ class RunnerPolicyTests(unittest.TestCase):
         self.assertTrue(stability['comparison']['scanner_capability_changed'])
         self.assertEqual(stability['gate']['downgrade_reason'], 'scanner-capability-changed')
         self.assertFalse(stability['gate']['failed'])
+
+    def test_resolve_advanced_gate_exit_code_prefers_risk_calibration_then_replay_then_stability(self) -> None:
+        should_fail, exit_code, notes = advanced_gates._resolve_advanced_gate_exit_code(
+            risk_calibration={
+                'gate': {'failed': True},
+                'unstable_high_severity_rules': ['image-alt'],
+            },
+            replay_verification={
+                'gate': {'failed': True},
+            },
+            scanner_stability={
+                'gate': {'failed': True},
+            },
+        )
+        self.assertTrue(should_fail)
+        self.assertEqual(exit_code, 46)
+        self.assertEqual(len(notes), 3)
 
 
 if __name__ == "__main__":
