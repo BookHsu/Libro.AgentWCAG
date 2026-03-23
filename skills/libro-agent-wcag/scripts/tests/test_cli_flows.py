@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
 
@@ -16,6 +17,7 @@ class CliFlowTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.repo_root = Path(__file__).resolve().parents[4]
         cls.test_workspace_root = cls.repo_root / '.tmp-test' / 'cli-flows'
+        cls.product_version = tomllib.loads((cls.repo_root / 'pyproject.toml').read_text(encoding='utf-8'))['project']['version']
 
     def _workspace(self, name: str) -> Path:
         workspace = self.test_workspace_root / name
@@ -626,7 +628,7 @@ class CliFlowTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         self.assertTrue((output_dir / 'wcag-report.sarif').exists())
         payload = json.loads((output_dir / 'wcag-report.sarif').read_text(encoding='utf-8'))
-        self.assertEqual(payload['runs'][0]['tool']['driver']['version'], '0.1.0')
+        self.assertEqual(payload['runs'][0]['tool']['driver']['version'], self.product_version)
         self.assertRegex(
             payload['runs'][0]['tool']['driver']['properties']['source_revision'],
             r'^[0-9a-f]{40}$',
@@ -1270,7 +1272,7 @@ class CliFlowTests(unittest.TestCase):
         self.assertEqual(len(sarif['runs'][0]['results']), 1)
         self.assertEqual(sarif['runs'][0]['results'][0]['ruleId'], 'button-name')
         self.assertEqual(compact['product']['report_schema_version'], '1.0.0')
-        self.assertEqual(sarif['runs'][0]['tool']['driver']['version'], '0.1.0')
+        self.assertEqual(sarif['runs'][0]['tool']['driver']['version'], self.product_version)
 
     def test_run_accessibility_audit_summary_only_prints_compact_json(self) -> None:
         test_dir = self._workspace('m23-summary-only-test')
@@ -1303,12 +1305,12 @@ class CliFlowTests(unittest.TestCase):
         payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
         self.assertEqual(payload['report_schema']['version'], '1.0.0')
         self.assertEqual(payload['run_meta']['report_schema_version'], '1.0.0')
-        self.assertEqual(payload['run_meta']['product']['product_version'], '0.1.0')
+        self.assertEqual(payload['run_meta']['product']['product_version'], self.product_version)
         self.assertRegex(payload['run_meta']['product']['source_revision'], r'^[0-9a-f]{40}$')
         self.assertIn('## Report Metadata', (output_dir / 'wcag-report.md').read_text(encoding='utf-8'))
         self.assertTrue((output_dir / 'schemas' / 'wcag-report-1.0.0.schema.json').exists())
         self.assertIn('machine_output', compact)
-        self.assertEqual(compact['product']['product_version'], '0.1.0')
+        self.assertEqual(compact['product']['product_version'], self.product_version)
         self.assertRegex(compact['product']['source_revision'], r'^[0-9a-f]{40}$')
 
     def test_run_accessibility_audit_lists_policy_presets_without_target(self) -> None:
@@ -1516,7 +1518,7 @@ class CliFlowTests(unittest.TestCase):
         self.assertEqual(manifest['generator']['name'], 'run_accessibility_audit.py')
         self.assertEqual(manifest['generator']['product_name'], 'Libro.AgentWCAG')
         self.assertEqual(manifest['generator']['version'], '1.0.0')
-        self.assertEqual(manifest['generator']['product_version'], '0.1.0')
+        self.assertEqual(manifest['generator']['product_version'], self.product_version)
         self.assertEqual(manifest['generator']['report_schema_version'], '1.0.0')
         self.assertRegex(manifest['generator']['source_revision'], r'^[0-9a-f]{40}$')
         self.assertGreaterEqual(manifest['artifact_count'], 3)
