@@ -7,6 +7,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tomllib
 import unittest
 from pathlib import Path
 
@@ -16,6 +17,7 @@ class ReleaseAdoptionTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.repo_root = Path(__file__).resolve().parents[4]
         cls.workspace_root = cls.repo_root / ".tmp-test" / "release-adoption"
+        cls.product_version = tomllib.loads((cls.repo_root / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
 
     def _workspace(self, name: str) -> Path:
         workspace = self.workspace_root / name
@@ -76,8 +78,8 @@ class ReleaseAdoptionTests(unittest.TestCase):
         self.assertTrue(summary["doctor_version_consistency_verified"])
         self.assertTrue(summary["doctor_manifest_integrity_verified"])
         self.assertTrue(summary["uninstall_removed_destination"])
-        self.assertEqual(summary["installed_product_version"], "0.1.0")
-        self.assertEqual(summary["report_product_version"], "0.1.0")
+        self.assertEqual(summary["installed_product_version"], self.product_version)
+        self.assertEqual(summary["report_product_version"], self.product_version)
         self.assertEqual(summary["source_revision"], "fedcba9876543210fedcba9876543210fedcba98")
 
     def test_bootstrap_wrappers_reference_latest_manifest_and_checksum_verification(self) -> None:

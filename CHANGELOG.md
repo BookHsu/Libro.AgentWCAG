@@ -6,6 +6,8 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-03-23
+
 ### Added
 
 - Release-readiness docs for checklist, environment matrix, and first-run smoke guidance.
@@ -21,6 +23,21 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - README now links release-readiness references and M20 CI policy/baseline examples.
 - Release checklist now requires scanner stability evidence review for volatility gates and capability drift downgrades.
 - Changelog discipline now requires release notes to match the tested release workflow, GA blocker policy, and rollback communication rules.
+
+### Install / Verify
+
+- Package release assets with `python .\scripts\package-release.py --output-dir .\dist\release --overwrite`.
+- Bootstrap install from release assets with `pwsh -File .\scripts\install-latest.ps1 -ReleaseBase .\dist\release -Agent codex`.
+- Post-install verification is part of bootstrap and can also be run explicitly with `python .\scripts\doctor-agent.py --agent codex --verify-manifest-integrity`.
+
+### Checksum Verification
+
+- Verify `libro-agent-wcag-1.0.1-sha256sums.txt` before installing any release bundle.
+- Confirm the selected bundle hash matches both the checksum file and `libro-agent-wcag-1.0.1-release-manifest.json`.
+
+### Known Limitations
+
+- GitHub Release publish flow is contract-tested in-repo; final end-to-end publish still depends on a real tag push in GitHub Actions.
 
 ## Changelog Discipline
 
