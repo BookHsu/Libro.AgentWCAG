@@ -1,0 +1,82 @@
+{
+  "agent": "codex",
+  "ok": true,
+  "destination": ".tmp-realistic-smoke\\installed",
+  "exists": true,
+  "skill_md": true,
+  "manifest": true,
+  "adapter_prompt": true,
+  "expected_product": {
+    "product_name": "Libro.AgentWCAG",
+    "product_version": "0.1.0",
+    "source_revision": "40909dfb06f2ee93fca2b199abea26c4d7357117"
+  },
+  "installed_product": {
+    "product_name": "Libro.AgentWCAG",
+    "product_version": "0.1.0",
+    "source_revision": "40909dfb06f2ee93fca2b199abea26c4d7357117",
+    "provenance": {
+      "version_source": "pyproject.toml",
+      "source_revision_source": "git-head"
+    }
+  },
+  "manifest_provenance": {
+    "verified": true,
+    "missing_manifest_fields": [],
+    "mismatched_fields": [],
+    "expected": {
+      "product_name": "Libro.AgentWCAG",
+      "product_version": "0.1.0",
+      "source_revision": "40909dfb06f2ee93fca2b199abea26c4d7357117"
+    }
+  },
+  "version_consistency": {
+    "verified": true,
+    "expected": {
+      "product_version": "0.1.0",
+      "source_revision": "40909dfb06f2ee93fca2b199abea26c4d7357117"
+    },
+    "installed": {
+      "product_name": "Libro.AgentWCAG",
+      "product_version": "0.1.0",
+      "source_revision": "40909dfb06f2ee93fca2b199abea26c4d7357117",
+      "provenance": {
+        "version_source": "pyproject.toml",
+        "source_revision_source": "git-head"
+      }
+    },
+    "matches": {
+      "product_version": true,
+      "source_revision": true
+    }
+  },
+  "manifest_data": {
+    "skill_name": "libro-agent-wcag",
+    "product_name": "Libro.AgentWCAG",
+    "product_version": "0.1.0",
+    "source_revision": "40909dfb06f2ee93fca2b199abea26c4d7357117",
+    "agent": "codex",
+    "skill_entrypoint": "SKILL.md",
+    "adapter_prompt": "adapters/openai-codex/prompt-template.md",
+    "usage_example": "adapters/openai-codex/usage-example.md",
+    "failure_guide": "adapters/openai-codex/failure-guide.md",
+    "e2e_example": "adapters/openai-codex/e2e-example.md",
+    "manifest_integrity": {
+      "algorithm": "sha256",
+      "entrypoint_hashes": {
+        "skill_entrypoint": "c3dc20665bc1460d6858423b1f6ae85730578b3dce398c29f677ab16aea37626",
+        "adapter_prompt": "834c1baa277586de0f946197c096f702c3185b78ce7f6bb1474b1af79304edf6",
+        "usage_example": "2b076c1c0b16b391e2628e526e2d27ae1e92d5e5a385d45acd7a14ce187bf22a",
+        "failure_guide": "694566d8bab90448b2c309bb61e1ae274f1570413c864ef23826c1ef911439b0",
+        "e2e_example": "db496741ec03b8e6b6cd129a21594f4b8ef2e3acfd76e7caafc8a005037210bc"
+      }
+    },
+    "notes": "For non-Codex agents, wire the adapter prompt into your agent's prompt or skill system.",
+    "invoke_example": "Use $libro-agent-wcag to audit or remediate a web page using a selected WCAG version and level.",
+    "doctor_command": "python scripts/doctor-agent.py --agent codex",
+    "provenance": {
+      "version_source": "pyproject.toml",
+      "source_revision_source": "git-head"
+    }
+  }
+}

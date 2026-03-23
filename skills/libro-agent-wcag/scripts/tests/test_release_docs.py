@@ -40,6 +40,10 @@ class ReleaseDocsTests(unittest.TestCase):
             self.repo_root / 'docs' / 'testing' / 'realistic-sample' / 'mixed-findings.html',
             self.repo_root / 'docs' / 'testing' / 'realistic-sample' / 'scanner-fixtures' / 'axe.mock.json',
             self.repo_root / 'docs' / 'testing' / 'realistic-sample' / 'scanner-fixtures' / 'lighthouse.mock.json',
+            self.repo_root / 'docs' / 'testing' / 'realistic-sample' / 'artifacts' / 'install-manifest.sample.json',
+            self.repo_root / 'docs' / 'testing' / 'realistic-sample' / 'artifacts' / 'doctor.sample.json',
+            self.repo_root / 'docs' / 'testing' / 'realistic-sample' / 'artifacts' / 'artifact-manifest.sample.json',
+            self.repo_root / 'docs' / 'testing' / 'realistic-sample' / 'artifacts' / 'wcag-report.sample.sarif',
             self.repo_root / 'docs' / 'testing' / 'realistic-sample' / 'artifacts' / 'smoke-summary.json',
             self.repo_root / 'docs' / 'testing' / 'realistic-sample' / 'known-limitations.md',
         ]
@@ -91,6 +95,34 @@ class ReleaseDocsTests(unittest.TestCase):
         self.assertIn('pyproject.toml', content)
         self.assertIn('LIBRO_AGENTWCAG_SOURCE_REVISION', content)
         self.assertIn('fail fast', content.lower())
+
+    def test_adoption_smoke_guide_covers_version_consistency_outputs(self) -> None:
+        content = (self.repo_root / 'docs' / 'release' / 'adoption-smoke-guide.md').read_text(encoding='utf-8')
+        self.assertIn('version_consistency.verified = true', content)
+        self.assertIn('wcag-report.sample.json', content)
+        self.assertIn('source_revision', content)
+
+    def test_realistic_sample_artifacts_capture_provenance_metadata(self) -> None:
+        smoke = json.loads(
+            (self.repo_root / 'docs' / 'testing' / 'realistic-sample' / 'artifacts' / 'smoke-summary.json').read_text(
+                encoding='utf-8'
+            )
+        )
+        doctor = json.loads(
+            (self.repo_root / 'docs' / 'testing' / 'realistic-sample' / 'artifacts' / 'doctor.sample.json').read_text(
+                encoding='utf-8-sig'
+            )
+        )
+        report = json.loads(
+            (self.repo_root / 'docs' / 'testing' / 'realistic-sample' / 'artifacts' / 'wcag-report.sample.json').read_text(
+                encoding='utf-8'
+            )
+        )
+        self.assertEqual(smoke['installed_product_version'], '0.1.0')
+        self.assertTrue(smoke['doctor_version_consistency_verified'])
+        self.assertEqual(doctor['installed_product']['product_version'], '0.1.0')
+        self.assertTrue(doctor['version_consistency']['verified'])
+        self.assertEqual(report['run_meta']['product']['product_version'], '0.1.0')
 
 
 if __name__ == '__main__':

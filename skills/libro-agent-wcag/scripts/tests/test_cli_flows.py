@@ -586,49 +586,54 @@ class CliFlowTests(unittest.TestCase):
 
 
     def test_run_accessibility_audit_with_sarif_and_rule_filters(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            html_path = Path(tmp) / 'sample.html'
-            output_dir = Path(tmp) / 'out'
-            axe_json = Path(tmp) / 'axe.json'
-            html_path.write_text('<!doctype html><html><body><img class="hero" src="hero.png"><button class="icon"></button></body></html>', encoding='utf-8')
-            axe_json.write_text(
-                json.dumps(
-                    {
-                        'violations': [
-                            {'id': 'image-alt', 'impact': 'serious', 'description': 'Image alt missing', 'nodes': [{'target': ['img.hero']}]},
-                            {'id': 'button-name', 'impact': 'serious', 'description': 'Button name missing', 'nodes': [{'target': ['button.icon']}]},
-                        ]
-                    }
-                ),
-                encoding='utf-8',
-            )
-            completed = subprocess.run(
-                [
-                    sys.executable,
-                    'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
-                    '--target',
-                    str(html_path),
-                    '--output-dir',
-                    str(output_dir),
-                    '--report-format',
-                    'sarif',
-                    '--include-rule',
-                    'image-alt',
-                    '--mock-axe-json',
-                    str(axe_json),
-                    '--skip-lighthouse',
-                ],
-                cwd=self.repo_root,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
-            self.assertTrue((output_dir / 'wcag-report.sarif').exists())
-            payload = json.loads((output_dir / 'wcag-report.sarif').read_text(encoding='utf-8'))
-            rules = payload['runs'][0]['tool']['driver']['rules']
-            self.assertEqual(len(rules), 1)
-            self.assertEqual(rules[0]['id'], 'image-alt')
+        test_dir = self._workspace('m22-sarif-rule-filters')
+        html_path = test_dir / 'sample.html'
+        output_dir = test_dir / 'out'
+        axe_json = test_dir / 'axe.json'
+        html_path.write_text('<!doctype html><html><body><img class="hero" src="hero.png"><button class="icon"></button></body></html>', encoding='utf-8')
+        axe_json.write_text(
+            json.dumps(
+                {
+                    'violations': [
+                        {'id': 'image-alt', 'impact': 'serious', 'description': 'Image alt missing', 'nodes': [{'target': ['img.hero']}]},
+                        {'id': 'button-name', 'impact': 'serious', 'description': 'Button name missing', 'nodes': [{'target': ['button.icon']}]},
+                    ]
+                }
+            ),
+            encoding='utf-8',
+        )
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(output_dir),
+                '--report-format',
+                'sarif',
+                '--include-rule',
+                'image-alt',
+                '--mock-axe-json',
+                str(axe_json),
+                '--skip-lighthouse',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        self.assertTrue((output_dir / 'wcag-report.sarif').exists())
+        payload = json.loads((output_dir / 'wcag-report.sarif').read_text(encoding='utf-8'))
+        self.assertEqual(payload['runs'][0]['tool']['driver']['version'], '0.1.0')
+        self.assertRegex(
+            payload['runs'][0]['tool']['driver']['properties']['source_revision'],
+            r'^[0-9a-f]{40}$',
+        )
+        rules = payload['runs'][0]['tool']['driver']['rules']
+        self.assertEqual(len(rules), 1)
+        self.assertEqual(rules[0]['id'], 'image-alt')
 
     def test_run_accessibility_audit_fail_on_returns_deterministic_exit_code(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -1264,6 +1269,8 @@ class CliFlowTests(unittest.TestCase):
         sarif = json.loads((output_dir / 'wcag-report.sarif').read_text(encoding='utf-8'))
         self.assertEqual(len(sarif['runs'][0]['results']), 1)
         self.assertEqual(sarif['runs'][0]['results'][0]['ruleId'], 'button-name')
+        self.assertEqual(compact['product']['report_schema_version'], '1.0.0')
+        self.assertEqual(sarif['runs'][0]['tool']['driver']['version'], '0.1.0')
 
     def test_run_accessibility_audit_summary_only_prints_compact_json(self) -> None:
         test_dir = self._workspace('m23-summary-only-test')
@@ -1296,8 +1303,13 @@ class CliFlowTests(unittest.TestCase):
         payload = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
         self.assertEqual(payload['report_schema']['version'], '1.0.0')
         self.assertEqual(payload['run_meta']['report_schema_version'], '1.0.0')
+        self.assertEqual(payload['run_meta']['product']['product_version'], '0.1.0')
+        self.assertRegex(payload['run_meta']['product']['source_revision'], r'^[0-9a-f]{40}$')
+        self.assertIn('## Report Metadata', (output_dir / 'wcag-report.md').read_text(encoding='utf-8'))
         self.assertTrue((output_dir / 'schemas' / 'wcag-report-1.0.0.schema.json').exists())
         self.assertIn('machine_output', compact)
+        self.assertEqual(compact['product']['product_version'], '0.1.0')
+        self.assertRegex(compact['product']['source_revision'], r'^[0-9a-f]{40}$')
 
     def test_run_accessibility_audit_lists_policy_presets_without_target(self) -> None:
         test_dir = self._workspace('m24-policy-presets-test')

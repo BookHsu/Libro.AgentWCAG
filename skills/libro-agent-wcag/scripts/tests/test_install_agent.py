@@ -126,6 +126,10 @@ class InstallAgentTests(unittest.TestCase):
         self.assertTrue(payload['ok'])
         self.assertTrue(payload['manifest_provenance']['verified'])
         self.assertEqual(payload['expected_product']['product_version'], '0.1.0')
+        self.assertEqual(payload['installed_product']['product_version'], '0.1.0')
+        self.assertTrue(payload['version_consistency']['verified'])
+        self.assertTrue(payload['version_consistency']['matches']['product_version'])
+        self.assertTrue(payload['version_consistency']['matches']['source_revision'])
 
     def test_doctor_fails_when_manifest_provenance_is_missing(self) -> None:
         destination = self._workspace('doctor-missing-provenance') / 'codex-skill'
@@ -170,6 +174,7 @@ class InstallAgentTests(unittest.TestCase):
         self.assertFalse(payload['ok'])
         self.assertIn('source_revision', payload['manifest_provenance']['missing_manifest_fields'])
         self.assertIn('provenance', payload['manifest_provenance']['missing_manifest_fields'])
+        self.assertFalse(payload['version_consistency']['verified'])
 
     def test_uninstall_removes_destination(self) -> None:
         destination = self._workspace('uninstall') / 'codex-skill'
