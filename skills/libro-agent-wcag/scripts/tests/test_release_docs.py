@@ -79,6 +79,9 @@ class ReleaseDocsTests(unittest.TestCase):
         self.assertIn('## Release readiness', content)
         self.assertIn('product_version', content)
         self.assertIn('source_revision', content)
+        self.assertIn('package-release.py', content)
+        self.assertIn('libro-agent-wcag-<version>-all-in-one.zip', content)
+        self.assertIn('libro-agent-wcag-<version>-sha256sums.txt', content)
         self.assertIn('docs/release/release-playbook.md', content)
         self.assertIn('docs/release/adoption-smoke-guide.md', content)
         self.assertIn('docs/release/apply-fixes-scope.md', content)
@@ -95,12 +98,16 @@ class ReleaseDocsTests(unittest.TestCase):
         self.assertIn('pyproject.toml', content)
         self.assertIn('LIBRO_AGENTWCAG_SOURCE_REVISION', content)
         self.assertIn('fail fast', content.lower())
+        self.assertIn('package-release.py', content)
+        self.assertIn('sha256sums.txt', content)
 
     def test_adoption_smoke_guide_covers_version_consistency_outputs(self) -> None:
         content = (self.repo_root / 'docs' / 'release' / 'adoption-smoke-guide.md').read_text(encoding='utf-8')
         self.assertIn('version_consistency.verified = true', content)
         self.assertIn('wcag-report.sample.json', content)
         self.assertIn('source_revision', content)
+        self.assertIn('package-release.py', content)
+        self.assertIn('latest-release.json', content)
 
     def test_realistic_sample_artifacts_capture_provenance_metadata(self) -> None:
         smoke = json.loads(

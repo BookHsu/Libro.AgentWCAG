@@ -495,48 +495,48 @@
 
 #### 3.5 Release asset contract 設計
 
-- [ ] 定義每次 release 必須產生的正式 assets 清單
-- [ ] 定義 `codex` bundle ZIP 命名規則
-- [ ] 定義 `claude` bundle ZIP 命名規則
-- [ ] 定義 `gemini` bundle ZIP 命名規則
-- [ ] 定義 `copilot` bundle ZIP 命名規則
-- [ ] 定義 `all-in-one` bundle ZIP 命名規則
-- [ ] 定義 checksum 檔命名規則
-- [ ] 定義 release manifest 檔命名規則
-- [ ] 定義哪些 assets 屬於公開交付物
-- [ ] 定義哪些 artifacts 只屬於 CI triage，不應進 release
-- [ ] 將 asset contract 文件化
-- [ ] 為 asset naming 補 contract tests
+- [x] 定義每次 release 必須產生的正式 assets 清單
+- [x] 定義 `codex` bundle ZIP 命名規則
+- [x] 定義 `claude` bundle ZIP 命名規則
+- [x] 定義 `gemini` bundle ZIP 命名規則
+- [x] 定義 `copilot` bundle ZIP 命名規則
+- [x] 定義 `all-in-one` bundle ZIP 命名規則
+- [x] 定義 checksum 檔命名規則
+- [x] 定義 release manifest 檔命名規則
+- [x] 定義哪些 assets 屬於公開交付物
+- [x] 定義哪些 artifacts 只屬於 CI triage，不應進 release
+- [x] 將 asset contract 文件化
+- [x] 為 asset naming 補 contract tests
 
 #### 3.6 Packaging script 與 bundle 內容規範
 
-- [ ] 新增 `scripts/package-release.py`
-- [ ] 實作 release staging directory 建立流程
-- [ ] 實作 agent-specific bundle 組裝流程
-- [ ] 實作 `all-in-one` bundle 組裝流程
-- [ ] 實作 package completeness validation
-- [ ] 定義 bundle 內根目錄結構
-- [ ] 定義 bundle 是否包含 schema artifacts
-- [ ] 定義 bundle 是否包含 policy bundles
-- [ ] 定義 bundle 是否包含 archive docs
-- [ ] 定義 bundle 最小必要內容清單
-- [ ] 確保 bundle 不混入 tests 或開發期垃圾檔
-- [ ] 輸出 machine-readable packaging summary
-- [ ] 為 packaging script 補單元測試
-- [ ] 為 bundle completeness 補測試
-- [ ] 為 deterministic packaging 補測試
+- [x] 新增 `scripts/package-release.py`
+- [x] 實作 release staging directory 建立流程
+- [x] 實作 agent-specific bundle 組裝流程
+- [x] 實作 `all-in-one` bundle 組裝流程
+- [x] 實作 package completeness validation
+- [x] 定義 bundle 內根目錄結構
+- [x] 定義 bundle 是否包含 schema artifacts
+- [x] 定義 bundle 是否包含 policy bundles
+- [x] 定義 bundle 是否包含 archive docs
+- [x] 定義 bundle 最小必要內容清單
+- [x] 確保 bundle 不混入 tests 或開發期垃圾檔
+- [x] 輸出 machine-readable packaging summary
+- [x] 為 packaging script 補單元測試
+- [x] 為 bundle completeness 補測試
+- [x] 為 deterministic packaging 補測試
 
 #### 3.7 Checksum 與下載完整性驗證
 
-- [ ] 決定 checksum 演算法固定為 `sha256`
-- [ ] 決定 checksum file 格式為 plain text、JSON，或兩者並行
-- [ ] 在 packaging script 中產出 checksum 檔
-- [ ] 在 release manifest 中加入每個 asset 的 checksum
+- [x] 決定 checksum 演算法固定為 `sha256`
+- [x] 決定 checksum file 格式為 plain text、JSON，或兩者並行
+- [x] 在 packaging script 中產出 checksum 檔
+- [x] 在 release manifest 中加入每個 asset 的 checksum
 - [ ] 定義 downstream 使用者如何驗證 checksum
 - [ ] 定義 checksum mismatch 的 triage 流程
 - [ ] 評估 doctor 是否需要支援下載後 asset checksum 驗證
-- [ ] 補 checksum 文件範例
-- [ ] 為 checksum file format 補測試
+- [x] 補 checksum 文件範例
+- [x] 為 checksum file format 補測試
 - [ ] 為 checksum mismatch 補測試
 - [ ] 為遺漏檔案或錯誤順序補測試
 
@@ -814,21 +814,21 @@
 
 允許修改檔案：
 
-- [ ] `scripts/package-release.py`
-- [ ] `README.md`
-- [ ] `docs/release/release-playbook.md`
-- [ ] `docs/release/supported-environments.md`
-- [ ] `docs/release/adoption-smoke-guide.md`
-- [ ] `skills/libro-agent-wcag/scripts/tests/`
+- [x] `scripts/package-release.py`
+- [x] `README.md`
+- [x] `docs/release/release-playbook.md`
+- [x] `docs/release/supported-environments.md`
+- [x] `docs/release/adoption-smoke-guide.md`
+- [x] `skills/libro-agent-wcag/scripts/tests/`
 
 主要工作：
 
-- [ ] 定義 release assets 清單與命名規則
-- [ ] 實作 agent-specific bundle 組裝
-- [ ] 實作 `all-in-one` bundle 組裝
-- [ ] 產出 `sha256` checksum 檔
-- [ ] 產出 release manifest
-- [ ] 補 package completeness / deterministic packaging tests
+- [x] 定義 release assets 清單與命名規則
+- [x] 實作 agent-specific bundle 組裝
+- [x] 實作 `all-in-one` bundle 組裝
+- [x] 產出 `sha256` checksum 檔
+- [x] 產出 release manifest
+- [x] 補 package completeness / deterministic packaging tests
 
 禁止事項：
 
@@ -838,9 +838,9 @@
 
 完成證據：
 
-- [ ] 從 repo 根目錄可產出完整 release assets
-- [ ] bundle 命名、checksum、manifest 與文件一致
-- [ ] packaging tests 通過
+- [x] 從 repo 根目錄可產出完整 release assets
+- [x] bundle 命名、checksum、manifest 與文件一致
+- [x] packaging tests 通過
 
 建議驗證命令：
 

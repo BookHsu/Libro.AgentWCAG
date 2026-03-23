@@ -10,6 +10,7 @@ This matrix defines the currently supported runtime and scanner prerequisites.
 | Scanner tools | `@axe-core/cli`, `lighthouse` via `npx` | Missing tools cause scanner-path failures. |
 | OS scripts | Windows PowerShell + POSIX shell | Wrapper scripts are provided for both. |
 | Agent adapters | Codex, Claude, Gemini, Copilot | Installed via `scripts/install-agent.py`. |
+| Release packaging | Python stdlib `zipfile`, local filesystem write access | `scripts/package-release.py` builds deterministic ZIP bundles, checksums, and release manifest assets. |
 
 ## Baseline prerequisites
 
@@ -53,4 +54,4 @@ When opening a dependency/security triage ticket, include:
 - Legacy Python versions below 3.12.
 - Node versions outside active LTS maintenance.
 - Environments that block subprocess execution for scanner commands.
-
+- Release packaging lanes that cannot write local ZIP/checksum assets under the selected output directory.

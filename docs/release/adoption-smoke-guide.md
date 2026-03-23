@@ -6,6 +6,21 @@ Use this guide to validate install, doctor, smoke, integrity, and troubleshootin
 
 Goal: confirm that a user can install, verify, run, and remove the skill without manual repo-specific intervention.
 
+Before consumer smoke, stage versioned release assets:
+
+- `python .\scripts\package-release.py --output-dir .\dist\release --overwrite`
+
+Expected release assets:
+
+- `libro-agent-wcag-<version>-codex.zip`
+- `libro-agent-wcag-<version>-claude.zip`
+- `libro-agent-wcag-<version>-gemini.zip`
+- `libro-agent-wcag-<version>-copilot.zip`
+- `libro-agent-wcag-<version>-all-in-one.zip`
+- `libro-agent-wcag-<version>-release-manifest.json`
+- `libro-agent-wcag-<version>-sha256sums.txt`
+- `latest-release.json`
+
 Run the scripted realistic validation flow:
 
 - `python .\scripts\run-realistic-validation-smoke.py --agent codex`
