@@ -16,23 +16,15 @@ class ReleaseDocsTests(unittest.TestCase):
     def test_release_docs_exist(self) -> None:
         expected_files = [
             self.repo_root / 'CHANGELOG.md',
-            self.repo_root / 'docs' / 'release' / 'release-checklist.md',
-            self.repo_root / 'docs' / 'release' / 'release-notes-workflow.md',
+            self.repo_root / 'docs' / 'release' / 'release-playbook.md',
             self.repo_root / 'docs' / 'release' / 'supported-environments.md',
-            self.repo_root / 'docs' / 'release' / 'first-run-smoke.md',
+            self.repo_root / 'docs' / 'release' / 'adoption-smoke-guide.md',
             self.repo_root / 'docs' / 'release' / 'apply-fixes-scope.md',
-            self.repo_root / 'docs' / 'release' / 'demo-package-walkthrough.md',
             self.repo_root / 'docs' / 'release' / 'prompt-invocation-templates.md',
-            self.repo_root / 'docs' / 'release' / 'troubleshooting-intake.md',
             self.repo_root / 'docs' / 'release' / 'resilient-run-patterns.md',
-            self.repo_root / 'docs' / 'release' / 'release-packaging-extras-placement.md',
             self.repo_root / 'docs' / 'release' / 'real-scanner-ci-lane.md',
-            self.repo_root / 'docs' / 'release' / 'baseline-debt-lifecycle.md',
-            self.repo_root / 'docs' / 'release' / 'risk-calibration.md',
-            self.repo_root / 'docs' / 'release' / 'replay-verification-lane.md',
-            self.repo_root / 'docs' / 'release' / 'scanner-stability-ledger.md',
-            self.repo_root / 'docs' / 'release' / 'provenance-verification.md',
-            self.repo_root / 'docs' / 'release' / 'install-integrity-verification.md',
+            self.repo_root / 'docs' / 'release' / 'baseline-governance.md',
+            self.repo_root / 'docs' / 'release' / 'advanced-ci-gates.md',
             self.repo_root / 'docs' / 'policy-bundles' / 'strict-web-app.json',
             self.repo_root / 'docs' / 'policy-bundles' / 'legacy-content.json',
             self.repo_root / 'docs' / 'policy-bundles' / 'marketing-site.json',
@@ -80,20 +72,14 @@ class ReleaseDocsTests(unittest.TestCase):
     def test_readme_links_release_readiness(self) -> None:
         content = (self.repo_root / 'README.md').read_text(encoding='utf-8')
         self.assertIn('## Release readiness', content)
-        self.assertIn('docs/release/release-checklist.md', content)
-        self.assertIn('docs/release/first-run-smoke.md', content)
+        self.assertIn('docs/release/release-playbook.md', content)
+        self.assertIn('docs/release/adoption-smoke-guide.md', content)
         self.assertIn('docs/release/apply-fixes-scope.md', content)
-        self.assertIn('docs/release/demo-package-walkthrough.md', content)
         self.assertIn('docs/release/prompt-invocation-templates.md', content)
-        self.assertIn('docs/release/troubleshooting-intake.md', content)
         self.assertIn('docs/release/resilient-run-patterns.md', content)
         self.assertIn('docs/release/real-scanner-ci-lane.md', content)
-        self.assertIn('docs/release/baseline-debt-lifecycle.md', content)
-        self.assertIn('docs/release/risk-calibration.md', content)
-        self.assertIn('docs/release/replay-verification-lane.md', content)
-        self.assertIn('docs/release/scanner-stability-ledger.md', content)
-        self.assertIn('docs/release/provenance-verification.md', content)
-        self.assertIn('docs/release/install-integrity-verification.md', content)
+        self.assertIn('docs/release/baseline-governance.md', content)
+        self.assertIn('docs/release/advanced-ci-gates.md', content)
         self.assertIn('docs/policy-bundles/', content)
 
 
