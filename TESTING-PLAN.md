@@ -15,16 +15,16 @@ Coverage target in this repo:
 | Component Test | Yes | Yes | `run_accessibility_audit.py`, `normalize_report.py`, installer scripts | Implemented | Automated | `test_runner.py`, `test_cli_flows.py`, `test_install_agent.py`, `test_repo_scripts.py` |
 | Module Test | Yes | Yes | `skills/libro-agent-wcag/scripts/`, `adapters/`, references | Implemented | Automated + Static Contract | `test_adapters.py`, `test_repo_contracts.py`, workflow and remediation tests |
 | Integration Test | Yes | Yes | Workflow + installer + validator path | Implemented | Automated | `test_install_agent.py`, `test_repo_scripts.py`, `test_cli_flows.py`, `test_repo_invocation.py` |
-| System Test | Yes | Yes | Whole repo as an installable skill product | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/scenario-assets.md` |
-| End-to-End Test | Yes | Yes | Install -> invoke -> audit/report flow | Implemented | Automated + Scripted Manual | `test_cli_flows.py`, `test_matrix_completion.py`, `docs/testing/scenario-assets.md` |
+| System Test | Yes | Yes | Whole repo as an installable skill product | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/testing-playbook.md` |
+| End-to-End Test | Yes | Yes | Install -> invoke -> audit/report flow | Implemented | Automated + Scripted Manual | `test_cli_flows.py`, `test_matrix_completion.py`, `docs/testing/testing-playbook.md` |
 | Functional Test | Yes | Yes | Reporting, install flow, language behavior, execution modes | Implemented | Automated | workflow, CLI, install, adapter, and matrix tests |
-| Non-Functional Test | Yes | Yes | Performance, resilience, stability | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/nonfunctional-checks.md` |
+| Non-Functional Test | Yes | Yes | Performance, resilience, stability | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/testing-playbook.md` |
 | Smoke Test | Yes | Yes | Repo validation, root test discovery, installer basics | Implemented | Automated | `test_repo_invocation.py`, `validate_skill.py`, install tests |
 | Sanity Test | Yes | Yes | Recently changed areas | Implemented | Automated | current automated suite |
 | Regression Test | Yes | Yes | All core workflow and install paths | Implemented | Automated | full unit/CLI/contract suite |
-| Acceptance Test / UAT | Yes | No | Installed skill behavior against intended user outcomes | Implemented | Scripted Manual | `docs/testing/manual-checklists.md` |
-| Alpha Test | Yes | No | Internal usage before release | Implemented | Scripted Manual | `docs/testing/manual-checklists.md` |
-| Beta Test | Yes | No | External real-user trial | Implemented | Scripted Manual | `docs/testing/manual-checklists.md` |
+| Acceptance Test / UAT | Yes | No | Installed skill behavior against intended user outcomes | Implemented | Scripted Manual | `docs/testing/testing-playbook.md` |
+| Alpha Test | Yes | No | Internal usage before release | Implemented | Scripted Manual | `docs/testing/testing-playbook.md` |
+| Beta Test | Yes | No | External real-user trial | Implemented | Scripted Manual | `docs/testing/testing-playbook.md` |
 | Black-box Test | Yes | Yes | CLI tools and report outputs | Implemented | Automated | `test_cli_flows.py`, install/doctor/uninstall subprocess tests |
 | White-box Test | Yes | Yes | Workflow internals and branching logic | Implemented | Automated | `test_workflow.py`, `test_runner.py`, `test_remediation_library.py` |
 | Gray-box Test | Yes | Yes | Install + adapter + workflow contracts | Implemented | Automated | `test_repo_scripts.py`, `test_repo_contracts.py`, `test_matrix_completion.py` |
@@ -32,33 +32,33 @@ Coverage target in this repo:
 | Dynamic Testing | Yes | Yes | All runtime scripts | Implemented | Automated | CLI and workflow subprocess tests |
 | Boundary Value Testing | Yes | Yes | CLI args, execution modes, target validation | Implemented | Automated | `test_runner.py`, `test_workflow.py`, `test_cli_flows.py` |
 | Equivalence Partitioning | Yes | Yes | Versions, levels, agent targets, language variants | Implemented | Automated | `test_workflow.py`, `test_matrix_completion.py`, install tests |
-| Decision Table Testing | Yes | Yes | `task_mode` + `execution_mode` + target availability | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/scenario-assets.md` |
-| State Transition Testing | Yes | Yes | Execution/report lifecycle | Implemented | Automated + Scripted Manual | workflow status tests, `docs/testing/scenario-assets.md` |
+| Decision Table Testing | Yes | Yes | `task_mode` + `execution_mode` + target availability | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/testing-playbook.md` |
+| State Transition Testing | Yes | Yes | Execution/report lifecycle | Implemented | Automated + Scripted Manual | workflow status tests, `docs/testing/testing-playbook.md` |
 | Error Guessing | Yes | Yes | Invalid targets, missing files, duplicate findings, scanner failure | Implemented | Automated | `test_runner.py`, `test_cli_flows.py`, `test_workflow.py`, `test_repo_scripts.py` |
-| Exploratory Testing | Yes | No | Installed skill behavior on real pages | Implemented | Scripted Manual | `docs/testing/manual-checklists.md` |
-| Scenario Test | Yes | Yes | Real-world create/modify workflows | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/scenario-assets.md` |
+| Exploratory Testing | Yes | No | Installed skill behavior on real pages | Implemented | Scripted Manual | `docs/testing/testing-playbook.md` |
+| Scenario Test | Yes | Yes | Real-world create/modify workflows | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/testing-playbook.md` |
 | Data-Driven Test | Yes | Yes | Same workflow with multiple WCAG versions/levels/languages | Implemented | Automated | `test_workflow.py`, `test_matrix_completion.py` |
 | Parameterized Test | Yes | Yes | Versions, levels, execution modes, agents | Implemented | Automated | loop-based subtests in workflow/install/matrix tests |
 | API Test | No | No | N/A | Not Applicable | None | repo exposes no API |
 | UI Test | No | No | N/A | Not Applicable | None | repo ships no UI |
-| Compatibility Test | Yes | Yes | Different agents, OS/script entry points | Implemented | Automated + Scripted Manual | `test_install_agent.py`, `test_repo_scripts.py`, `docs/testing/nonfunctional-checks.md` |
+| Compatibility Test | Yes | Yes | Different agents, OS/script entry points | Implemented | Automated + Scripted Manual | `test_install_agent.py`, `test_repo_scripts.py`, `docs/testing/testing-playbook.md` |
 | Cross-browser Test | No | No | N/A | Not Applicable | None | repo ships no browser UI |
 | Responsive Test | No | No | N/A | Not Applicable | None | repo ships no responsive UI |
-| Usability Test | Yes | No | Installation instructions and invocation flow | Implemented | Scripted Manual | `docs/testing/manual-checklists.md` |
+| Usability Test | Yes | No | Installation instructions and invocation flow | Implemented | Scripted Manual | `docs/testing/testing-playbook.md` |
 | Accessibility Test | Yes | Yes | HTML fixture scanning and report output | Implemented | Automated | workflow/report tests and CLI report generation tests |
-| Performance Test | Yes | Yes | Workflow speed and scanner overhead | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/nonfunctional-checks.md` |
+| Performance Test | Yes | Yes | Workflow speed and scanner overhead | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/testing-playbook.md` |
 | Load Test | No | No | N/A | Not Applicable | None | no service endpoint |
-| Stress Test | Yes | Yes | Large fixture sets / scanner timeouts | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/nonfunctional-checks.md` |
+| Stress Test | Yes | Yes | Large fixture sets / scanner timeouts | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/testing-playbook.md` |
 | Spike Test | No | No | N/A | Not Applicable | None | no service endpoint |
-| Endurance / Soak Test | Yes | Yes | Long-running scan batches | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/nonfunctional-checks.md` |
-| Volume / Capacity Test | Yes | Yes | Large report / many fixtures | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/nonfunctional-checks.md` |
-| Scalability Test | Yes | Yes | Batch audit workflows | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/nonfunctional-checks.md` |
-| Security Test | Yes | Yes | CLI input boundaries, install path handling | Implemented | Automated + Scripted Manual | `test_runner.py`, `test_cli_flows.py`, install overwrite tests, `docs/testing/nonfunctional-checks.md` |
-| Vulnerability Scan | Yes | Yes | Dependencies and scripts | Implemented | Automated + Scripted Manual | `test_repo_invocation.py`, `docs/testing/nonfunctional-checks.md` |
+| Endurance / Soak Test | Yes | Yes | Long-running scan batches | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/testing-playbook.md` |
+| Volume / Capacity Test | Yes | Yes | Large report / many fixtures | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/testing-playbook.md` |
+| Scalability Test | Yes | Yes | Batch audit workflows | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/testing-playbook.md` |
+| Security Test | Yes | Yes | CLI input boundaries, install path handling | Implemented | Automated + Scripted Manual | `test_runner.py`, `test_cli_flows.py`, install overwrite tests, `docs/testing/testing-playbook.md` |
+| Vulnerability Scan | Yes | Yes | Dependencies and scripts | Implemented | Automated + Scripted Manual | `test_repo_invocation.py`, `docs/testing/testing-playbook.md` |
 | Penetration Test | No | No | N/A | Not Applicable | None | no exposed service |
 | Authorization Test | No | No | N/A | Not Applicable | None | no auth system |
 | Authentication Test | No | No | N/A | Not Applicable | None | no login flow |
-| Recovery Test | Yes | Yes | Failed scan recovery and reinstall flows | Implemented | Automated + Scripted Manual | `test_cli_flows.py`, `test_matrix_completion.py`, `docs/testing/nonfunctional-checks.md` |
+| Recovery Test | Yes | Yes | Failed scan recovery and reinstall flows | Implemented | Automated + Scripted Manual | `test_cli_flows.py`, `test_matrix_completion.py`, `docs/testing/testing-playbook.md` |
 | Failover Test | No | No | N/A | Not Applicable | None | no HA topology |
 | Backup/Restore Test | No | No | N/A | Not Applicable | None | no persistent data store |
 | Installation Test | Yes | Yes | Installer, wrappers, manifest generation | Implemented | Automated | `test_install_agent.py`, `test_repo_scripts.py` |
@@ -68,8 +68,8 @@ Coverage target in this repo:
 | Internationalization Test | Yes | Yes | Language fallback design | Implemented | Automated | `test_matrix_completion.py`, `test_workflow.py` |
 | Database Test | No | No | N/A | Not Applicable | None | no database |
 | DB Migration Test | No | No | N/A | Not Applicable | None | no database |
-| Interrupt Test | Yes | Yes | Mid-install overwrite / missing files / scanner failure | Implemented | Automated + Scripted Manual | broken install tests, scanner error tests, `docs/testing/nonfunctional-checks.md` |
-| Concurrency Test | Yes | Yes | Parallel installs to different destinations | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/nonfunctional-checks.md` |
+| Interrupt Test | Yes | Yes | Mid-install overwrite / missing files / scanner failure | Implemented | Automated + Scripted Manual | broken install tests, scanner error tests, `docs/testing/testing-playbook.md` |
+| Concurrency Test | Yes | Yes | Parallel installs to different destinations | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/testing-playbook.md` |
 | Chaos Test | No | No | N/A | Not Applicable | None | no distributed runtime system |
 
 ## Repo Mapping
@@ -139,9 +139,7 @@ Coverage target in this repo:
 
 ### Manual assets
 
-- `docs/testing/manual-checklists.md`
-- `docs/testing/scenario-assets.md`
-- `docs/testing/nonfunctional-checks.md`
+- `docs/testing/testing-playbook.md`
 - Coverage:
   - Acceptance / Alpha / Beta / Usability / Exploratory
   - System / End-to-End / Scenario / Decision Table / State Transition

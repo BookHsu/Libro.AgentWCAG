@@ -148,27 +148,20 @@ python scripts/validate_skill.py skills/libro-agent-wcag --validate-policy-bundl
 
 ## Release readiness
 
-- `docs/release/release-checklist.md`:  packaging, validation, and publish gate checklist
+- `docs/release/release-playbook.md`: packaging, validation, publish gate checklist, and release-notes workflow
 - `CHANGELOG.md`:  versioned release notes baseline
-- `docs/release/release-notes-workflow.md`:  release-notes update workflow
 - `docs/release/supported-environments.md`:  supported runtime and toolchain matrix
-- `docs/release/first-run-smoke.md`:  install-plus-doctor first-run smoke guide
+- `docs/release/adoption-smoke-guide.md`: install, smoke, integrity verification, and troubleshooting guidance
 - `docs/release/apply-fixes-scope.md`:  explicit apply-fixes scope, boundaries, and remediation classes
-- `docs/release/demo-package-walkthrough.md`:  minimal package-style validation walkthrough outside test suite
 - `docs/release/prompt-invocation-templates.md`:  reusable contract and adapter invocation templates
-- `docs/release/troubleshooting-intake.md`:  triage intake checklist for install and remediation problems
 - `docs/release/resilient-run-patterns.md`:  resilient scanner retry/backoff, policy gates, baseline-diff CLI patterns, and triage workflow checklists for CI handoff
 - `docs/release/github-actions-wcag-ci-sample.yml`:  GitHub Actions sample with artifact retention and SARIF PR annotation
 - `docs/release/real-scanner-ci-lane.md`:  reusable optional real-scanner CI lane, evidence artifact conventions, and triage handoff contract
-- `docs/release/baseline-debt-lifecycle.md`:  baseline debt state governance (`new`/`accepted`/`retired`) and approval checkpoints
-- `docs/release/risk-calibration.md`:  per-rule risk calibration evidence workflow, fallback semantics, and strict CI gate contract
-- `docs/release/replay-verification-lane.md`:  remediation replay verification lane, deterministic gate semantics, and CI evidence handoff
-- `docs/release/scanner-stability-ledger.md`:  scanner variance ledger workflow, approved-bound comparison, and deterministic fallback semantics
-- `docs/release/provenance-verification.md`:  baseline evidence/hash-chain verification and artifact-manifest CI workflow
-- `docs/release/install-integrity-verification.md`:  post-install manifest integrity verification and corruption remediation playbook
+- `docs/release/baseline-governance.md`:  baseline debt governance, waiver lifecycle, and provenance verification
+- `docs/release/advanced-ci-gates.md`:  risk calibration, replay verification, and scanner stability gate guidance
 - `docs/policy-bundles/*.json`:  reusable policy-bundle templates (`strict-web-app`, `legacy-content`, `marketing-site`) for multi-repo adoption
 - Policy bundle governance: `bundle_version`, `bundle_hash`, and `updated_at` are lock metadata fields; validate drift via `python scripts/validate_skill.py skills/libro-agent-wcag --validate-policy-bundles` before merging policy changes.
-- `docs/release/release-packaging-extras-placement.md`:  decision record for extras placement
+- `docs/archive/decisions/release-packaging-extras-placement.md`:  archived decision record for extras placement
 - `.github/ISSUE_TEMPLATE/installation-failure.yml`:  installation failure intake form
 - `.github/ISSUE_TEMPLATE/remediation-mismatch.yml`:  remediation mismatch intake form
 
