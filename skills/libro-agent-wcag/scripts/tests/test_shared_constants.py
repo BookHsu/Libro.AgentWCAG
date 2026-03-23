@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import tomllib
 import unittest
 from pathlib import Path
 
@@ -17,9 +18,10 @@ class SharedConstantsTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.repo_root = Path(__file__).resolve().parents[4]
+        cls.product_version = tomllib.loads((cls.repo_root / 'pyproject.toml').read_text(encoding='utf-8'))['project']['version']
 
     def test_product_version_is_loaded_from_pyproject(self) -> None:
-        self.assertEqual(shared_constants.get_product_version(), '0.1.0')
+        self.assertEqual(shared_constants.get_product_version(), self.product_version)
 
     def test_source_revision_falls_back_to_git_head(self) -> None:
         revision = shared_constants.get_source_revision()
@@ -43,7 +45,7 @@ class SharedConstantsTests(unittest.TestCase):
             env={shared_constants.SOURCE_REVISION_ENV_VAR: 'a' * 40}
         )
         self.assertEqual(provenance['product_name'], 'Libro.AgentWCAG')
-        self.assertEqual(provenance['product_version'], '0.1.0')
+        self.assertEqual(provenance['product_version'], self.product_version)
         self.assertEqual(provenance['source_revision'], 'a' * 40)
         self.assertEqual(
             provenance['source_revision_source'],

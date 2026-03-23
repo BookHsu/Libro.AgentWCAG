@@ -6,6 +6,7 @@ import json
 import shutil
 import subprocess
 import sys
+import tomllib
 import unittest
 from pathlib import Path
 
@@ -15,6 +16,7 @@ class InstallAgentTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.repo_root = Path(__file__).resolve().parents[4]
         cls.test_workspace_root = cls.repo_root / '.tmp-test' / 'install-agent'
+        cls.product_version = tomllib.loads((cls.repo_root / 'pyproject.toml').read_text(encoding='utf-8'))['project']['version']
 
     def _workspace(self, name: str) -> Path:
         workspace = self.test_workspace_root / name
@@ -43,7 +45,7 @@ class InstallAgentTests(unittest.TestCase):
         manifest = json.loads((destination / 'install-manifest.json').read_text(encoding='utf-8'))
         self.assertEqual(manifest['agent'], 'claude')
         self.assertEqual(manifest['product_name'], 'Libro.AgentWCAG')
-        self.assertEqual(manifest['product_version'], '0.1.0')
+        self.assertEqual(manifest['product_version'], self.product_version)
         self.assertRegex(manifest['source_revision'], r'^[0-9a-f]{40}$')
         self.assertEqual(manifest['adapter_prompt'], 'adapters/claude/prompt-template.md')
         self.assertIn('doctor-agent.py', manifest['doctor_command'])
@@ -125,8 +127,8 @@ class InstallAgentTests(unittest.TestCase):
         payload = json.loads(doctor.stdout)
         self.assertTrue(payload['ok'])
         self.assertTrue(payload['manifest_provenance']['verified'])
-        self.assertEqual(payload['expected_product']['product_version'], '0.1.0')
-        self.assertEqual(payload['installed_product']['product_version'], '0.1.0')
+        self.assertEqual(payload['expected_product']['product_version'], self.product_version)
+        self.assertEqual(payload['installed_product']['product_version'], self.product_version)
         self.assertTrue(payload['version_consistency']['verified'])
         self.assertTrue(payload['version_consistency']['matches']['product_version'])
         self.assertTrue(payload['version_consistency']['matches']['source_revision'])
