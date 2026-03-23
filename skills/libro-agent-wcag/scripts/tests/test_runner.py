@@ -39,6 +39,20 @@ from run_accessibility_audit import (
 
 
 class RunnerTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.repo_root = Path(__file__).resolve().parents[4]
+        cls.test_workspace_root = cls.repo_root / '.tmp-test' / 'runner'
+
+    def _workspace(self, name: str) -> Path:
+        workspace = self.test_workspace_root / name
+        if workspace.exists():
+            import shutil
+
+            shutil.rmtree(workspace, ignore_errors=True)
+        workspace.mkdir(parents=True, exist_ok=True)
+        return workspace
+
     def test_existing_local_path_is_converted_to_file_uri(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             html_path = Path(tmp) / "index.html"
@@ -386,11 +400,7 @@ class RunnerTests(unittest.TestCase):
         self.assertTrue(bool(evidence['chain_hash']))
 
     def test_build_artifact_manifest_includes_sha256_and_size(self) -> None:
-        workspace = Path(__file__).resolve().parents[4] / 'automation-work' / 'm31-runner-manifest-test'
-        if workspace.exists():
-            import shutil
-
-            shutil.rmtree(workspace, ignore_errors=True)
+        workspace = self._workspace('m31-runner-manifest-test')
         output_dir = workspace / 'out'
         output_dir.mkdir(parents=True, exist_ok=True)
         report_path = output_dir / 'wcag-report.json'
@@ -560,6 +570,20 @@ class RunnerRetryTests(unittest.TestCase):
         mock_sleep.assert_not_called()
 
 class RunnerPolicyTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.repo_root = Path(__file__).resolve().parents[4]
+        cls.test_workspace_root = cls.repo_root / '.tmp-test' / 'runner-policy'
+
+    def _workspace(self, name: str) -> Path:
+        workspace = self.test_workspace_root / name
+        if workspace.exists():
+            import shutil
+
+            shutil.rmtree(workspace, ignore_errors=True)
+        workspace.mkdir(parents=True, exist_ok=True)
+        return workspace
+
     def test_apply_rule_policy_filters_findings_and_summary(self) -> None:
         report = {
             'findings': [
@@ -934,12 +958,7 @@ class RunnerPolicyTests(unittest.TestCase):
         self.assertEqual(calibration['downgrade_reason'], 'missing-evidence')
 
     def test_evaluate_risk_calibration_downgrades_on_conflicting_rule_ids(self) -> None:
-        workspace = Path(__file__).resolve().parents[4] / 'automation-work' / 'm36-risk-calibration-conflict-test'
-        if workspace.exists():
-            import shutil
-
-            shutil.rmtree(workspace, ignore_errors=True)
-        workspace.mkdir(parents=True, exist_ok=True)
+        workspace = self._workspace('m36-risk-calibration-conflict-test')
         source = workspace / 'risk-calibration.json'
         source.write_text(
             json.dumps(
@@ -967,12 +986,7 @@ class RunnerPolicyTests(unittest.TestCase):
         self.assertEqual(calibration['downgrade_reason'], 'conflicting-rule-ids')
 
     def test_evaluate_risk_calibration_marks_unstable_high_severity_rule(self) -> None:
-        workspace = Path(__file__).resolve().parents[4] / 'automation-work' / 'm36-risk-calibration-unstable-test'
-        if workspace.exists():
-            import shutil
-
-            shutil.rmtree(workspace, ignore_errors=True)
-        workspace.mkdir(parents=True, exist_ok=True)
+        workspace = self._workspace('m36-risk-calibration-unstable-test')
         source = workspace / 'risk-calibration.json'
         source.write_text(
             json.dumps(
@@ -1097,12 +1111,7 @@ class RunnerPolicyTests(unittest.TestCase):
         self.assertFalse(stability['gate']['failed'])
 
     def test_build_scanner_stability_payload_respects_history_window_from_baseline_artifact(self) -> None:
-        workspace = Path(__file__).resolve().parents[4] / 'automation-work' / 'm38-stability-window-test'
-        if workspace.exists():
-            import shutil
-
-            shutil.rmtree(workspace, ignore_errors=True)
-        workspace.mkdir(parents=True, exist_ok=True)
+        workspace = self._workspace('m38-stability-window-test')
         baseline = workspace / 'scanner-stability.json'
         baseline.write_text(
             json.dumps(
@@ -1174,12 +1183,7 @@ class RunnerPolicyTests(unittest.TestCase):
         self.assertEqual(stability['history_meta']['loaded_point_count'], 2)
 
     def test_build_scanner_stability_payload_downgrades_on_scanner_capability_change(self) -> None:
-        workspace = Path(__file__).resolve().parents[4] / 'automation-work' / 'm38-stability-capability-drift-test'
-        if workspace.exists():
-            import shutil
-
-            shutil.rmtree(workspace, ignore_errors=True)
-        workspace.mkdir(parents=True, exist_ok=True)
+        workspace = self._workspace('m38-stability-capability-drift-test')
         baseline = workspace / 'scanner-stability.json'
         baseline.write_text(
             json.dumps(
