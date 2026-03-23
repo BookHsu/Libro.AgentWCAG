@@ -28,6 +28,8 @@ Use this playbook when a published `Libro.AgentWCAG` release must be withdrawn o
 - publish a newer corrective hotfix release with a new tag
 - communicate the rollback window, impact, and safe version to adopters
 
+Yanking a release means leaving the tag immutable while marking the GitHub Release as withdrawn/unsafe for new installs.
+
 ## Hotfix Policy
 
 - hotfix tags use the next semver patch release, for example `v0.1.1`

@@ -36,7 +36,7 @@ Release-consumer shortest path from a GitHub Release asset set:
 Release-consumer quickstart:
 
 1. Install from release assets.
-2. Verify with `python .\scripts\doctor-agent.py --agent codex --verify-manifest-integrity`.
+2. `install-latest.ps1` / `install-latest.sh` automatically runs `doctor-agent.py --verify-manifest-integrity` after install succeeds.
 3. Run a first audit with `python .\skills\libro-agent-wcag\scripts\run_accessibility_audit.py --target <file-or-url> --output-dir out`.
 4. Remove the skill with `python .\scripts\uninstall-agent.py --agent codex`.
 

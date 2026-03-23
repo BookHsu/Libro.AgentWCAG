@@ -89,6 +89,17 @@ class ReleaseAdoptionTests(unittest.TestCase):
             self.assertIn("release-manifest.json", content)
             self.assertIn("sha256", content.lower())
             self.assertIn("install-agent.py", content)
+            self.assertIn("doctor-agent.py", content)
+            self.assertIn("doctor verification passed", content)
+
+    def test_bootstrap_wrappers_document_python_permission_and_network_failures(self) -> None:
+        powershell = (self.repo_root / "scripts" / "install-latest.ps1").read_text(encoding="utf-8")
+        shell = (self.repo_root / "scripts" / "install-latest.sh").read_text(encoding="utf-8")
+
+        self.assertIn("python runtime is unavailable", powershell)
+        self.assertIn("python runtime is unavailable", shell)
+        self.assertIn("filesystem permissions", shell)
+        self.assertIn("network failure", shell)
 
 
 if __name__ == "__main__":

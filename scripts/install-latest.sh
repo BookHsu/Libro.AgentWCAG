@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
@@ -70,7 +71,22 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _run_checked(command: list[str], cwd: Path, env: dict[str, str], *, step: str) -> None:
+    try:
+        completed = subprocess.run(command, cwd=cwd, env=env, check=False)
+    except PermissionError as exc:
+        raise RuntimeError(f"{step} failed due to insufficient filesystem permissions") from exc
+    if completed.returncode != 0:
+        raise RuntimeError(f"{step} exited with code {completed.returncode}")
+
+
+def _require_python() -> None:
+    if not sys.executable:
+        raise RuntimeError("python runtime is unavailable; install Python 3.12+ and ensure it is in PATH")
+
+
 def main() -> int:
+    _require_python()
     args = parse_args()
     stage_dir = Path(tempfile.mkdtemp(prefix="libro-agentwcag-install-"))
     try:
@@ -115,8 +131,24 @@ def main() -> int:
         if args.force:
             command.append("--force")
 
-        completed = subprocess.run(command, cwd=bundle_root, env=env, check=False)
-        return completed.returncode
+        _run_checked(command, bundle_root, env, step="install-agent.py")
+
+        doctor_command = [
+            sys.executable,
+            str(bundle_root / "scripts" / "doctor-agent.py"),
+            "--agent",
+            args.agent,
+            "--verify-manifest-integrity",
+        ]
+        if args.dest:
+            doctor_command.extend(["--dest", args.dest])
+        _run_checked(doctor_command, bundle_root, env, step="doctor-agent.py")
+        print("Bootstrap install completed and doctor verification passed.")
+        return 0
+    except urllib.error.URLError as exc:
+        raise RuntimeError("network failure while downloading release assets") from exc
+    except PermissionError as exc:
+        raise RuntimeError("insufficient filesystem permissions while staging release assets") from exc
     finally:
         if not args.keep_downloaded:
             shutil.rmtree(stage_dir, ignore_errors=True)

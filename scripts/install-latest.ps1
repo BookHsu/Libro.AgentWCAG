@@ -57,6 +57,11 @@ $stageDir = Join-Path ([System.IO.Path]::GetTempPath()) ("libro-agentwcag-instal
 New-Item -ItemType Directory -Path $stageDir | Out-Null
 
 try {
+  $pythonCommand = Get-Command python -ErrorAction SilentlyContinue
+  if (-not $pythonCommand) {
+    throw 'python runtime is unavailable; install Python 3.12+ and ensure it is in PATH'
+  }
+
   if ($Version) {
     $manifestName = "libro-agent-wcag-$Version-release-manifest.json"
   } else {
@@ -100,7 +105,29 @@ try {
   if ($Force) { $arguments += '--force' }
 
   & python @arguments
-  exit $LASTEXITCODE
+  if ($LASTEXITCODE -ne 0) {
+    throw "install-agent.py exited with code $LASTEXITCODE"
+  }
+
+  $doctorArguments = @(
+    (Join-Path $bundleRoot 'scripts/doctor-agent.py'),
+    '--agent', $Agent,
+    '--verify-manifest-integrity'
+  )
+  if ($Dest) { $doctorArguments += @('--dest', $Dest) }
+
+  & python @doctorArguments
+  if ($LASTEXITCODE -ne 0) {
+    throw "doctor-agent.py exited with code $LASTEXITCODE"
+  }
+
+  Write-Host 'Bootstrap install completed and doctor verification passed.'
+} catch [System.Net.WebException] {
+  Write-Error 'network failure while downloading release assets'
+  exit 1
+} catch [System.UnauthorizedAccessException] {
+  Write-Error 'insufficient filesystem permissions while staging or installing release assets'
+  exit 1
 } finally {
   if (-not $KeepDownloaded) {
     Remove-Item -Recurse -Force $stageDir -ErrorAction SilentlyContinue

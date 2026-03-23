@@ -7,6 +7,14 @@ Use this workflow when publishing a formal GitHub release for `Libro.AgentWCAG`.
 - Automatic publish trigger: push a tag matching `v*`
 - Manual trigger: `workflow_dispatch` on `.github/workflows/release.yml` with `release_tag`
 
+## Version Bump Flow
+
+1. Update `pyproject.toml` to the target `X.Y.Z` version.
+2. Finalize the matching `CHANGELOG.md` section.
+3. Validate release assets and clean smoke locally when needed.
+4. Create and push tag `vX.Y.Z`.
+5. Let `release.yml` perform validate -> package -> smoke -> publish.
+
 ## Pipeline Stages
 
 1. `validate`
@@ -24,6 +32,17 @@ Use this workflow when publishing a formal GitHub release for `Libro.AgentWCAG`.
 4. `publish-release`
    - runs only after `package-release` and `clean-release-smoke` succeed
    - publishes all staged release assets as the GitHub Release payload
+
+## Post-Publish Verification
+
+Every release must perform one post-publish verification pass:
+
+1. download the published assets from GitHub Release
+2. verify `sha256sums.txt`
+3. run `install-latest.ps1` or `install-latest.sh`
+4. confirm installer-triggered doctor verification succeeds
+5. run a first audit
+6. uninstall cleanly
 
 ## Publish Gate
 
@@ -46,6 +65,8 @@ No undocumented manual override is allowed to skip these gates.
   - known limitations
   - install / verify commands
   - checksum verification guidance
+- Use `docs/release/release-note-template.md` for standard releases.
+- Use `docs/release/hotfix-release-note-template.md` for hotfix releases.
 - Hotfix releases follow the same structure and must explicitly identify the superseded version.
 
 ## Artifact Retention

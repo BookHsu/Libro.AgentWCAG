@@ -66,6 +66,7 @@ A GA release is allowed only when all blocker gates pass:
 
 - Semantic versioning is the release policy baseline.
 - Tag format is `vX.Y.Z`.
+- Deprecation and compatibility changes are communicated only through formal release versions, `CHANGELOG.md`, and release notes; there is no separate pre-announcement window.
 - Breaking changes require:
   - a semver-major bump
   - explicit changelog callout
