@@ -118,28 +118,28 @@
 
 #### 1.5 Advanced Gates 拆分
 
-- [ ] 將 risk calibration / replay / scanner stability 相關常數搬到 `advanced_gates.py`
-- [ ] 搬移 risk calibration mode/schema/version 常數
-- [ ] 搬移 risk calibration threshold/min sample/exit code 常數
-- [ ] 搬移 replay verification schema/version/exit code 常數
-- [ ] 搬移 scanner stability mode/schema/version/window/exit code 常數
-- [ ] 搬移 risk calibration evidence 載入 helper
-- [ ] 搬移 risk calibration 評估 helper
-- [ ] 搬移 replay source report 載入 helper
-- [ ] 搬移 replay summary 組裝 helper
-- [ ] 搬移 replay gate decision helper
-- [ ] 搬移 scanner stability baseline 載入 helper
-- [ ] 搬移 scanner stability comparison helper
-- [ ] 搬移 scanner stability gate decision helper
-- [ ] 搬移 advanced gate exit code decision helper
-- [ ] 更新主檔 import
-- [ ] 移除主檔中已搬移的 advanced gate helper
-- [ ] 執行 `test_runner.py` 中 risk calibration / replay / scanner stability 測試
-- [ ] 執行 `test_cli_flows.py` 中對應 fail / warn / downgrade 測試
-- [ ] 驗證 exit code 46 / 47 / 48 維持不變
-- [ ] 驗證 `run_meta.risk_calibration` 結構不變
-- [ ] 驗證 `run_meta.replay_verification` 結構不變
-- [ ] 驗證 `run_meta.scanner_stability` 結構不變
+- [x] 將 risk calibration / replay / scanner stability 相關常數搬到 `advanced_gates.py`
+- [x] 搬移 risk calibration mode/schema/version 常數
+- [x] 搬移 risk calibration threshold/min sample/exit code 常數
+- [x] 搬移 replay verification schema/version/exit code 常數
+- [x] 搬移 scanner stability mode/schema/version/window/exit code 常數
+- [x] 搬移 risk calibration evidence 載入 helper
+- [x] 搬移 risk calibration 評估 helper
+- [x] 搬移 replay source report 載入 helper
+- [x] 搬移 replay summary 組裝 helper
+- [x] 搬移 replay gate decision helper
+- [x] 搬移 scanner stability baseline 載入 helper
+- [x] 搬移 scanner stability comparison helper
+- [x] 搬移 scanner stability gate decision helper
+- [x] 搬移 advanced gate exit code decision helper
+- [x] 更新主檔 import
+- [x] 移除主檔中已搬移的 advanced gate helper
+- [x] 執行 `test_runner.py` 中 risk calibration / replay / scanner stability 測試
+- [x] 執行 `test_cli_flows.py` 中對應 fail / warn / downgrade 測試
+- [x] 驗證 exit code 46 / 47 / 48 維持不變
+- [x] 驗證 `run_meta.risk_calibration` 結構不變
+- [x] 驗證 `run_meta.replay_verification` 結構不變
+- [x] 驗證 `run_meta.scanner_stability` 結構不變
 
 #### 1.6 Artifact 與 Output 拆分
 
