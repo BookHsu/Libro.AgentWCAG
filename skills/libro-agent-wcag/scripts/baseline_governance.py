@@ -49,6 +49,13 @@ def _finding_signature(finding: dict[str, Any]) -> str:
     return f"{rule_id}|{target}"
 
 
+def _normalize_filesystem_like_target(value: str) -> str:
+    normalized = str(value or "").strip().replace("\\", "/")
+    if len(normalized) >= 3 and normalized[0] == "/" and normalized[1].isalpha() and normalized[2] == ":":
+        normalized = normalized[1:]
+    return normalized.lower()
+
+
 def _normalize_signature_target(target: str, mode: str) -> str:
     value = str(target or "").strip()
     if not value or mode == "none":
@@ -56,8 +63,7 @@ def _normalize_signature_target(target: str, mode: str) -> str:
 
     parsed = urlparse(value)
     if parsed.scheme == "file":
-        file_path = Path(url2pathname(parsed.path)).as_posix().lower()
-        return file_path
+        return _normalize_filesystem_like_target(url2pathname(parsed.path))
     if parsed.scheme in {"http", "https"}:
         host = parsed.netloc.lower()
         path = parsed.path or "/"
@@ -65,8 +71,7 @@ def _normalize_signature_target(target: str, mode: str) -> str:
             return path
         return f"{host}{path}"
 
-    local_path = Path(value).as_posix().lower()
-    return local_path
+    return _normalize_filesystem_like_target(value)
 
 
 def _canonicalize_signature_selector(selector: str, mode: str) -> str:
