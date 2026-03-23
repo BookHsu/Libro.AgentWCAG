@@ -143,24 +143,24 @@
 
 #### 1.6 Artifact 與 Output 拆分
 
-- [ ] 將 artifact / schema / summary 相關常數搬到 `report_artifacts.py`
-- [ ] 搬移 report schema 常數
-- [ ] 搬移 report schema source path helper
-- [ ] 搬移 schema staging helper
-- [ ] 搬移 artifact path 蒐集 helper
-- [ ] 搬移 artifact manifest 組裝 helper
-- [ ] 搬移 checksum / size / timestamp helper
-- [ ] 搬移 compact summary payload 組裝 helper
-- [ ] 搬移 summary-only stdout 輸出 helper
-- [ ] 搬移 report output path 組裝 helper
-- [ ] 視需要搬移 effective-policy artifact path helper
-- [ ] 更新主檔 import
-- [ ] 移除主檔中已搬移的 artifact/output helper
-- [ ] 執行 `test_runner.py` 中 artifact manifest 測試
-- [ ] 執行 `test_cli_flows.py` 中 summary-only、artifact-manifest、effective-policy artifact 測試
-- [ ] 驗證 `artifact-manifest.json` 結構不變
-- [ ] 驗證 schema 輸出路徑不變
-- [ ] 驗證 summary-only stdout JSON 結構不變
+- [x] 將 artifact / schema / summary 相關常數搬到 `report_artifacts.py`
+- [x] 搬移 report schema 常數
+- [x] 搬移 report schema source path helper
+- [x] 搬移 schema staging helper
+- [x] 搬移 artifact path 蒐集 helper
+- [x] 搬移 artifact manifest 組裝 helper
+- [x] 搬移 checksum / size / timestamp helper
+- [x] 搬移 compact summary payload 組裝 helper
+- [x] 搬移 summary-only stdout 輸出 helper
+- [x] 搬移 report output path 組裝 helper
+- [x] 視需要搬移 effective-policy artifact path helper
+- [x] 更新主檔 import
+- [x] 移除主檔中已搬移的 artifact/output helper
+- [x] 執行 `test_runner.py` 中 artifact manifest 測試
+- [x] 執行 `test_cli_flows.py` 中 summary-only、artifact-manifest、effective-policy artifact 測試
+- [x] 驗證 `artifact-manifest.json` 結構不變
+- [x] 驗證 schema 輸出路徑不變
+- [x] 驗證 summary-only stdout JSON 結構不變
 
 #### 1.7 CLI 與 Orchestration 收斂
 
