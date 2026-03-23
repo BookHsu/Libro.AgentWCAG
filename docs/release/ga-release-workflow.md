@@ -5,6 +5,7 @@ Use this workflow when publishing a formal GitHub release for `Libro.AgentWCAG`.
 ## Trigger
 
 - Automatic publish trigger: push a tag matching `v*`
+- Automatic publish trigger: publish a GitHub Release for an existing `v*` tag
 - Manual trigger: `workflow_dispatch` on `.github/workflows/release.yml` with `release_tag`
 
 ## Version Bump Flow
@@ -14,6 +15,7 @@ Use this workflow when publishing a formal GitHub release for `Libro.AgentWCAG`.
 3. Validate release assets and clean smoke locally when needed.
 4. Create and push tag `vX.Y.Z`.
 5. Let `release.yml` perform validate -> package -> smoke -> publish.
+6. If the release was created in the GitHub UI after the tag already existed, publishing the release also triggers the same asset pipeline.
 
 ## Pipeline Stages
 

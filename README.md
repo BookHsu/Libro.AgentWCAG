@@ -1,23 +1,40 @@
 # Libro.AgentWCAG
 
-Libro.AgentWCAG is a cross-agent WCAG web accessibility skill repository for creating or remediating web pages with a shared vendor-neutral contract.
+中文說明為預設版本。English version: [README.en.md](/c:/Source/Libro.AgentWCAG.clean/README.en.md)
 
-## Repository layout
+Libro.AgentWCAG 是一個可安裝、可發佈的跨代理 WCAG 網頁無障礙 skill repository，支援以一致的 vendor-neutral contract 讓不同 AI agent 執行稽核、建議修正與部分自動修正。
 
-- `skills/libro-agent-wcag`: installable skill payload
-- `skills/libro-agent-wcag/adapters/openai-codex`: v1 adapter for OpenAI/Codex
-- `skills/libro-agent-wcag/adapters/claude`: v1 adapter for Claude
-- `skills/libro-agent-wcag/adapters/gemini`: v2 adapter for Gemini
-- `skills/libro-agent-wcag/adapters/copilot`: v2 adapter for Copilot
-- `scripts/install-agent.py`: repo-native installer for supported agents
-- `scripts/uninstall-agent.py`: repo-native uninstaller for supported agents
-- `scripts/doctor-agent.py`: installation health check for supported agents
+## 專案重點
 
-## Install
+- 支援代理：Codex、Claude、Gemini、Copilot
+- 安裝方式：repo 直接安裝，或從 release 資產快速安裝
+- 發佈方式：可產生版本化 zip、checksum、release manifest
+- 核心能力：`audit-only`、`suggest-only`、`apply-fixes`
 
-Recommended installation uses the repo-native installer instead of a Codex-internal helper path.
+## Repo 結構
 
-Release-consumer installs can bootstrap from packaged assets with:
+- `skills/libro-agent-wcag`: 可安裝 skill 主體
+- `skills/libro-agent-wcag/adapters/openai-codex`: Codex adapter
+- `skills/libro-agent-wcag/adapters/claude`: Claude adapter
+- `skills/libro-agent-wcag/adapters/gemini`: Gemini adapter
+- `skills/libro-agent-wcag/adapters/copilot`: Copilot adapter
+- `scripts/install-agent.py`: 直接安裝指定 agent bundle
+- `scripts/doctor-agent.py`: 安裝後健康檢查與完整性驗證
+- `scripts/uninstall-agent.py`: 卸載工具
+
+## 安裝
+
+### 從目前 repo 直接安裝
+
+```powershell
+python .\scripts\install-agent.py --agent codex
+python .\scripts\install-agent.py --agent claude
+python .\scripts\install-agent.py --agent gemini
+python .\scripts\install-agent.py --agent copilot
+python .\scripts\install-agent.py --agent all
+```
+
+### 從本地 release 資產安裝
 
 ```powershell
 pwsh -File .\scripts\install-latest.ps1 -ReleaseBase .\dist\release -Agent codex
@@ -27,59 +44,24 @@ pwsh -File .\scripts\install-latest.ps1 -ReleaseBase .\dist\release -Agent codex
 sh ./scripts/install-latest.sh --release-base ./dist/release --agent codex
 ```
 
-Release-consumer shortest path from a GitHub Release asset set:
-
-1. Download the published release assets for `vX.Y.Z`.
-2. Verify `libro-agent-wcag-X.Y.Z-sha256sums.txt`.
-3. Run `install-latest.ps1` or `install-latest.sh` against the release asset directory or URL.
-
-Release-consumer quickstart:
-
-1. Install from release assets.
-2. `install-latest.ps1` / `install-latest.sh` automatically runs `doctor-agent.py --verify-manifest-integrity` after install succeeds.
-3. Run a first audit with `python .\skills\libro-agent-wcag\scripts\run_accessibility_audit.py --target <file-or-url> --output-dir out`.
-4. Remove the skill with `python .\scripts\uninstall-agent.py --agent codex`.
-
-### Install a single agent bundle
+### 從 GitHub 已發佈版本快速安裝
 
 ```powershell
-python .\scripts\install-agent.py --agent codex
-python .\scripts\install-agent.py --agent claude
-python .\scripts\install-agent.py --agent gemini
-python .\scripts\install-agent.py --agent copilot
+pwsh -File .\scripts\install-latest.ps1 -ReleaseBase https://github.com/<owner>/<repo>/releases/download/vX.Y.Z -Agent codex
 ```
 
-### Install all supported agent bundles at once
+- 把 `vX.Y.Z` 換成實際 tag，例如 `v1.0.1`
+- 安裝流程會自動驗證 `latest-release.json` / release manifest / `sha256`
+- 安裝完成後會自動執行 `doctor-agent.py --verify-manifest-integrity`
 
-```powershell
-python .\scripts\install-agent.py --agent all
-```
-
-### Wrapper scripts
-
-```powershell
-pwsh -File .\scripts\install-agent.ps1 -Agent codex
-pwsh -File .\scripts\install-agent.ps1 -Agent all
-```
-
-```sh
-sh ./scripts/install-agent.sh codex
-sh ./scripts/install-agent.sh all
-```
-
-### Default destinations
+### 預設安裝位置
 
 - `codex`: `~/.codex/skills/libro-agent-wcag`
 - `claude`: `~/.claude/skills/libro-agent-wcag`
 - `gemini`: `~/.gemini/skills/libro-agent-wcag`
 - `copilot`: `~/.copilot/skills/libro-agent-wcag`
 
-Use `--dest <path>` to override, and `--force` to replace an existing installation.
-When `--agent all` is combined with `--dest`, the installer creates `codex/`, `claude/`, `gemini/`, and `copilot/` subdirectories under that base path.
-
-After installation, check `install-manifest.json` inside the installed folder. It points to the correct adapter prompt for the selected agent and includes `usage_example`, `failure_guide`, and `e2e_example` paths, plus `product_version` and `source_revision` for release provenance.
-
-### Verify installation
+## 驗證安裝
 
 ```powershell
 python .\scripts\doctor-agent.py --agent codex
@@ -87,133 +69,80 @@ python .\scripts\doctor-agent.py --agent codex --verify-manifest-integrity
 python .\scripts\doctor-agent.py --agent all
 ```
 
-`scripts/install-agent.py`, `scripts/doctor-agent.py`, and `skills/libro-agent-wcag/scripts/report_artifacts.py` now read `product_version` from `pyproject.toml` through a shared helper. `source_revision` resolves from `LIBRO_AGENTWCAG_SOURCE_REVISION` when set, otherwise from the local git `HEAD`. `LIBRO_AGENTWCAG_BUILD_TIMESTAMP` is an optional UTC ISO-8601 override for release packaging lanes. Missing `project.version` or unresolved `source_revision` fail fast instead of emitting partial provenance.
+## 使用方式
 
-`doctor-agent.py` also emits machine-readable version consistency fields so downstream smoke and release checks can compare the installed manifest against the current repo/package provenance without reparsing `pyproject.toml` in multiple places.
-
-### Uninstall
-
-```powershell
-python .\scripts\uninstall-agent.py --agent codex
-python .\scripts\uninstall-agent.py --agent all
-```
-
-## Use in AI agents
-
-The platform-neutral contract lives here:
+共用 contract 位於：
 
 - `skills/libro-agent-wcag/SKILL.md`
 - `skills/libro-agent-wcag/references/core-spec.md`
 - `skills/libro-agent-wcag/references/adapter-mapping.md`
-- `skills/libro-agent-wcag/references/framework-patterns-react.md`
-- `skills/libro-agent-wcag/references/framework-patterns-vue.md`
-- `skills/libro-agent-wcag/references/framework-patterns-nextjs.md`
 
-Adapters can translate the same core contract into each platform's prompt or tool syntax.
+支援的任務模式：
 
-### Agent-specific entrypoints
+- `audit-only`: 只找問題
+- `suggest-only`: 找問題並提出修正建議
+- `apply-fixes`: 在明確要求修改時，對支援的本地檔案做安全範圍內修正
 
-- `codex`: `adapters/openai-codex/prompt-template.md`, `usage-example.md`, `failure-guide.md`, and `e2e-example.md`
-- `claude`: `adapters/claude/prompt-template.md`, `usage-example.md`, `failure-guide.md`, and `e2e-example.md`
-- `gemini`: `adapters/gemini/prompt-template.md`, `usage-example.md`, `failure-guide.md`, and `e2e-example.md`
-- `copilot`: `adapters/copilot/prompt-template.md`, `usage-example.md`, `failure-guide.md`, and `e2e-example.md`
+支援的任務意圖：
 
-### First-use guidance
+- `create`: 對草稿、模板、未上線頁面做檢查
+- `modify`: 對既有頁面先稽核再修正
 
-- `codex`: invoke `$libro-agent-wcag` directly after installation.
-- `claude`: load the installed `adapters/claude/prompt-template.md` into your Claude project/system prompt.
-- `gemini`: load the installed `adapters/gemini/prompt-template.md` into your Gemini custom instruction or agent wrapper.
-- `copilot`: load the installed `adapters/copilot/prompt-template.md` into your Copilot instruction or prompt file.
-
-The shared contract supports three execution modes:
-
-- `audit-only`: find issues only
-- `suggest-only`: find issues and propose fixes
-- `apply-fixes`: apply fixes when the user explicitly requests modification
-
-Language support:
-
-- Markdown summary text and table headers follow `output_language`
-- JSON field names remain canonical English keys
-- Unsupported languages currently fall back to English
-
-The shared contract also distinguishes task intent:
-
-- `create`: review a draft, generated page, or template before release
-- `modify`: audit an existing target first, then propose or apply changes
-
-Current implementation note:
-
-- `apply-fixes` is an execution intent exposed through the contract and report output.
-- For supported local targets (`.html`, `.htm`, `.xhtml`, `.jsx`, `.tsx`, `.vue`), the core Python workflow applies safe first-pass deterministic rewrites (language attributes, alt text, control naming, ARIA naming/validity, document/title/list/table semantics, and viewport/meta refresh handling), then emits diff artifacts when changes are made.
-- Non-local targets, unsupported local file types, and higher-risk remediation classes remain `suggest-only` or assisted/manual by design. See `docs/release/apply-fixes-scope.md` for the explicit scope matrix and boundaries.
-- Scanner runtime resilience is configurable via `--scanner-retry-attempts` and `--scanner-retry-backoff-seconds`. See `docs/release/resilient-run-patterns.md` for recommended CI patterns, including the reproducible dependency-audit lane (`pip-audit` + `npm audit`).
-- CI policy controls are available via `--report-format (json|sarif)`, `--fail-on`, `--include-rule`, `--ignore-rule`, `--policy-config`, `--policy-preset (strict|balanced|legacy)`, and `--policy-bundle (strict-web-app|legacy-content|marketing-site)` for deterministic gating and per-project rule policy. `--policy-config` now validates unsupported keys up front to avoid silent policy drift; use `--list-policy-config-keys` for machine-readable key discovery in scripts/automation. Use `--list-policy-presets` for preset discovery, and `--strict-rule-overlap` to fail fast when the same rule id appears in both include/ignore lists. `--sort-findings` and `--max-findings` keep output ordering deterministic and report volume manageable for CI triage.
-- Baseline diff gating is available via `--baseline-report` and `--fail-on-new-only` to fail only on newly introduced unresolved debt. Signature churn can be tuned with `--baseline-include-target`, `--baseline-target-normalization`, and `--baseline-selector-canonicalization`. Baseline updates now emit debt lifecycle metadata (`run_meta.baseline_diff.debt_transitions` and finding-level `debt_state`) for `new`, `accepted`, and `retired` tracking across refreshes. Debt waivers can be declared in baseline JSON via `debt_waivers[]` (`signature`, `owner`, `approved_at`, `expires_at`, `reason`) with strict schema validation; use `--waiver-expiry-mode (ignore|warn|fail)` to enforce renewal/retirement before release gates. Trend intelligence is available via `--debt-trend-window <N>` and emits `debt-trend.json` plus `summary.debt_trend`/`run_meta.debt_trend` highlights (`new`, `accepted`, `retired`, `regressed`) across the latest baseline window. Use `--baseline-evidence-mode (none|hash|hash-chain)` to verify baseline provenance and fail fast on tampered evidence before debt transitions are applied. Use `--replay-verify-from <report-dir>` to run remediation replay verification and emit `replay-summary.json` / `replay-diff.md` with deterministic high-severity regression gating. Use `--stability-baseline <path>` with `--stability-mode (off|warn|fail)` to emit `scanner-stability.json` and compare per-scanner/per-rule/per-target volatility against approved bounds, including deterministic downgrade messaging when scanner capability drifts. Every run now stages `artifact-manifest.json` with per-artifact `sha256`, size, timestamp, and generator metadata for CI handoff integrity checks; generator metadata includes `product_version`, `source_revision`, and the unchanged report schema version. JSON reports expose the same provenance in `run_meta.product`, Markdown reports append a `Report Metadata` section, and SARIF exports set driver `version` plus provenance properties. `--summary-only` prints a compact JSON gate summary while still writing full artifacts to disk, including scanner capability negotiation metadata (`available_scanners`, `unavailable_scanners`, `available_rule_count`) and minimal product provenance (`product_version`, `source_revision`, `report_schema_version`). Add `--explain-policy` to include the fully merged effective policy in `run_meta.policy_effective` and compact summary output for CI debugging/audits. Use `--write-effective-policy` to persist merged policy (including source provenance) to a standalone JSON artifact. JSON reports now include `report_schema.version` (`1.0.0`) and stage schema artifacts under `out/schemas/wcag-report-1.0.0.schema.json` for CI compatibility checks before parsing.
-
-Current adapter coverage:
-
-- OpenAI/Codex
-- Claude
-- Gemini
-- Copilot
-
-## Local validation
+## 本地驗證
 
 ```powershell
 python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"
 python scripts/validate_skill.py skills/libro-agent-wcag --validate-policy-bundles
 ```
 
-## Runtime requirements
+## 發佈
 
-- Python 3.12+
-- Node.js and `npx`
-- `@axe-core/cli` and `lighthouse` available through `npx`
-- `PyYAML` for skill validation
-- `pip-audit` for dependency-audit lane and supply-chain gate checks
+### 產出 release 資產
 
-## Release readiness
+```powershell
+python .\scripts\package-release.py --output-dir .\dist\release --overwrite
+```
 
-- Create versioned release assets from the repo root with `python .\scripts\package-release.py --output-dir .\dist\release --overwrite`.
-- Packaging emits deterministic bundle names: `libro-agent-wcag-<version>-codex.zip`, `libro-agent-wcag-<version>-claude.zip`, `libro-agent-wcag-<version>-gemini.zip`, `libro-agent-wcag-<version>-copilot.zip`, and `libro-agent-wcag-<version>-all-in-one.zip`.
-- Companion release artifacts are `libro-agent-wcag-<version>-release-manifest.json`, `libro-agent-wcag-<version>-sha256sums.txt`, and `latest-release.json`.
-- Release bundles intentionally exclude `skills/libro-agent-wcag/scripts/tests/`, `docs/testing/`, and `docs/archive/`; use the versioned release manifest and checksum file for downstream verification.
-- Release-consumer bootstrap entrypoints are `scripts/install-latest.ps1` and `scripts/install-latest.sh`; both resolve `latest-release.json` or a pinned `--version`, verify `sha256`, then invoke the packaged installer from the extracted bundle.
-- Clean release-consumer validation is available via `python .\scripts\run-release-adoption-smoke.py --release-dir .\dist\release --agent codex`.
-- Formal GA release automation lives in `.github/workflows/release.yml` and is documented in `docs/release/ga-release-workflow.md`.
-- GA quality gates and compatibility promises are defined in `docs/release/ga-definition.md`.
-- Rollback and hotfix rules are defined in `docs/release/rollback-playbook.md`.
-- `docs/release/release-playbook.md`: packaging, validation, publish gate checklist, and release-notes workflow
-- `docs/release/ga-release-workflow.md`: tag-triggered publish flow, gate order, and retention contract
-- `docs/release/ga-definition.md`: GA scope, blocker policy, compatibility promises, and semver expectations
-- `docs/release/rollback-playbook.md`: rollback triggers, operator rules, and hotfix policy
-- `CHANGELOG.md`:  versioned release notes baseline
-- `docs/release/supported-environments.md`:  supported runtime and toolchain matrix
-- `docs/release/adoption-smoke-guide.md`: install, smoke, integrity verification, and troubleshooting guidance
-- `docs/release/apply-fixes-scope.md`:  explicit apply-fixes scope, boundaries, and remediation classes
-- `docs/release/prompt-invocation-templates.md`:  reusable contract and adapter invocation templates
-- `docs/release/resilient-run-patterns.md`:  resilient scanner retry/backoff, policy gates, baseline-diff CLI patterns, and triage workflow checklists for CI handoff
-- `docs/examples/ci/github-actions-wcag-ci-sample.yml`:  GitHub Actions sample with artifact retention and SARIF PR annotation
-- `docs/release/real-scanner-ci-lane.md`:  formal `libro-agent-wcag-real-scanner` PR gate, evidence artifact conventions, and triage handoff contract
-- `docs/release/baseline-governance.md`:  baseline debt governance, waiver lifecycle, and provenance verification
-- `docs/release/advanced-ci-gates.md`:  risk calibration, replay verification, and scanner stability gate guidance
-- `docs/policy-bundles/*.json`:  reusable policy-bundle templates (`strict-web-app`, `legacy-content`, `marketing-site`) for multi-repo adoption
-- Policy bundle governance: `bundle_version`, `bundle_hash`, and `updated_at` are lock metadata fields; validate drift via `python scripts/validate_skill.py skills/libro-agent-wcag --validate-policy-bundles` before merging policy changes.
-- `docs/archive/decisions/release-packaging-extras-placement.md`:  archived decision record for extras placement
-- `.github/ISSUE_TEMPLATE/installation-failure.yml`:  installation failure intake form
-- `.github/ISSUE_TEMPLATE/remediation-mismatch.yml`:  remediation mismatch intake form
+會產出：
 
-## Future directions
-- Broader safe rewrite coverage after regression baselines prove stability for additional rule families
-## Testing Strategy
+- `libro-agent-wcag-<version>-codex.zip`
+- `libro-agent-wcag-<version>-claude.zip`
+- `libro-agent-wcag-<version>-gemini.zip`
+- `libro-agent-wcag-<version>-copilot.zip`
+- `libro-agent-wcag-<version>-all-in-one.zip`
+- `libro-agent-wcag-<version>-sha256sums.txt`
+- `libro-agent-wcag-<version>-release-manifest.json`
+- `latest-release.json`
 
-- See `TESTING-PLAN.md` for the applicable test matrix, repo mapping, and current coverage status.
-- See `SKILL-TODO.md` for the remaining skill-completion backlog and implementation checklist.
+### GitHub Release 自動化
 
-## Codex Automation
+- `.github/workflows/release.yml` 現在支援三種入口：
+  - push `v*` tag
+  - 手動執行 `workflow_dispatch`
+  - 在 GitHub UI 將 Release 設為 `published`
+- 這代表如果先在 GitHub 手動發佈 release，也會自動補上 zip 與其他 release assets
 
-- Use `docs/automations/test-plan-automation.md` as the execution spec for scheduled Codex test-development automation. This lane focuses only on test development, testing-plan updates, commits, and pushes.
-- Use `docs/automations/test-plan-review-policy.md` as the review policy before accepting automation-generated changes.
+## PR 規則與 owner bypass
 
-\r\n
+- `owner can bypass` 不是 repo 檔案本身能強制控制的功能，必須在 GitHub repository settings 設定
+- 建議用 branch ruleset / branch protection 設定：
+  - required pull request
+  - required status checks
+  - 必要檢查包含 `libro-agent-wcag-real-scanner`
+  - bypass list 加入 repo owner / admin 或 maintainer team
+- 詳細操作說明見 [docs/release/repo-admin-setup.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/repo-admin-setup.md)
+
+## 重要文件
+
+- 中文首頁：`README.md`
+- 英文版本：[README.en.md](/c:/Source/Libro.AgentWCAG.clean/README.en.md)
+- Release 流程：[docs/release/ga-release-workflow.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/ga-release-workflow.md)
+- Release 管理設定：[docs/release/repo-admin-setup.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/repo-admin-setup.md)
+- Release 操作手冊：[docs/release/release-playbook.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/release-playbook.md)
+- 安裝與 smoke：[docs/release/adoption-smoke-guide.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/adoption-smoke-guide.md)
+- 支援環境：[docs/release/supported-environments.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/supported-environments.md)
+
+## 備註
+
+- 深入的技術文件目前多數仍以英文撰寫，中文首頁先負責安裝、發佈與管理入口整理。
+- 如果要把整套 release / testing / governance 文件全部改成雙語，下一步應該是先決定是 `README + docs/zh-TW/`，還是每份文件中英分檔。
