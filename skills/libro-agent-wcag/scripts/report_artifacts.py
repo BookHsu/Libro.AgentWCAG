@@ -8,9 +8,9 @@ from pathlib import Path
 from typing import Any
 
 from baseline_governance import _sha256_file, _utc_timestamp
+from shared_constants import REPORT_SCHEMA_VERSION
 
 REPORT_SCHEMA_NAME = 'libro-agent-wcag-report'
-REPORT_SCHEMA_VERSION = '1.0.0'
 REPORT_SCHEMA_FILENAME = f'wcag-report-{REPORT_SCHEMA_VERSION}.schema.json'
 
 

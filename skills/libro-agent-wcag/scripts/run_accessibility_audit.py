@@ -75,7 +75,6 @@ from policy_controls import (
     _resolve_policy_preset,
 )
 from report_artifacts import (
-    REPORT_SCHEMA_VERSION,
     _build_artifact_manifest,
     _build_compact_summary,
     _build_report_output_paths,
@@ -102,6 +101,7 @@ from scanner_runtime import (
     _try_run_lighthouse,
     run_preflight_checks,
 )
+from shared_constants import REPORT_SCHEMA_VERSION
 from wcag_workflow import normalize_report, resolve_contract, to_markdown_table, write_report_files
 
 DEFAULT_TIMEOUT_SECONDS = 120

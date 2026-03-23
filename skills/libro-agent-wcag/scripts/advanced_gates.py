@@ -13,6 +13,7 @@ from baseline_governance import (
     _finding_signature_with_config,
     _normalize_signature_target,
 )
+from shared_constants import REPORT_SCHEMA_VERSION
 
 RISK_CALIBRATION_MODES = {'off', 'warn', 'strict'}
 RISK_CALIBRATION_SCHEMA_VERSION = '1.0.0'
@@ -26,7 +27,6 @@ SCANNER_STABILITY_SCHEMA_VERSION = '1.0.0'
 SCANNER_STABILITY_EXIT_CODE = 48
 DEFAULT_SCANNER_STABILITY_WINDOW = 5
 DEFAULT_SCANNER_STABILITY_MAX_VARIANCE = 0
-REPORT_SCHEMA_VERSION = '1.0.0'
 HIGH_SEVERITY_LEVELS = {'critical', 'serious'}
 
 
