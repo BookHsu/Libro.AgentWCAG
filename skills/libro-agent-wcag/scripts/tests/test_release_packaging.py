@@ -7,6 +7,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tomllib
 import unittest
 import zipfile
 from pathlib import Path
@@ -17,6 +18,7 @@ class ReleasePackagingTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.repo_root = Path(__file__).resolve().parents[4]
         cls.workspace_root = cls.repo_root / ".tmp-test" / "release-packaging"
+        cls.product_version = tomllib.loads((cls.repo_root / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
 
     def _workspace(self, name: str) -> Path:
         workspace = self.workspace_root / name
@@ -49,8 +51,8 @@ class ReleasePackagingTests(unittest.TestCase):
         completed = self._run_packager(output_dir)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
 
-        manifest_path = output_dir / "libro-agent-wcag-0.1.0-release-manifest.json"
-        checksum_path = output_dir / "libro-agent-wcag-0.1.0-sha256sums.txt"
+        manifest_path = output_dir / f"libro-agent-wcag-{self.product_version}-release-manifest.json"
+        checksum_path = output_dir / f"libro-agent-wcag-{self.product_version}-sha256sums.txt"
         latest_path = output_dir / "latest-release.json"
         self.assertTrue(manifest_path.exists())
         self.assertTrue(checksum_path.exists())
@@ -59,40 +61,40 @@ class ReleasePackagingTests(unittest.TestCase):
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         asset_names = {asset["filename"] for asset in manifest["assets"]}
         expected_bundles = {
-            "libro-agent-wcag-0.1.0-codex.zip",
-            "libro-agent-wcag-0.1.0-claude.zip",
-            "libro-agent-wcag-0.1.0-gemini.zip",
-            "libro-agent-wcag-0.1.0-copilot.zip",
-            "libro-agent-wcag-0.1.0-all-in-one.zip",
+            f"libro-agent-wcag-{self.product_version}-codex.zip",
+            f"libro-agent-wcag-{self.product_version}-claude.zip",
+            f"libro-agent-wcag-{self.product_version}-gemini.zip",
+            f"libro-agent-wcag-{self.product_version}-copilot.zip",
+            f"libro-agent-wcag-{self.product_version}-all-in-one.zip",
         }
         self.assertTrue(expected_bundles.issubset(asset_names))
-        self.assertIn("libro-agent-wcag-0.1.0-install-latest.ps1", asset_names)
-        self.assertIn("libro-agent-wcag-0.1.0-install-latest.sh", asset_names)
-        self.assertIn("libro-agent-wcag-0.1.0-run-release-adoption-smoke.py", asset_names)
+        self.assertIn(f"libro-agent-wcag-{self.product_version}-install-latest.ps1", asset_names)
+        self.assertIn(f"libro-agent-wcag-{self.product_version}-install-latest.sh", asset_names)
+        self.assertIn(f"libro-agent-wcag-{self.product_version}-run-release-adoption-smoke.py", asset_names)
         self.assertEqual(manifest["checksum_file"], checksum_path.name)
         self.assertEqual(manifest["latest_pointer"], latest_path.name)
 
         codex_bundle = next(asset for asset in manifest["assets"] if asset["filename"].endswith("-codex.zip"))
         self.assertEqual(codex_bundle["agent"], "codex")
-        self.assertEqual(codex_bundle["bundle_root"], "libro-agent-wcag-0.1.0-codex")
+        self.assertEqual(codex_bundle["bundle_root"], f"libro-agent-wcag-{self.product_version}-codex")
 
-        with zipfile.ZipFile(output_dir / "libro-agent-wcag-0.1.0-codex.zip") as archive:
+        with zipfile.ZipFile(output_dir / f"libro-agent-wcag-{self.product_version}-codex.zip") as archive:
             names = set(archive.namelist())
-            self.assertIn("libro-agent-wcag-0.1.0-codex/scripts/install-agent.py", names)
+            self.assertIn(f"libro-agent-wcag-{self.product_version}-codex/scripts/install-agent.py", names)
             self.assertIn(
-                "libro-agent-wcag-0.1.0-codex/skills/libro-agent-wcag/adapters/openai-codex/prompt-template.md",
+                f"libro-agent-wcag-{self.product_version}-codex/skills/libro-agent-wcag/adapters/openai-codex/prompt-template.md",
                 names,
             )
             self.assertNotIn(
-                "libro-agent-wcag-0.1.0-codex/skills/libro-agent-wcag/adapters/claude/prompt-template.md",
+                f"libro-agent-wcag-{self.product_version}-codex/skills/libro-agent-wcag/adapters/claude/prompt-template.md",
                 names,
             )
             self.assertFalse(any("/scripts/tests/" in name for name in names))
-            self.assertFalse(any(name.startswith("libro-agent-wcag-0.1.0-codex/docs/testing/") for name in names))
-            self.assertFalse(any(name.startswith("libro-agent-wcag-0.1.0-codex/docs/archive/") for name in names))
+            self.assertFalse(any(name.startswith(f"libro-agent-wcag-{self.product_version}-codex/docs/testing/") for name in names))
+            self.assertFalse(any(name.startswith(f"libro-agent-wcag-{self.product_version}-codex/docs/archive/") for name in names))
 
         checksums = checksum_path.read_text(encoding="utf-8")
-        self.assertIn("*libro-agent-wcag-0.1.0-release-manifest.json", checksums)
+        self.assertIn(f"*libro-agent-wcag-{self.product_version}-release-manifest.json", checksums)
         self.assertIn("*latest-release.json", checksums)
 
     def test_package_release_is_deterministic_given_fixed_provenance(self) -> None:
@@ -104,16 +106,16 @@ class ReleasePackagingTests(unittest.TestCase):
         self.assertEqual(second.returncode, 0, second.stdout + second.stderr)
 
         filenames = [
-            "libro-agent-wcag-0.1.0-codex.zip",
-            "libro-agent-wcag-0.1.0-claude.zip",
-            "libro-agent-wcag-0.1.0-gemini.zip",
-            "libro-agent-wcag-0.1.0-copilot.zip",
-            "libro-agent-wcag-0.1.0-all-in-one.zip",
-            "libro-agent-wcag-0.1.0-install-latest.ps1",
-            "libro-agent-wcag-0.1.0-install-latest.sh",
-            "libro-agent-wcag-0.1.0-run-release-adoption-smoke.py",
-            "libro-agent-wcag-0.1.0-release-manifest.json",
-            "libro-agent-wcag-0.1.0-sha256sums.txt",
+            f"libro-agent-wcag-{self.product_version}-codex.zip",
+            f"libro-agent-wcag-{self.product_version}-claude.zip",
+            f"libro-agent-wcag-{self.product_version}-gemini.zip",
+            f"libro-agent-wcag-{self.product_version}-copilot.zip",
+            f"libro-agent-wcag-{self.product_version}-all-in-one.zip",
+            f"libro-agent-wcag-{self.product_version}-install-latest.ps1",
+            f"libro-agent-wcag-{self.product_version}-install-latest.sh",
+            f"libro-agent-wcag-{self.product_version}-run-release-adoption-smoke.py",
+            f"libro-agent-wcag-{self.product_version}-release-manifest.json",
+            f"libro-agent-wcag-{self.product_version}-sha256sums.txt",
             "latest-release.json",
         ]
         for filename in filenames:
