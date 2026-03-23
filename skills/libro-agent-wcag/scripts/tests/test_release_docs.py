@@ -22,6 +22,8 @@ class ReleaseDocsTests(unittest.TestCase):
             self.repo_root / 'docs' / 'release' / 'ga-definition.md',
             self.repo_root / 'docs' / 'release' / 'ga-release-workflow.md',
             self.repo_root / 'docs' / 'release' / 'rollback-playbook.md',
+            self.repo_root / 'docs' / 'release' / 'release-note-template.md',
+            self.repo_root / 'docs' / 'release' / 'hotfix-release-note-template.md',
             self.repo_root / 'docs' / 'release' / 'apply-fixes-scope.md',
             self.repo_root / 'docs' / 'release' / 'prompt-invocation-templates.md',
             self.repo_root / 'docs' / 'release' / 'resilient-run-patterns.md',
@@ -90,6 +92,7 @@ class ReleaseDocsTests(unittest.TestCase):
         self.assertIn('docs/release/ga-release-workflow.md', content)
         self.assertIn('docs/release/ga-definition.md', content)
         self.assertIn('docs/release/rollback-playbook.md', content)
+        self.assertIn('doctor-agent.py --verify-manifest-integrity', content)
         self.assertIn('Release-consumer shortest path', content)
         self.assertIn('Release-consumer quickstart', content)
         self.assertIn('docs/release/release-playbook.md', content)
@@ -110,6 +113,9 @@ class ReleaseDocsTests(unittest.TestCase):
         self.assertIn('fail fast', content.lower())
         self.assertIn('package-release.py', content)
         self.assertIn('sha256sums.txt', content)
+        self.assertIn('release-note-template.md', content)
+        self.assertIn('hotfix-release-note-template.md', content)
+        self.assertIn('Post-Publish Verification', content)
 
     def test_adoption_smoke_guide_covers_version_consistency_outputs(self) -> None:
         content = (self.repo_root / 'docs' / 'release' / 'adoption-smoke-guide.md').read_text(encoding='utf-8')
@@ -135,12 +141,28 @@ class ReleaseDocsTests(unittest.TestCase):
         rollback = (self.repo_root / 'docs' / 'release' / 'rollback-playbook.md').read_text(encoding='utf-8')
         self.assertIn('GA Quality Gates', ga_definition)
         self.assertIn('Blocker', ga_definition)
+        self.assertIn('there is no separate pre-announcement window', ga_definition)
         self.assertIn('validate', ga_workflow)
         self.assertIn('clean-release-smoke', ga_workflow)
         self.assertIn('Release title format', ga_workflow)
         self.assertIn('checksum verification guidance', ga_workflow)
+        self.assertIn('Version Bump Flow', ga_workflow)
+        self.assertIn('Post-Publish Verification', ga_workflow)
+        self.assertIn('release-note-template.md', ga_workflow)
+        self.assertIn('hotfix-release-note-template.md', ga_workflow)
         self.assertIn('Never rewrite or force-move an existing published tag.', rollback)
+        self.assertIn('withdrawn/unsafe for new installs', rollback)
         self.assertIn('hotfix', rollback.lower())
+
+    def test_release_note_templates_cover_install_and_checksum_sections(self) -> None:
+        release_template = (self.repo_root / 'docs' / 'release' / 'release-note-template.md').read_text(encoding='utf-8')
+        hotfix_template = (self.repo_root / 'docs' / 'release' / 'hotfix-release-note-template.md').read_text(encoding='utf-8')
+        self.assertIn('## Highlights', release_template)
+        self.assertIn('## Checksum Verification', release_template)
+        self.assertIn('install-latest.ps1', release_template)
+        self.assertIn('## Replaces', hotfix_template)
+        self.assertIn('## User Action Required', hotfix_template)
+        self.assertIn('doctor-agent.py --agent codex --verify-manifest-integrity', hotfix_template)
 
     def test_realistic_sample_artifacts_capture_provenance_metadata(self) -> None:
         smoke = json.loads(

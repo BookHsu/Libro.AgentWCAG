@@ -567,8 +567,8 @@
 - [x] 定義 release notes 必含 known limitations
 - [x] 定義 release notes 必含 install / verify 指令
 - [x] 定義 release notes 必含 checksum verification 說明
-- [ ] 補 release note template
-- [ ] 補 hotfix release note template
+- [x] 補 release note template
+- [x] 補 hotfix release note template
 - [x] 更新 changelog discipline 文件
 
 #### 3.10 One-click installer 體驗
@@ -584,10 +584,10 @@
 - [x] 實作解壓到 temp dir
 - [x] 實作呼叫 installer
 - [x] 實作失敗後 temp 清理
-- [ ] 實作成功後呼叫 doctor 或提示 doctor 驗證
-- [ ] 定義 Python 缺失時的錯誤訊息
-- [ ] 定義權限不足時的錯誤訊息
-- [ ] 定義 network failure 時的錯誤訊息
+- [x] 實作成功後呼叫 doctor 或提示 doctor 驗證
+- [x] 定義 Python 缺失時的錯誤訊息
+- [x] 定義權限不足時的錯誤訊息
+- [x] 定義 network failure 時的錯誤訊息
 - [x] 為 bootstrap scripts 補測試或最少 smoke validation
 
 #### 3.11 Clean environment adoption smoke
@@ -614,11 +614,11 @@
 
 - [x] 新增 `docs/release/ga-release-workflow.md`
 - [x] 補 pre-release checklist
-- [ ] 補 version bump 流程
+- [x] 補 version bump 流程
 - [x] 補 changelog finalize 流程
 - [x] 補 tag 建立流程
 - [x] 補 release workflow 觸發與監看流程
-- [ ] 補 post-publish verification 流程
+- [x] 補 post-publish verification 流程
 - [x] 新增 `docs/release/rollback-playbook.md`
 - [x] 定義 rollback trigger 條件
 - [x] 定義 rollback owner / approver
@@ -644,7 +644,7 @@
 - [x] 定義 known limitations 的允收標準
 - [x] 定義 semantic versioning 是否正式採用
 - [x] 定義 breaking change 的分類
-- [ ] 定義 deprecation policy
+- [x] 定義 deprecation policy
 - [x] 定義 report schema versioning policy
 - [x] 定義 install-manifest 相容性政策
 - [x] 定義 adapter entrypoint path 相容性政策
@@ -680,11 +680,11 @@
 
 #### 3.16 建議實作順序
 
-- [ ] 第一步：先完成版本單一來源與 provenance helper
-- [ ] 第二步：完成 installer / doctor / report 的版本資訊注入
-- [ ] 第三步：完成 packaging script 與 bundle contract
-- [ ] 第四步：完成 checksum 與 release asset verification
-- [ ] 第五步：完成 one-click installer 與 clean smoke
+- [x] 第一步：先完成版本單一來源與 provenance helper
+- [x] 第二步：完成 installer / doctor / report 的版本資訊注入
+- [x] 第三步：完成 packaging script 與 bundle contract
+- [x] 第四步：完成 checksum 與 release asset verification
+- [x] 第五步：完成 one-click installer 與 clean smoke
 - [x] 第六步：完成 GitHub Release workflow
 - [x] 第七步：完成 GA definition、rollback、docs 收斂
 - [x] 每一步完成後都更新測試與文件
@@ -692,9 +692,9 @@
 #### 3.17 最小交付標準
 
 - [x] tag push 可自動產生正式 release assets
-- [ ] 所有 installer / doctor / report artifacts 帶一致版本資訊
-- [ ] release assets 可被 checksum 驗證
-- [ ] clean environment adoption smoke 可成功執行
+- [x] 所有 installer / doctor / report artifacts 帶一致版本資訊
+- [x] release assets 可被 checksum 驗證
+- [x] clean environment adoption smoke 可成功執行
 - [x] rollback playbook 可供非作者依文件操作
 - [x] GA definition 文件已完成且與實作一致
 - [x] README 與 release docs 已反映正式產品化入口
