@@ -38,7 +38,7 @@
 - [x] 新增 `skills/libro-agent-wcag/scripts/baseline_governance.py`
 - [x] 新增 `skills/libro-agent-wcag/scripts/advanced_gates.py`
 - [x] 新增 `skills/libro-agent-wcag/scripts/report_artifacts.py`
-- [ ] 視需要新增 `skills/libro-agent-wcag/scripts/shared_constants.py`
+- [x] 視需要新增 `skills/libro-agent-wcag/scripts/shared_constants.py`
 - [x] 確認新增檔案命名與責任清楚，不和 `wcag_workflow.py`、`auto_fix.py` 重疊
 
 #### 1.2 Scanner Runtime 拆分
@@ -178,11 +178,11 @@
 
 #### 1.8 共用常數與相依整理
 
-- [ ] 檢查哪些常數仍適合留在主檔
-- [ ] 檢查哪些常數應抽到 `shared_constants.py`
-- [ ] 若新增 `shared_constants.py`，同步更新所有模組 import
-- [ ] 確保 `wcag_workflow.py`、`auto_fix.py`、新模組之間沒有多餘交錯依賴
-- [ ] 若發現模組邊界重疊，優先調整責任而不是複製 helper
+- [x] 檢查哪些常數仍適合留在主檔
+- [x] 檢查哪些常數應抽到 `shared_constants.py`
+- [x] 若新增 `shared_constants.py`，同步更新所有模組 import
+- [x] 確保 `wcag_workflow.py`、`auto_fix.py`、新模組之間沒有多餘交錯依賴
+- [x] 若發現模組邊界重疊，優先調整責任而不是複製 helper
 
 #### 1.9 測試與回歸驗證
 
