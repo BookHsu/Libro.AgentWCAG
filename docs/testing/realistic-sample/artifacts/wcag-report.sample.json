@@ -8,11 +8,11 @@
     "modification_owner": "core-workflow",
     "diff_artifacts": [
       {
-        "path": "C:\\Source\\Libro.AgentWCAG\\.tmp-realistic-smoke\\run\\mixed-findings.html",
+        "path": "<repo>/.tmp-realistic-smoke/run/mixed-findings.html",
         "type": "modified-file"
       },
       {
-        "path": "C:\\Source\\Libro.AgentWCAG\\.tmp-realistic-smoke\\run\\audit-output\\wcag-fixes.diff",
+        "path": "<repo>/.tmp-realistic-smoke/run/audit-output/wcag-fixes.diff",
         "type": "unified-diff"
       }
     ],
@@ -59,7 +59,7 @@
     },
     "notes": [
       "Applied 5 safe auto-fix change(s) to the local target.",
-      "Saved auto-fix diff: C:\\Source\\Libro.AgentWCAG\\.tmp-realistic-smoke\\run\\audit-output\\wcag-fixes.diff"
+      "Saved auto-fix diff: <repo>/.tmp-realistic-smoke/run/audit-output/wcag-fixes.diff"
     ],
     "applied_changes": [
       {
@@ -90,7 +90,7 @@
     ]
   },
   "target": {
-    "value": "C:\\Source\\Libro.AgentWCAG\\.tmp-realistic-smoke\\run\\mixed-findings.html",
+    "value": "<repo>/.tmp-realistic-smoke/run/mixed-findings.html",
     "task_mode": "modify"
   },
   "standard": {

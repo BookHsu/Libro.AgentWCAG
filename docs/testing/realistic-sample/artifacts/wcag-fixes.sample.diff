@@ -1,5 +1,5 @@
---- C:\Source\Libro.AgentWCAG\.tmp-realistic-smoke\run\mixed-findings.html
-+++ C:\Source\Libro.AgentWCAG\.tmp-realistic-smoke\run\mixed-findings.html
+--- <repo>/.tmp-realistic-smoke/run/mixed-findings.html
++++ <repo>/.tmp-realistic-smoke/run/mixed-findings.html
 @@ -3,22 +3,22 @@
  <head>
    <meta charset="utf-8">
