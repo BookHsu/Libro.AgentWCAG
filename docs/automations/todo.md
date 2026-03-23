@@ -164,17 +164,17 @@
 
 #### 1.7 CLI 與 Orchestration 收斂
 
-- [ ] 保留 `run_accessibility_audit.py` 作為 CLI 入口
-- [ ] 保留 `parse_args()` 在主檔，或明確定義其最終歸屬
-- [ ] 清理主檔中不再需要的常數
-- [ ] 清理主檔中不再需要的重複 helper
-- [ ] 確保主檔只保留參數解析、流程協調、最終 exit code 決策
-- [ ] 重新整理 import 順序
-- [ ] 確認沒有循環依賴
-- [ ] 確認主檔仍容易追蹤 `main()` 流程
-- [ ] 檢查主檔長度是否顯著下降
-- [ ] 檢查 argparse help 文案未意外變更
-- [ ] 驗證 CLI 執行方式仍為 `python skills/libro-agent-wcag/scripts/run_accessibility_audit.py`
+- [x] 保留 `run_accessibility_audit.py` 作為 CLI 入口
+- [x] 保留 `parse_args()` 在主檔，或明確定義其最終歸屬
+- [x] 清理主檔中不再需要的常數
+- [x] 清理主檔中不再需要的重複 helper
+- [x] 確保主檔只保留參數解析、流程協調、最終 exit code 決策
+- [x] 重新整理 import 順序
+- [x] 確認沒有循環依賴
+- [x] 確認主檔仍容易追蹤 `main()` 流程
+- [x] 檢查主檔長度是否顯著下降
+- [x] 檢查 argparse help 文案未意外變更
+- [x] 驗證 CLI 執行方式仍為 `python skills/libro-agent-wcag/scripts/run_accessibility_audit.py`
 
 #### 1.8 共用常數與相依整理
 

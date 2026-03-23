@@ -9,8 +9,6 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
-from urllib.request import url2pathname
 
 from auto_fix import (
     apply_report_fixes,
@@ -383,6 +381,28 @@ def _resolve_fail_threshold(report: dict[str, Any], fail_on: str) -> tuple[bool,
         if SEVERITY_RANK.get(severity, 0) >= threshold_rank:
             return True, FAIL_ON_EXIT_CODES[fail_on]
     return False, 0
+
+
+def _write_machine_report_outputs(
+    *,
+    report: dict[str, Any],
+    report_format: str,
+    output_json: Path,
+    output_md: Path,
+    machine_output: Path,
+    contract_target: str,
+    local_target: Path | None,
+) -> None:
+    if report_format == 'json':
+        write_report_files(report, str(output_json), str(output_md))
+        return
+
+    machine_output.write_text(
+        json.dumps(_report_to_sarif(report, contract_target, local_target), ensure_ascii=False, indent=2),
+        encoding='utf-8',
+    )
+    output_md.parent.mkdir(parents=True, exist_ok=True)
+    output_md.write_text(to_markdown_table(report), encoding='utf-8')
 
 
 def parse_args() -> argparse.Namespace:
@@ -1126,16 +1146,15 @@ def main() -> int:
     output_json = report_output_paths['output_json']
     output_md = report_output_paths['output_md']
     machine_output = report_output_paths['machine_output']
-    if report_format == 'json':
-        write_report_files(report, str(output_json), str(output_md))
-    else:
-        output_sarif = machine_output
-        output_sarif.write_text(
-            json.dumps(_report_to_sarif(report, contract.target, local_target), ensure_ascii=False, indent=2),
-            encoding='utf-8',
-        )
-        output_md.parent.mkdir(parents=True, exist_ok=True)
-        output_md.write_text(to_markdown_table(report), encoding='utf-8')
+    _write_machine_report_outputs(
+        report=report,
+        report_format=report_format,
+        output_json=output_json,
+        output_md=output_md,
+        machine_output=machine_output,
+        contract_target=contract.target,
+        local_target=local_target,
+    )
 
     if fail_on:
         gate_report = {'findings': gate_findings}
@@ -1160,15 +1179,15 @@ def main() -> int:
             'scope': gate_scope,
             'evaluated_findings': len(gate_report.get('findings', [])),
         }
-        if report_format == 'json':
-            write_report_files(report, str(output_json), str(output_md))
-        elif machine_output.suffix == '.sarif':
-            output_sarif = machine_output
-            output_sarif.write_text(
-                json.dumps(_report_to_sarif(report, contract.target, local_target), ensure_ascii=False, indent=2),
-                encoding='utf-8',
-            )
-            output_md.write_text(to_markdown_table(report), encoding='utf-8')
+        _write_machine_report_outputs(
+            report=report,
+            report_format=report_format,
+            output_json=output_json,
+            output_md=output_md,
+            machine_output=machine_output,
+            contract_target=contract.target,
+            local_target=local_target,
+        )
     else:
         should_fail, exit_code = False, 0
 
@@ -1247,15 +1266,15 @@ def main() -> int:
         'path': str(artifact_manifest_path),
         'algorithm': 'sha256',
     }
-    if report_format == 'json':
-        write_report_files(report, str(output_json), str(output_md))
-    elif machine_output.suffix == '.sarif':
-        output_sarif = machine_output
-        output_sarif.write_text(
-            json.dumps(_report_to_sarif(report, contract.target, local_target), ensure_ascii=False, indent=2),
-            encoding='utf-8',
-        )
-        output_md.write_text(to_markdown_table(report), encoding='utf-8')
+    _write_machine_report_outputs(
+        report=report,
+        report_format=report_format,
+        output_json=output_json,
+        output_md=output_md,
+        machine_output=machine_output,
+        contract_target=contract.target,
+        local_target=local_target,
+    )
 
     axe_raw = output_dir / 'axe.raw.json'
     lighthouse_raw = output_dir / 'lighthouse.raw.json'
