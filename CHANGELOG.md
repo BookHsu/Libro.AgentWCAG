@@ -6,6 +6,32 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-03-23
+
+### Added
+
+- Chinese default repository homepage with a preserved English companion file in `README.en.md`.
+- Repo admin setup guide for release asset publishing and PR bypass configuration in `docs/release/repo-admin-setup.md`.
+
+### Changed
+
+- Release workflow now also reacts to GitHub Release `published` events so manually published releases can still receive packaged zip assets.
+- README default language is now Traditional Chinese, with quick-install guidance for published release assets.
+- GA release workflow docs now describe the GitHub UI publish path alongside tag-push and manual dispatch flows.
+
+### Install / Verify
+
+- Bootstrap install from published release assets with `pwsh -File .\scripts\install-latest.ps1 -ReleaseBase https://github.com/<owner>/<repo>/releases/download/v1.0.2 -Agent codex`.
+
+### Checksum Verification
+
+- Verify `libro-agent-wcag-1.0.2-sha256sums.txt` before installing any release bundle.
+- Confirm the selected bundle hash matches both the checksum file and `libro-agent-wcag-1.0.2-release-manifest.json`.
+
+### Known Limitations
+
+- Owner/admin bypass remains a GitHub repository setting and is not enforced by repository files alone.
+
 ## [1.0.1] - 2026-03-23
 
 ### Added

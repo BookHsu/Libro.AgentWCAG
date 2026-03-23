@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "Libro.AgentWCAG"
-version = "1.0.1"
+version = "1.0.2"
 description = "Publishable repository for the Libro.AgentWCAG cross-agent WCAG web skill."
 readme = "README.md"
 requires-python = ">=3.12"
