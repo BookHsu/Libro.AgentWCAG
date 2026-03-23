@@ -18,74 +18,74 @@
 
 #### 1.0 前置盤點與重構設計
 
-- [ ] 盤點 `skills/libro-agent-wcag/scripts/run_accessibility_audit.py` 目前所有責任區塊
-- [ ] 列出目前所有常數、CLI flags、exit codes、schema version 常數與其歸屬
-- [ ] 列出目前所有內部 helper 與它們之間的呼叫依賴
-- [ ] 標記哪些函式是純邏輯、哪些是 I/O、哪些是 orchestration
-- [ ] 列出目前所有會寫檔的函式
-- [ ] 列出目前所有會直接呼叫 subprocess 的函式
-- [ ] 列出目前所有會影響 CLI 契約的輸出欄位
-- [ ] 列出目前所有會影響 `run_meta` 的組裝函式
-- [ ] 建立拆分前後的函式對應表
-- [ ] 定義拆分後的模組邊界與檔名
-- [ ] 定義拆分後的 import 方向，避免循環依賴
-- [ ] 定義「不可變更」清單：CLI flags、exit codes、artifact 檔名、report schema、summary-only 輸出
+- [x] 盤點 `skills/libro-agent-wcag/scripts/run_accessibility_audit.py` 目前所有責任區塊
+- [x] 列出目前所有常數、CLI flags、exit codes、schema version 常數與其歸屬
+- [x] 列出目前所有內部 helper 與它們之間的呼叫依賴
+- [x] 標記哪些函式是純邏輯、哪些是 I/O、哪些是 orchestration
+- [x] 列出目前所有會寫檔的函式
+- [x] 列出目前所有會直接呼叫 subprocess 的函式
+- [x] 列出目前所有會影響 CLI 契約的輸出欄位
+- [x] 列出目前所有會影響 `run_meta` 的組裝函式
+- [x] 建立拆分前後的函式對應表
+- [x] 定義拆分後的模組邊界與檔名
+- [x] 定義拆分後的 import 方向，避免循環依賴
+- [x] 定義「不可變更」清單：CLI flags、exit codes、artifact 檔名、report schema、summary-only 輸出
 
 #### 1.1 新增模組骨架
 
-- [ ] 新增 `skills/libro-agent-wcag/scripts/scanner_runtime.py`
-- [ ] 新增 `skills/libro-agent-wcag/scripts/policy_controls.py`
-- [ ] 新增 `skills/libro-agent-wcag/scripts/baseline_governance.py`
-- [ ] 新增 `skills/libro-agent-wcag/scripts/advanced_gates.py`
-- [ ] 新增 `skills/libro-agent-wcag/scripts/report_artifacts.py`
+- [x] 新增 `skills/libro-agent-wcag/scripts/scanner_runtime.py`
+- [x] 新增 `skills/libro-agent-wcag/scripts/policy_controls.py`
+- [x] 新增 `skills/libro-agent-wcag/scripts/baseline_governance.py`
+- [x] 新增 `skills/libro-agent-wcag/scripts/advanced_gates.py`
+- [x] 新增 `skills/libro-agent-wcag/scripts/report_artifacts.py`
 - [ ] 視需要新增 `skills/libro-agent-wcag/scripts/shared_constants.py`
-- [ ] 確認新增檔案命名與責任清楚，不和 `wcag_workflow.py`、`auto_fix.py` 重疊
+- [x] 確認新增檔案命名與責任清楚，不和 `wcag_workflow.py`、`auto_fix.py` 重疊
 
 #### 1.2 Scanner Runtime 拆分
 
-- [ ] 將 `npx` resolution 相關常數與 helper 搬到 `scanner_runtime.py`
-- [ ] 搬移 `_resolve_npx_executable()`
-- [ ] 搬移 `NPX_EXECUTABLE`
-- [ ] 搬移 `PREFLIGHT_TOOL_CHECKS`
-- [ ] 搬移 `_extract_version_line()`
-- [ ] 搬移 `_build_version_provenance()`
-- [ ] 搬移 `_run_command()`
-- [ ] 搬移 `_is_transient_scanner_error()`
-- [ ] 搬移 `_run_scanner_with_retry()`
-- [ ] 搬移 scanner preflight 相關 helper
-- [ ] 搬移 axe scanner 執行 helper
-- [ ] 搬移 lighthouse scanner 執行 helper
+- [x] 將 `npx` resolution 相關常數與 helper 搬到 `scanner_runtime.py`
+- [x] 搬移 `_resolve_npx_executable()`
+- [x] 搬移 `NPX_EXECUTABLE`
+- [x] 搬移 `PREFLIGHT_TOOL_CHECKS`
+- [x] 搬移 `_extract_version_line()`
+- [x] 搬移 `_build_version_provenance()`
+- [x] 搬移 `_run_command()`
+- [x] 搬移 `_is_transient_scanner_error()`
+- [x] 搬移 `_run_scanner_with_retry()`
+- [x] 搬移 scanner preflight 相關 helper
+- [x] 搬移 axe scanner 執行 helper
+- [x] 搬移 lighthouse scanner 執行 helper
 - [ ] 搬移 scanner capability negotiation 相關 helper
-- [ ] 檢查 scanner runtime 模組對外 export 清單
-- [ ] 更新主檔 import
-- [ ] 移除主檔中已搬移的 scanner runtime helper
-- [ ] 執行 `test_runner.py` 中 scanner runtime 相關測試
-- [ ] 執行 `test_real_scanner_ci_lane.py`
-- [ ] 驗證 Windows `npx.cmd` fallback 行為不變
-- [ ] 驗證 scanner timeout / missing-tool / runtime-error 分類行為不變
+- [x] 檢查 scanner runtime 模組對外 export 清單
+- [x] 更新主檔 import
+- [x] 移除主檔中已搬移的 scanner runtime helper
+- [x] 執行 `test_runner.py` 中 scanner runtime 相關測試
+- [x] 執行 `test_real_scanner_ci_lane.py`
+- [x] 驗證 Windows `npx.cmd` fallback 行為不變
+- [x] 驗證 scanner timeout / missing-tool / runtime-error 分類行為不變
 
 #### 1.3 Policy Controls 拆分
 
-- [ ] 將 policy preset/bundle 相關常數搬到 `policy_controls.py`
-- [ ] 搬移 `POLICY_PRESETS`
-- [ ] 搬移 `POLICY_BUNDLES`
-- [ ] 搬移 `ALLOWED_POLICY_CONFIG_KEYS`
-- [ ] 搬移 `POLICY_CONFIG_KEY_SPECS`
-- [ ] 搬移 policy preset resolve 相關 helper
-- [ ] 搬移 policy bundle resolve 相關 helper
-- [ ] 搬移 policy-config 載入與 key 驗證 helper
-- [ ] 搬移 include/ignore overlap 檢查 helper
-- [ ] 搬移 effective policy 組裝 helper
-- [ ] 搬移 preset discovery payload helper
-- [ ] 搬移 policy-config key discovery payload helper
-- [ ] 搬移 explain-policy 相關 helper
-- [ ] 搬移 write-effective-policy artifact 相關 helper
-- [ ] 更新主檔 import
-- [ ] 移除主檔中已搬移的 policy helper
-- [ ] 執行 `test_runner.py` 中 policy 相關測試
-- [ ] 執行 `test_cli_flows.py` 中 `--policy-config`、`--policy-bundle`、`--explain-policy`、`--strict-rule-overlap` 相關測試
-- [ ] 驗證 effective policy 結構不變
-- [ ] 驗證 policy 相關 CLI 錯誤訊息與行為不變
+- [x] 將 policy preset/bundle 相關常數搬到 `policy_controls.py`
+- [x] 搬移 `POLICY_PRESETS`
+- [x] 搬移 `POLICY_BUNDLES`
+- [x] 搬移 `ALLOWED_POLICY_CONFIG_KEYS`
+- [x] 搬移 `POLICY_CONFIG_KEY_SPECS`
+- [x] 搬移 policy preset resolve 相關 helper
+- [x] 搬移 policy bundle resolve 相關 helper
+- [x] 搬移 policy-config 載入與 key 驗證 helper
+- [x] 搬移 include/ignore overlap 檢查 helper
+- [x] 搬移 effective policy 組裝 helper
+- [x] 搬移 preset discovery payload helper
+- [x] 搬移 policy-config key discovery payload helper
+- [x] 搬移 explain-policy 相關 helper
+- [x] 搬移 write-effective-policy artifact 相關 helper
+- [x] 更新主檔 import
+- [x] 移除主檔中已搬移的 policy helper
+- [x] 執行 `test_runner.py` 中 policy 相關測試
+- [x] 執行 `test_cli_flows.py` 中 `--policy-config`、`--policy-bundle`、`--explain-policy`、`--strict-rule-overlap` 相關測試
+- [x] 驗證 effective policy 結構不變
+- [x] 驗證 policy 相關 CLI 錯誤訊息與行為不變
 
 #### 1.4 Baseline Governance 拆分
 
