@@ -25,6 +25,7 @@ class ReleaseDocsTests(unittest.TestCase):
             self.repo_root / 'docs' / 'release' / 'real-scanner-ci-lane.md',
             self.repo_root / 'docs' / 'release' / 'baseline-governance.md',
             self.repo_root / 'docs' / 'release' / 'advanced-ci-gates.md',
+            self.repo_root / 'docs' / 'examples' / 'ci' / 'github-actions-wcag-ci-sample.yml',
             self.repo_root / 'docs' / 'policy-bundles' / 'strict-web-app.json',
             self.repo_root / 'docs' / 'policy-bundles' / 'legacy-content.json',
             self.repo_root / 'docs' / 'policy-bundles' / 'marketing-site.json',
@@ -77,6 +78,7 @@ class ReleaseDocsTests(unittest.TestCase):
         self.assertIn('docs/release/apply-fixes-scope.md', content)
         self.assertIn('docs/release/prompt-invocation-templates.md', content)
         self.assertIn('docs/release/resilient-run-patterns.md', content)
+        self.assertIn('docs/examples/ci/github-actions-wcag-ci-sample.yml', content)
         self.assertIn('docs/release/real-scanner-ci-lane.md', content)
         self.assertIn('docs/release/baseline-governance.md', content)
         self.assertIn('docs/release/advanced-ci-gates.md', content)

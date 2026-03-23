@@ -15,7 +15,7 @@ class RealScannerCiLaneTests(unittest.TestCase):
         cls.repo_root = Path(__file__).resolve().parents[4]
         cls.reusable_workflow = cls.repo_root / '.github' / 'workflows' / 'reusable-real-scanner-lane.yml'
         cls.main_workflow = cls.repo_root / '.github' / 'workflows' / 'test.yml'
-        cls.sample_workflow = cls.repo_root / 'docs' / 'release' / 'github-actions-wcag-ci-sample.yml'
+        cls.sample_workflow = cls.repo_root / 'docs' / 'examples' / 'ci' / 'github-actions-wcag-ci-sample.yml'
         cls.ci_lane_doc = cls.repo_root / 'docs' / 'release' / 'real-scanner-ci-lane.md'
 
     def test_reusable_lane_defines_live_and_fallback_matrix_contract(self) -> None:
