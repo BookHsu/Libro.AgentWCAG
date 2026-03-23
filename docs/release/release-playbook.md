@@ -7,10 +7,18 @@ Use this playbook as the primary release-readiness document for `libro-agent-wca
 - Confirm `README.md` install and usage sections reflect current repo behavior.
 - Confirm adapter prompt templates and usage examples are synchronized across supported agents.
 - Confirm `scripts/install-agent.py`, wrapper scripts, and uninstall flow remain aligned.
+- Run `python scripts/package-release.py --output-dir dist/release --overwrite` from the repo root to stage versioned release assets.
 - Confirm `skills/libro-agent-wcag/agents/openai.yaml` and manifest references are valid.
 - Confirm `pyproject.toml` remains the single source for `product_version`.
 - Confirm release automation sets `LIBRO_AGENTWCAG_SOURCE_REVISION`; if not set, verify the build runs from a git checkout where `HEAD` resolves cleanly.
 - If release packaging needs a pinned timestamp, set `LIBRO_AGENTWCAG_BUILD_TIMESTAMP` as a UTC ISO-8601 value; invalid or missing required provenance must fail fast rather than writing partial metadata.
+- Confirm release asset names match the documented contract:
+  - `libro-agent-wcag-<version>-<agent>.zip` for `codex`, `claude`, `gemini`, and `copilot`
+  - `libro-agent-wcag-<version>-all-in-one.zip`
+  - `libro-agent-wcag-<version>-release-manifest.json`
+  - `libro-agent-wcag-<version>-sha256sums.txt`
+  - `latest-release.json`
+- Confirm release bundles exclude `skills/libro-agent-wcag/scripts/tests/`, `docs/testing/`, and `docs/archive/`.
 
 ## Validation Readiness
 
@@ -25,6 +33,7 @@ Use this playbook as the primary release-readiness document for `libro-agent-wca
 - Run dependency-audit lane (`pip-audit --strict` and `npm audit --audit-level=high`) with archived logs.
 - Capture and archive `--preflight-only` output, including `version_provenance`.
 - Verify `artifact-manifest.json` is generated for the release candidate and includes checksums for machine and markdown outputs plus generator `product_version`, `source_revision`, and report schema metadata.
+- Verify the release manifest enumerates every packaged bundle with a 64-character `sha256` and that `sha256sums.txt` covers the bundles plus the release manifest itself.
 - Run the adoption smoke flow in `docs/release/adoption-smoke-guide.md`.
 - Verify release notes and changelog entries match the tested behavior.
 

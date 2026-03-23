@@ -152,6 +152,10 @@ python scripts/validate_skill.py skills/libro-agent-wcag --validate-policy-bundl
 
 ## Release readiness
 
+- Create versioned release assets from the repo root with `python .\scripts\package-release.py --output-dir .\dist\release --overwrite`.
+- Packaging emits deterministic bundle names: `libro-agent-wcag-<version>-codex.zip`, `libro-agent-wcag-<version>-claude.zip`, `libro-agent-wcag-<version>-gemini.zip`, `libro-agent-wcag-<version>-copilot.zip`, and `libro-agent-wcag-<version>-all-in-one.zip`.
+- Companion release artifacts are `libro-agent-wcag-<version>-release-manifest.json`, `libro-agent-wcag-<version>-sha256sums.txt`, and `latest-release.json`.
+- Release bundles intentionally exclude `skills/libro-agent-wcag/scripts/tests/`, `docs/testing/`, and `docs/archive/`; use the versioned release manifest and checksum file for downstream verification.
 - `docs/release/release-playbook.md`: packaging, validation, publish gate checklist, and release-notes workflow
 - `CHANGELOG.md`:  versioned release notes baseline
 - `docs/release/supported-environments.md`:  supported runtime and toolchain matrix
