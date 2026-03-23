@@ -155,6 +155,7 @@ def _build_compact_summary(
     exit_code: int,
 ) -> dict[str, Any]:
     summary = report.get('summary', {})
+    product_metadata = report.get('run_meta', {}).get('product', {})
     compact: dict[str, Any] = {
         'status': 'failed' if should_fail else 'ok',
         'report_format': report_format,
@@ -164,6 +165,15 @@ def _build_compact_summary(
         'fixed_findings': summary.get('fixed_findings', 0),
         'manual_required_count': summary.get('manual_required_count', 0),
     }
+    if product_metadata:
+        compact['product'] = {
+            'name': product_metadata.get('name'),
+            'product_version': product_metadata.get('product_version'),
+            'source_revision': product_metadata.get('source_revision'),
+            'report_schema_version': product_metadata.get('report_schema_version'),
+        }
+        if 'build_timestamp' in product_metadata:
+            compact['product']['build_timestamp'] = product_metadata.get('build_timestamp')
     if fail_on:
         policy_gate = report.get('run_meta', {}).get('policy_gate', {})
         compact['policy_gate'] = {

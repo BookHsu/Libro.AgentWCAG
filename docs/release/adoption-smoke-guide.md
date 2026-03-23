@@ -20,10 +20,16 @@ The script executes:
 Pass criteria:
 
 - install command succeeds with no missing manifest assets
-- doctor command reports healthy right after install
+- doctor command reports healthy right after install, including `manifest_provenance.verified = true` and `version_consistency.verified = true`
 - audit command emits both JSON and Markdown reports
 - apply-fixes output emits diff and snapshot artifacts
-- smoke summary shows mixed remediation outcomes
+- smoke summary shows mixed remediation outcomes plus installed/report provenance
+
+Representative smoke artifacts should preserve:
+
+- installer provenance in `install-manifest.json` (`product_version`, `source_revision`)
+- doctor consistency data (`expected_product`, `installed_product`, `version_consistency`)
+- report provenance in `wcag-report.sample.json`, `wcag-report.sample.md`, and SARIF/manifest examples stored beside the smoke output
 
 ## Demo Package Walkthrough
 
@@ -56,6 +62,8 @@ Healthy output should show:
 
 - `ok = true`
 - `manifest_integrity.verified = true`
+- `manifest_provenance.verified = true`
+- `version_consistency.verified = true`
 - no hash mismatches
 - no missing files
 

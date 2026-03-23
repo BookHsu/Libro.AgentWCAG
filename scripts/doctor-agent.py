@@ -175,6 +175,50 @@ def verify_manifest_provenance(manifest: dict[str, object]) -> dict[str, object]
     return payload
 
 
+def _installed_product_from_manifest(manifest: dict[str, object]) -> dict[str, object]:
+    installed = {
+        'product_name': manifest.get('product_name'),
+        'product_version': manifest.get('product_version'),
+        'source_revision': manifest.get('source_revision'),
+    }
+    if 'build_timestamp' in manifest:
+        installed['build_timestamp'] = manifest.get('build_timestamp')
+    provenance = manifest.get('provenance')
+    if isinstance(provenance, dict):
+        installed['provenance'] = provenance
+    return installed
+
+
+def _build_version_consistency(
+    expected_provenance: dict[str, str],
+    manifest: dict[str, object] | None,
+    manifest_provenance: dict[str, object],
+) -> dict[str, object]:
+    consistency = {
+        'verified': False,
+        'expected': {
+            'product_version': expected_provenance['product_version'],
+            'source_revision': expected_provenance['source_revision'],
+        },
+        'installed': {},
+        'matches': {
+            'product_version': False,
+            'source_revision': False,
+        },
+    }
+    if manifest is None:
+        return consistency
+
+    installed = _installed_product_from_manifest(manifest)
+    consistency['installed'] = installed
+    consistency['matches'] = {
+        'product_version': installed.get('product_version') == expected_provenance['product_version'],
+        'source_revision': installed.get('source_revision') == expected_provenance['source_revision'],
+    }
+    consistency['verified'] = bool(manifest_provenance.get('verified')) and all(consistency['matches'].values())
+    return consistency
+
+
 def doctor(destination: Path, verify_manifest_integrity_mode: bool) -> dict[str, object]:
     manifest_path = destination / 'install-manifest.json'
     expected_provenance = get_product_provenance()
@@ -189,6 +233,7 @@ def doctor(destination: Path, verify_manifest_integrity_mode: bool) -> dict[str,
             'product_version': expected_provenance['product_version'],
             'source_revision': expected_provenance['source_revision'],
         },
+        'installed_product': {},
         'manifest_provenance': {
             'verified': False,
             'missing_manifest_fields': ['install-manifest.json'],
@@ -197,6 +242,18 @@ def doctor(destination: Path, verify_manifest_integrity_mode: bool) -> dict[str,
                 'product_name': expected_provenance['product_name'],
                 'product_version': expected_provenance['product_version'],
                 'source_revision': expected_provenance['source_revision'],
+            },
+        },
+        'version_consistency': {
+            'verified': False,
+            'expected': {
+                'product_version': expected_provenance['product_version'],
+                'source_revision': expected_provenance['source_revision'],
+            },
+            'installed': {},
+            'matches': {
+                'product_version': False,
+                'source_revision': False,
             },
         },
     }
@@ -215,7 +272,13 @@ def doctor(destination: Path, verify_manifest_integrity_mode: bool) -> dict[str,
         manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
         result['manifest_data'] = manifest
         result['adapter_prompt'] = (destination / manifest['adapter_prompt']).exists()
+        result['installed_product'] = _installed_product_from_manifest(manifest)
         result['manifest_provenance'] = verify_manifest_provenance(manifest)
+        result['version_consistency'] = _build_version_consistency(
+            expected_provenance,
+            manifest,
+            result['manifest_provenance'],
+        )
         if verify_manifest_integrity_mode:
             result['manifest_integrity'] = verify_manifest_integrity(destination, manifest)
     return result
@@ -229,6 +292,7 @@ def run_for_agent(agent: str, destination: Path, verify_manifest_integrity_mode:
         result['manifest'],
         result['adapter_prompt'],
         result['manifest_provenance']['verified'],
+        result['version_consistency']['verified'],
     ]
     if verify_manifest_integrity_mode:
         checks.append(bool(result['manifest_integrity']['verified']))
