@@ -89,32 +89,32 @@
 
 #### 1.4 Baseline Governance 拆分
 
-- [ ] 將 baseline / waiver / trend / evidence 相關常數搬到 `baseline_governance.py`
-- [ ] 搬移 baseline normalization mode 常數
-- [ ] 搬移 selector canonicalization mode 常數
-- [ ] 搬移 baseline evidence mode 常數
-- [ ] 搬移 waiver expiry mode 常數
-- [ ] 搬移 debt state 常數
-- [ ] 搬移 debt trend 相關常數
-- [ ] 搬移 debt waiver required fields 常數
-- [ ] 搬移 baseline report 載入 helper
-- [ ] 搬移 baseline signature 建構與 normalization helper
-- [ ] 搬移 baseline diff 計算 helper
-- [ ] 搬移 debt state transition 標記 helper
-- [ ] 搬移 debt waiver schema 驗證 helper
-- [ ] 搬移 waiver expiry review helper
-- [ ] 搬移 waiver gate decision helper
-- [ ] 搬移 debt trend payload 組裝 helper
-- [ ] 搬移 baseline evidence hash 計算 helper
-- [ ] 搬移 hash-chain 組裝 helper
-- [ ] 搬移 baseline evidence verification helper
-- [ ] 更新主檔 import
-- [ ] 移除主檔中已搬移的 baseline governance helper
-- [ ] 執行 `test_runner.py` 中 baseline / waiver / debt trend / evidence 相關測試
-- [ ] 執行 `test_cli_flows.py` 中 baseline hash/hash-chain、waiver expiry、debt trend 相關測試
-- [ ] 驗證 `run_meta.baseline_diff` 結構不變
-- [ ] 驗證 finding-level `debt_state` 輸出不變
-- [ ] 驗證 `debt-trend.json` 與 `run_meta.debt_trend` 結構不變
+- [x] 將 baseline / waiver / trend / evidence 相關常數搬到 `baseline_governance.py`
+- [x] 搬移 baseline normalization mode 常數
+- [x] 搬移 selector canonicalization mode 常數
+- [x] 搬移 baseline evidence mode 常數
+- [x] 搬移 waiver expiry mode 常數
+- [x] 搬移 debt state 常數
+- [x] 搬移 debt trend 相關常數
+- [x] 搬移 debt waiver required fields 常數
+- [x] 搬移 baseline report 載入 helper
+- [x] 搬移 baseline signature 建構與 normalization helper
+- [x] 搬移 baseline diff 計算 helper
+- [x] 搬移 debt state transition 標記 helper
+- [x] 搬移 debt waiver schema 驗證 helper
+- [x] 搬移 waiver expiry review helper
+- [x] 搬移 waiver gate decision helper
+- [x] 搬移 debt trend payload 組裝 helper
+- [x] 搬移 baseline evidence hash 計算 helper
+- [x] 搬移 hash-chain 組裝 helper
+- [x] 搬移 baseline evidence verification helper
+- [x] 更新主檔 import
+- [x] 移除主檔中已搬移的 baseline governance helper
+- [x] 執行 `test_runner.py` 中 baseline / waiver / debt trend / evidence 相關測試
+- [x] 執行 `test_cli_flows.py` 中 baseline hash/hash-chain、waiver expiry、debt trend 相關測試
+- [x] 驗證 `run_meta.baseline_diff` 結構不變
+- [x] 驗證 finding-level `debt_state` 輸出不變
+- [x] 驗證 `debt-trend.json` 與 `run_meta.debt_trend` 結構不變
 
 #### 1.5 Advanced Gates 拆分
 

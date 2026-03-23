@@ -16,14 +16,13 @@ if str(SCRIPT_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPT_ROOT))
 
 import run_accessibility_audit as runner
+import baseline_governance
 import scanner_runtime
 
 from run_accessibility_audit import (
     DEFAULT_SCANNER_RETRY_ATTEMPTS,
     DEFAULT_TIMEOUT_SECONDS,
     _build_artifact_manifest,
-    _build_run_baseline_evidence,
-    _compute_report_evidence_hash,
     _find_rule_policy_overlaps,
     _policy_config_keys_payload,
     parse_args,
@@ -350,8 +349,8 @@ class RunnerTests(unittest.TestCase):
             'target_normalization': 'none',
             'selector_canonicalization': 'none',
         }
-        first_hash, first_material = _compute_report_evidence_hash(report, signature_config)
-        second_hash, second_material = _compute_report_evidence_hash(report, signature_config)
+        first_hash, first_material = baseline_governance._compute_report_evidence_hash(report, signature_config)
+        second_hash, second_material = baseline_governance._compute_report_evidence_hash(report, signature_config)
         self.assertEqual(first_hash, second_hash)
         self.assertEqual(first_material['unresolved_signatures'], second_material['unresolved_signatures'])
 
@@ -367,7 +366,7 @@ class RunnerTests(unittest.TestCase):
                 {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'status': 'open'},
             ],
         }
-        baseline_hash, _ = _compute_report_evidence_hash(baseline_report, signature_config)
+        baseline_hash, _ = baseline_governance._compute_report_evidence_hash(baseline_report, signature_config)
         baseline_report['run_meta'] = {
             'baseline_evidence': {
                 'mode': 'hash',
@@ -381,7 +380,7 @@ class RunnerTests(unittest.TestCase):
                 {'rule_id': 'button-name', 'changed_target': 'button.icon', 'status': 'open'},
             ],
         }
-        evidence = _build_run_baseline_evidence(
+        evidence = baseline_governance._build_run_baseline_evidence(
             report=report,
             baseline_report=baseline_report,
             signature_config=signature_config,
@@ -691,7 +690,7 @@ class RunnerPolicyTests(unittest.TestCase):
             ]
         }
 
-        diff = runner._build_baseline_diff(current, baseline)
+        diff = baseline_governance._build_baseline_diff(current, baseline)
         self.assertEqual(diff['introduced_count'], 1)
         self.assertEqual(diff['resolved_count'], 1)
         self.assertEqual(diff['persistent_count'], 1)
@@ -718,8 +717,8 @@ class RunnerPolicyTests(unittest.TestCase):
             ]
         }
 
-        diff = runner._build_baseline_diff(report, baseline, signature_config)
-        runner._tag_findings_with_debt_state(report, diff, signature_config)
+        diff = baseline_governance._build_baseline_diff(report, baseline, signature_config)
+        baseline_governance._tag_findings_with_debt_state(report, diff, signature_config)
         findings = {f['rule_id']: f for f in report['findings']}
         self.assertEqual(findings['button-name']['debt_state'], 'new')
         self.assertEqual(findings['image-alt']['debt_state'], 'accepted')
@@ -743,7 +742,7 @@ class RunnerPolicyTests(unittest.TestCase):
             ]
         }
 
-        diff = runner._build_baseline_diff(current, baseline, signature_config)
+        diff = baseline_governance._build_baseline_diff(current, baseline, signature_config)
         self.assertEqual(diff['introduced_count'], 0)
         self.assertEqual(diff['persistent_count'], 1)
 
@@ -766,13 +765,13 @@ class RunnerPolicyTests(unittest.TestCase):
             ],
         }
 
-        diff = runner._build_baseline_diff(current, baseline, signature_config)
+        diff = baseline_governance._build_baseline_diff(current, baseline, signature_config)
         self.assertEqual(diff['introduced_count'], 0)
         self.assertEqual(diff['persistent_count'], 1)
 
     def test_validate_debt_waivers_rejects_missing_required_fields(self) -> None:
         with self.assertRaises(ValueError):
-            runner._validate_debt_waivers(
+            baseline_governance._validate_debt_waivers(
                 [
                     {
                         'signature': 'image-alt|img.hero',
@@ -805,7 +804,7 @@ class RunnerPolicyTests(unittest.TestCase):
                 },
             ]
         }
-        review = runner._evaluate_debt_waiver_review(
+        review = baseline_governance._evaluate_debt_waiver_review(
             baseline_diff,
             baseline_report,
             now_utc=datetime.fromisoformat('2026-03-01T00:00:00+00:00'),
@@ -817,7 +816,7 @@ class RunnerPolicyTests(unittest.TestCase):
         self.assertEqual(review['expired_waivers'][0]['signature'], 'button-name|button.icon')
 
     def test_build_debt_trend_payload_handles_missing_history(self) -> None:
-        trend = runner._build_debt_trend_payload(
+        trend = baseline_governance._build_debt_trend_payload(
             now_utc=datetime.fromisoformat('2026-03-13T00:00:00+00:00'),
             window=3,
             baseline_report={},
@@ -850,7 +849,7 @@ class RunnerPolicyTests(unittest.TestCase):
             'accepted': {'count': 3},
             'retired': {'count': 1},
         }
-        trend = runner._build_debt_trend_payload(
+        trend = baseline_governance._build_debt_trend_payload(
             now_utc=datetime.fromisoformat('2026-03-13T00:00:00+00:00'),
             window=5,
             baseline_report=baseline_report,
@@ -889,7 +888,7 @@ class RunnerPolicyTests(unittest.TestCase):
             'accepted': {'count': 2},
             'retired': {'count': 1},
         }
-        trend = runner._build_debt_trend_payload(
+        trend = baseline_governance._build_debt_trend_payload(
             now_utc=datetime.fromisoformat('2026-03-13T00:00:00+00:00'),
             window=3,
             baseline_report=baseline_report,
