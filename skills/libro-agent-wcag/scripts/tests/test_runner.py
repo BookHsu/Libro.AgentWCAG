@@ -16,6 +16,7 @@ if str(SCRIPT_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPT_ROOT))
 
 import run_accessibility_audit as runner
+import scanner_runtime
 
 from run_accessibility_audit import (
     DEFAULT_SCANNER_RETRY_ATTEMPTS,
@@ -23,18 +24,9 @@ from run_accessibility_audit import (
     _build_artifact_manifest,
     _build_run_baseline_evidence,
     _compute_report_evidence_hash,
-    _extract_version_line,
     _find_rule_policy_overlaps,
-    _is_transient_scanner_error,
     _policy_config_keys_payload,
-    _resolve_npx_executable,
-    _resolve_target_for_scanners,
-    _run_command,
-    _run_scanner_with_retry,
-    _try_run_axe,
-    _try_run_lighthouse,
     parse_args,
-    run_preflight_checks,
 )
 
 
@@ -54,30 +46,30 @@ class RunnerTests(unittest.TestCase):
         return workspace
 
     def test_existing_local_path_is_converted_to_file_uri(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            html_path = Path(tmp) / "index.html"
-            html_path.write_text("<!doctype html><title>x</title>", encoding="utf-8")
-            resolved = _resolve_target_for_scanners(str(html_path))
-            self.assertTrue(resolved.startswith("file:///"))
+        workspace = self._workspace("scanner-runtime-local-file-uri")
+        html_path = workspace / "index.html"
+        html_path.write_text("<!doctype html><title>x</title>", encoding="utf-8")
+        resolved = scanner_runtime._resolve_target_for_scanners(str(html_path))
+        self.assertTrue(resolved.startswith("file:///"))
 
     def test_http_target_is_preserved(self) -> None:
         target = "https://example.com/page"
-        self.assertEqual(_resolve_target_for_scanners(target), target)
+        self.assertEqual(scanner_runtime._resolve_target_for_scanners(target), target)
 
     def test_existing_file_uri_is_preserved(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            html_path = Path(tmp) / "index.html"
-            html_path.write_text("<!doctype html><title>x</title>", encoding="utf-8")
-            target = html_path.resolve().as_uri()
-            self.assertEqual(_resolve_target_for_scanners(target), target)
+        workspace = self._workspace("scanner-runtime-existing-file-uri")
+        html_path = workspace / "index.html"
+        html_path.write_text("<!doctype html><title>x</title>", encoding="utf-8")
+        target = html_path.resolve().as_uri()
+        self.assertEqual(scanner_runtime._resolve_target_for_scanners(target), target)
 
     def test_invalid_scheme_is_rejected(self) -> None:
         with self.assertRaises(ValueError):
-            _resolve_target_for_scanners("ftp://example.com/file.html")
+            scanner_runtime._resolve_target_for_scanners("ftp://example.com/file.html")
 
     def test_missing_local_file_is_rejected(self) -> None:
         with self.assertRaises(ValueError):
-            _resolve_target_for_scanners("missing-file.html")
+            scanner_runtime._resolve_target_for_scanners("missing-file.html")
 
     def test_cli_has_timeout_default(self) -> None:
         original = sys.argv
@@ -418,32 +410,32 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(artifact['kind'], 'machine-report-json')
         self.assertGreater(artifact['size_bytes'], 0)
         self.assertEqual(len(artifact['sha256']), 64)
-    @patch("run_accessibility_audit.subprocess.run")
+    @patch("scanner_runtime.subprocess.run")
     def test_run_command_returns_stdout_on_success(self, mock_run) -> None:
         mock_run.return_value = type("Result", (), {"returncode": 0, "stdout": "ok", "stderr": ""})()
-        ok, result = _run_command(["npx", "tool"], timeout_seconds=30)
+        ok, result = scanner_runtime._run_command(["npx", "tool"], timeout_seconds=30)
         self.assertTrue(ok)
         self.assertEqual(result, "ok")
 
-    @patch("run_accessibility_audit.subprocess.run")
+    @patch("scanner_runtime.subprocess.run")
     def test_run_command_returns_stderr_on_failure(self, mock_run) -> None:
         mock_run.return_value = type("Result", (), {"returncode": 1, "stdout": "out", "stderr": "boom"})()
-        ok, result = _run_command(["npx", "tool"], timeout_seconds=30)
+        ok, result = scanner_runtime._run_command(["npx", "tool"], timeout_seconds=30)
         self.assertFalse(ok)
         self.assertEqual(result, "boom")
 
-    @patch("run_accessibility_audit.subprocess.run")
+    @patch("scanner_runtime.subprocess.run")
     def test_run_command_returns_timeout_message(self, mock_run) -> None:
         mock_run.side_effect = subprocess.TimeoutExpired(cmd=["npx", "tool"], timeout=7)
-        ok, result = _run_command(["npx", "tool"], timeout_seconds=7)
+        ok, result = scanner_runtime._run_command(["npx", "tool"], timeout_seconds=7)
         self.assertFalse(ok)
         self.assertEqual(result, "command timed out after 7 seconds")
 
-    @patch("run_accessibility_audit.shutil.which")
-    @patch("run_accessibility_audit.os.name", "nt")
+    @patch("scanner_runtime.shutil.which")
+    @patch("scanner_runtime.os.name", "nt")
     def test_resolve_npx_executable_prefers_cmd_on_windows(self, mock_which) -> None:
         mock_which.side_effect = lambda tool: "C:/Program Files/nodejs/npx.cmd" if tool == "npx.cmd" else None
-        self.assertEqual(_resolve_npx_executable(), "npx.cmd")
+        self.assertEqual(scanner_runtime._resolve_npx_executable(), "npx.cmd")
 
     def test_try_run_axe_uses_resolved_npx_executable(self) -> None:
         output_dir = Path(__file__).parent / "fixtures" / "_tmp-npx-command"
@@ -451,8 +443,8 @@ class RunnerTests(unittest.TestCase):
         axe_json = output_dir / "axe.raw.json"
         axe_json.write_text('{"violations": []}', encoding="utf-8")
         try:
-            with patch("run_accessibility_audit.NPX_EXECUTABLE", "npx.cmd"), patch("run_accessibility_audit._run_command", return_value=(True, "")) as mock_run:
-                payload, err = _try_run_axe("https://example.com", output_dir, timeout_seconds=15)
+            with patch("scanner_runtime.NPX_EXECUTABLE", "npx.cmd"), patch("scanner_runtime._run_command", return_value=(True, "")) as mock_run:
+                payload, err = scanner_runtime._try_run_axe("https://example.com", output_dir, timeout_seconds=15)
             self.assertIsNone(err)
             self.assertEqual(payload, {"violations": []})
             self.assertEqual(mock_run.call_args[0][0][0], "npx.cmd")
@@ -464,31 +456,31 @@ class RunnerTests(unittest.TestCase):
 
     def test_try_run_axe_returns_error_when_output_missing(self) -> None:
         output_dir = Path(__file__).parent / "fixtures"
-        with patch("run_accessibility_audit._run_command", return_value=(True, "")):
-            payload, err = _try_run_axe("https://example.com", output_dir, timeout_seconds=15)
+        with patch("scanner_runtime._run_command", return_value=(True, "")):
+            payload, err = scanner_runtime._try_run_axe("https://example.com", output_dir, timeout_seconds=15)
         self.assertIsNone(payload)
         self.assertEqual(err, "axe did not generate output json")
 
     def test_try_run_lighthouse_returns_error_when_output_missing(self) -> None:
         output_dir = Path(__file__).parent / "fixtures"
-        with patch("run_accessibility_audit._run_command", return_value=(True, "")):
-            payload, err = _try_run_lighthouse("https://example.com", output_dir, timeout_seconds=15)
+        with patch("scanner_runtime._run_command", return_value=(True, "")):
+            payload, err = scanner_runtime._try_run_lighthouse("https://example.com", output_dir, timeout_seconds=15)
         self.assertIsNone(payload)
         self.assertEqual(err, "lighthouse did not generate output json")
 
-    @patch("run_accessibility_audit._tool_available", return_value=True)
-    @patch("run_accessibility_audit._run_command")
+    @patch("scanner_runtime._tool_available", return_value=True)
+    @patch("scanner_runtime._run_command")
     def test_preflight_returns_ok_when_all_checks_pass(self, mock_run_command, _mock_tool_available) -> None:
         mock_run_command.return_value = (True, "v")
-        result = run_preflight_checks(timeout_seconds=5)
+        result = scanner_runtime.run_preflight_checks(timeout_seconds=5)
         self.assertTrue(result["ok"])
         self.assertTrue(all(item["status"] == "ok" for item in result["checks"]))
 
-    @patch("run_accessibility_audit._tool_available")
+    @patch("scanner_runtime._tool_available")
     def test_preflight_reports_missing_binary(self, mock_tool_available) -> None:
         mock_tool_available.side_effect = [False, True, True]
-        with patch("run_accessibility_audit._run_command", return_value=(True, "v")):
-            result = run_preflight_checks(timeout_seconds=5)
+        with patch("scanner_runtime._run_command", return_value=(True, "v")):
+            result = scanner_runtime.run_preflight_checks(timeout_seconds=5)
         self.assertFalse(result["ok"])
         self.assertEqual(result["checks"][0]["status"], "error")
         self.assertIn("PATH", result["checks"][0]["message"])
@@ -497,11 +489,11 @@ class RunnerTests(unittest.TestCase):
 
     def test_extract_version_line_returns_first_non_empty_line(self) -> None:
         output = "\n\n10.9.0\nsecondary"
-        self.assertEqual(_extract_version_line(output), "10.9.0")
+        self.assertEqual(scanner_runtime._extract_version_line(output), "10.9.0")
 
-    @patch("run_accessibility_audit.shutil.which")
-    @patch("run_accessibility_audit._tool_available", return_value=True)
-    @patch("run_accessibility_audit._run_command")
+    @patch("scanner_runtime.shutil.which")
+    @patch("scanner_runtime._tool_available", return_value=True)
+    @patch("scanner_runtime._run_command")
     def test_preflight_includes_diagnostics_fields(
         self,
         mock_run_command,
@@ -510,7 +502,7 @@ class RunnerTests(unittest.TestCase):
     ) -> None:
         mock_which.return_value = '/usr/bin/npx'
         mock_run_command.return_value = (True, '10.9.0\n')
-        result = run_preflight_checks(timeout_seconds=5)
+        result = scanner_runtime.run_preflight_checks(timeout_seconds=5)
         self.assertIn('tools', result)
         self.assertIn('npx', result['tools'])
         npx = result['tools']['npx']
@@ -531,15 +523,15 @@ class RunnerRetryTests(unittest.TestCase):
         self.assertGreaterEqual(args.scanner_retry_backoff_seconds, 0)
 
     def test_is_transient_scanner_error_detects_timeout_and_network_signals(self) -> None:
-        self.assertTrue(_is_transient_scanner_error("command timed out after 5 seconds"))
-        self.assertTrue(_is_transient_scanner_error("network failure: ECONNRESET"))
-        self.assertFalse(_is_transient_scanner_error("command not found: npx"))
+        self.assertTrue(scanner_runtime._is_transient_scanner_error("command timed out after 5 seconds"))
+        self.assertTrue(scanner_runtime._is_transient_scanner_error("network failure: ECONNRESET"))
+        self.assertFalse(scanner_runtime._is_transient_scanner_error("command not found: npx"))
 
-    @patch("run_accessibility_audit.time.sleep")
+    @patch("scanner_runtime.time.sleep")
     def test_run_scanner_with_retry_retries_transient_error_then_succeeds(self, mock_sleep: Mock) -> None:
         runner = Mock(side_effect=[(None, "command timed out after 2 seconds"), ({"violations": []}, None)])
 
-        payload, error, telemetry = _run_scanner_with_retry(
+        payload, error, telemetry = scanner_runtime._run_scanner_with_retry(
             "axe",
             runner,
             retry_attempts=3,
@@ -552,11 +544,11 @@ class RunnerRetryTests(unittest.TestCase):
         self.assertEqual(runner.call_count, 2)
         mock_sleep.assert_called_once()
 
-    @patch("run_accessibility_audit.time.sleep")
+    @patch("scanner_runtime.time.sleep")
     def test_run_scanner_with_retry_does_not_retry_non_transient_errors(self, mock_sleep: Mock) -> None:
         runner = Mock(return_value=(None, "command not found: npx"))
 
-        payload, error, telemetry = _run_scanner_with_retry(
+        payload, error, telemetry = scanner_runtime._run_scanner_with_retry(
             "lighthouse",
             runner,
             retry_attempts=4,
