@@ -55,7 +55,7 @@
 - [x] 搬移 scanner preflight 相關 helper
 - [x] 搬移 axe scanner 執行 helper
 - [x] 搬移 lighthouse scanner 執行 helper
-- [ ] 搬移 scanner capability negotiation 相關 helper
+- [x] 搬移 scanner capability negotiation 相關 helper
 - [x] 檢查 scanner runtime 模組對外 export 清單
 - [x] 更新主檔 import
 - [x] 移除主檔中已搬移的 scanner runtime helper

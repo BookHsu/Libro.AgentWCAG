@@ -89,6 +89,7 @@ from scanner_runtime import (
     MAX_SCANNER_RETRY_BACKOFF_SECONDS,
     NPX_EXECUTABLE,
     PREFLIGHT_TOOL_CHECKS,
+    _build_scanner_capabilities,
     _build_version_provenance,
     _extract_version_line,
     _is_transient_scanner_error,
@@ -111,72 +112,6 @@ DEFAULT_DEBT_TREND_WINDOW = 5
 def _remove_if_exists(path: Path) -> None:
     if path.exists():
         path.unlink()
-
-def _collect_scanner_rule_ids(axe_data: dict[str, Any] | None, lighthouse_data: dict[str, Any] | None) -> list[str]:
-    rule_ids: set[str] = set()
-    if isinstance(axe_data, dict):
-        for violation in axe_data.get("violations", []):
-            if not isinstance(violation, dict):
-                continue
-            rule_id = str(violation.get("id", "")).strip()
-            if rule_id:
-                rule_ids.add(rule_id)
-    if isinstance(lighthouse_data, dict):
-        audits = lighthouse_data.get("audits", {})
-        if isinstance(audits, dict):
-            for audit_id in audits:
-                if isinstance(audit_id, str):
-                    value = audit_id.strip()
-                    if value:
-                        rule_ids.add(value)
-    return sorted(rule_ids)
-
-
-def _build_scanner_capabilities(
-    preflight: dict[str, Any],
-    report: dict[str, Any],
-    args: argparse.Namespace,
-    axe_data: dict[str, Any] | None,
-    lighthouse_data: dict[str, Any] | None,
-) -> dict[str, Any]:
-    tools = preflight.get("tools", {})
-    run_tools = report.get("run_meta", {}).get("tools", {})
-    available_rules = _collect_scanner_rule_ids(axe_data, lighthouse_data)
-    scanner_map = {
-        "axe": {
-            "requested": not args.skip_axe,
-            "mocked": bool(args.mock_axe_json),
-            "preflight_tool": "@axe-core/cli",
-        },
-        "lighthouse": {
-            "requested": not args.skip_lighthouse,
-            "mocked": bool(args.mock_lighthouse_json),
-            "preflight_tool": "lighthouse",
-        },
-    }
-    scanners: dict[str, Any] = {}
-    for scanner, config in scanner_map.items():
-        preflight_tool = config["preflight_tool"]
-        preflight_entry = tools.get(preflight_tool, {})
-        preflight_status = str(preflight_entry.get("status", "unknown"))
-        input_mode = "skipped"
-        if config["mocked"]:
-            input_mode = "mock"
-        elif config["requested"]:
-            input_mode = "live"
-        scanners[scanner] = {
-            "requested": config["requested"],
-            "input_mode": input_mode,
-            "preflight_status": preflight_status,
-            "run_status": run_tools.get(scanner, "unknown"),
-            "available": bool(config["mocked"] or preflight_status == "ok"),
-        }
-
-    return {
-        "scanners": scanners,
-        "available_rules": available_rules,
-        "available_rule_count": len(available_rules),
-    }
 
 def _rebuild_summary(report: dict[str, Any]) -> None:
     findings = report.get('findings', [])
