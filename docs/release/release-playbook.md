@@ -15,6 +15,10 @@ Use this playbook as the primary release-readiness document for `libro-agent-wca
   - `python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"`
 - Run skill structural validation:
   - `python scripts/validate_skill.py skills/libro-agent-wcag --validate-policy-bundles`
+- Verify `.github/workflows/libro-agent-wcag-real-scanner.yml` still defines workflow/job name `libro-agent-wcag-real-scanner`.
+- Verify the required PR check name remains `libro-agent-wcag-real-scanner`.
+- Verify the real-scanner lane still targets `docs/testing/realistic-sample/mixed-findings.html`.
+- Verify the real-scanner lane still retains artifacts for `14` days and uploads `wcag-report.sarif`.
 - Run dependency-audit lane (`pip-audit --strict` and `npm audit --audit-level=high`) with archived logs.
 - Capture and archive `--preflight-only` output, including `version_provenance`.
 - Verify `artifact-manifest.json` is generated for the release candidate and includes checksums for machine and markdown outputs.

@@ -362,8 +362,8 @@
 - [x] 在文件中寫明 artifact retention 為 `14` 天
 - [x] 在文件中寫明固定保留 `wcag-report.sarif`
 - [x] 更新 `docs/release/resilient-run-patterns.md`
-- [ ] 視需要更新 `docs/release/release-playbook.md`
-- [ ] 視需要更新 `README.md`
+- [x] 視需要更新 `docs/release/release-playbook.md`
+- [x] 視需要更新 `README.md`
 - [x] 確保文件反映「PR gate、live-only、scanner 不可用即 fail」最終決策
 
 #### 2.10 測試與驗證
