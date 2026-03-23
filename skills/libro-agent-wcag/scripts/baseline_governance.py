@@ -12,6 +12,8 @@ from typing import Any
 from urllib.parse import urlparse
 from urllib.request import url2pathname
 
+from shared_constants import REPORT_SCHEMA_VERSION
+
 BASELINE_TARGET_NORMALIZATION_MODES = {"none", "host-path", "path-only"}
 BASELINE_SELECTOR_CANONICALIZATION_MODES = {"none", "basic"}
 BASELINE_EVIDENCE_MODES = {"none", "hash", "hash-chain"}
@@ -23,7 +25,6 @@ DEBT_STATE_RETIRED = "retired"
 DEBT_STATE_REGRESSED = "regressed"
 DEBT_WAIVER_REQUIRED_FIELDS = {"signature", "owner", "approved_at", "expires_at", "reason"}
 DEBT_TREND_SCHEMA_VERSION = "1.0.0"
-REPORT_SCHEMA_VERSION = "1.0.0"
 
 
 def _utc_timestamp() -> str:
