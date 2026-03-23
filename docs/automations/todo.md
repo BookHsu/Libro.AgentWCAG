@@ -186,41 +186,41 @@
 
 #### 1.9 測試與回歸驗證
 
-- [ ] 每完成一個模組抽離後執行對應測試
-- [ ] 重點執行 `test_runner.py`
-- [ ] 重點執行 `test_cli_flows.py`
-- [ ] 視需要執行 `test_repo_contracts.py`
-- [ ] 視需要執行 `test_release_docs.py`
-- [ ] 最後執行完整測試
-- [ ] 檢查 git diff，確認沒有意外更動 CLI 契約、文件路徑或 sample 資產
-- [ ] 檢查 `git status` 與變更範圍是否符合預期
+- [x] 每完成一個模組抽離後執行對應測試
+- [x] 重點執行 `test_runner.py`
+- [x] 重點執行 `test_cli_flows.py`
+- [x] 視需要執行 `test_repo_contracts.py`
+- [x] 視需要執行 `test_release_docs.py`
+- [x] 最後執行完整測試
+- [x] 檢查 git diff，確認沒有意外更動 CLI 契約、文件路徑或 sample 資產
+- [x] 檢查 `git status` 與變更範圍是否符合預期
 
 #### 1.10 建議執行順序
 
-- [ ] 第一步：先抽 `scanner_runtime.py`
-- [ ] 第二步：再抽 `policy_controls.py`
-- [ ] 第三步：再抽 `baseline_governance.py`
-- [ ] 第四步：再抽 `advanced_gates.py`
-- [ ] 第五步：最後抽 `report_artifacts.py`
-- [ ] 第六步：回頭收斂主檔 orchestration
-- [ ] 每一步都先通過對應測試後再進下一步
+- [x] 第一步：先抽 `scanner_runtime.py`
+- [x] 第二步：再抽 `policy_controls.py`
+- [x] 第三步：再抽 `baseline_governance.py`
+- [x] 第四步：再抽 `advanced_gates.py`
+- [x] 第五步：最後抽 `report_artifacts.py`
+- [x] 第六步：回頭收斂主檔 orchestration
+- [x] 每一步都先通過對應測試後再進下一步
 
 #### 1.11 每一步的最小交付標準
 
-- [ ] 新模組已建立且命名清楚
-- [ ] 主檔已改用新模組 import
-- [ ] 對應測試已通過
-- [ ] `git diff` 僅包含預期重構
-- [ ] 未改動 CLI 契約、文件路徑、sample 資產
+- [x] 新模組已建立且命名清楚
+- [x] 主檔已改用新模組 import
+- [x] 對應測試已通過
+- [x] `git diff` 僅包含預期重構
+- [x] 未改動 CLI 契約、文件路徑、sample 資產
 
 #### 1.12 最終驗收條件
 
-- [ ] `run_accessibility_audit.py` 顯著縮小且可讀性提升
-- [ ] 所有既有 CLI flags 仍可使用
-- [ ] 所有既有 artifact 檔名與輸出結構維持相容
-- [ ] 文件中提到的 CLI 行為不需大改
-- [ ] 既有測試維持通過
-- [ ] 完成後可以獨立接續第 2 項 GitHub CI 自動 real-scanner lane 工作
+- [x] `run_accessibility_audit.py` 顯著縮小且可讀性提升
+- [x] 所有既有 CLI flags 仍可使用
+- [x] 所有既有 artifact 檔名與輸出結構維持相容
+- [x] 文件中提到的 CLI 行為不需大改
+- [x] 既有測試維持通過
+- [x] 完成後可以獨立接續第 2 項 GitHub CI 自動 real-scanner lane 工作
 
 ### 2. 將 Real-Scanner Lane 提升為自動 GitHub CI
 
