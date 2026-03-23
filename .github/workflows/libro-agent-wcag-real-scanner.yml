@@ -103,7 +103,16 @@ jobs:
           sarif_path = output_dir / "wcag-report.sarif"
 
           report = json.loads(report_path.read_text(encoding="utf-8"))
-          sarif = runner._report_to_sarif(report, target_path.as_uri(), target_path)
+          product = report.get("run_meta", {}).get("product", {})
+          product_metadata = {
+              "name": product.get("product_name", "Libro.AgentWCAG"),
+              "product_version": product["product_version"],
+              "source_revision": product["source_revision"],
+              "report_schema_version": product["report_schema_version"],
+          }
+          if product.get("build_timestamp"):
+              product_metadata["build_timestamp"] = product["build_timestamp"]
+          sarif = runner._report_to_sarif(report, target_path.as_uri(), target_path, product_metadata)
           sarif_path.write_text(json.dumps(sarif, ensure_ascii=False, indent=2), encoding="utf-8")
           PY
 
