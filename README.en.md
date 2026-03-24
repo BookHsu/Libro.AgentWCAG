@@ -87,6 +87,35 @@ To install the same workspace skill into another project root, run:
 python .\scripts\install-agent.py --agent gemini --workspace-root .
 ```
 
+### Claude add-dir / Git Submodule
+
+If you prefer vendoring the skill into a target repository, use:
+
+```bash
+git submodule add https://github.com/BookHsu/Libro.AgentWCAG.clean.git .vendor/libro-wcag
+claude --add-dir .vendor/libro-wcag
+```
+
+For a persisted sample, see [settings.add-dir.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/claude/settings.add-dir.sample.json).
+
+### GitHub Actions Reusable Workflow
+
+Other repositories can reuse [install-skill.yml](/c:/Source/Libro.AgentWCAG.clean/.github/workflows/install-skill.yml) directly:
+
+```yaml
+jobs:
+  setup:
+    uses: BookHsu/Libro.AgentWCAG.clean/.github/workflows/install-skill.yml@v1
+    with:
+      agent: claude
+```
+
+See [install-skill-consumer-sample.yml](/c:/Source/Libro.AgentWCAG.clean/docs/examples/ci/install-skill-consumer-sample.yml) for a complete example.
+
+### gh release download
+
+If you prefer downloading release assets with GitHub CLI, see [gh-release-download-sample.md](/c:/Source/Libro.AgentWCAG.clean/docs/examples/ci/gh-release-download-sample.md).
+
 ### 2. Verify The Installation
 
 ```powershell

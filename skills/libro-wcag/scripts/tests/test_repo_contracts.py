@@ -60,6 +60,24 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('JSON top-level keys', workspace_skill)
         self.assertIn('JSON top-level keys', core_skill)
 
+    def test_reusable_install_workflow_exists_and_calls_installer_and_doctor(self) -> None:
+        content = self._read(self.repo_root / '.github' / 'workflows' / 'install-skill.yml')
+        self.assertIn('workflow_call', content)
+        self.assertIn('actions/checkout@v4', content)
+        self.assertIn('actions/setup-python@v5', content)
+        self.assertIn('python scripts/install-agent.py', content)
+        self.assertIn('python scripts/doctor-agent.py', content)
+        self.assertIn('--verify-manifest-integrity', content)
+
+    def test_examples_cover_add_dir_reusable_workflow_and_gh_release_download(self) -> None:
+        add_dir = self._read(self.repo_root / 'docs' / 'examples' / 'claude' / 'settings.add-dir.sample.json')
+        reusable = self._read(self.repo_root / 'docs' / 'examples' / 'ci' / 'install-skill-consumer-sample.yml')
+        gh_release = self._read(self.repo_root / 'docs' / 'examples' / 'ci' / 'gh-release-download-sample.md')
+        self.assertIn('.vendor/libro-wcag', add_dir)
+        self.assertIn('uses: BookHsu/Libro.AgentWCAG.clean/.github/workflows/install-skill.yml@v1', reusable)
+        self.assertIn('gh release download', gh_release)
+        self.assertIn('install-agent.py --agent claude', gh_release)
+
     def test_claude_plugin_json_exists_and_has_required_fields(self) -> None:
         payload = json.loads((self.repo_root / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))
         self.assertEqual(payload['name'], 'libro-wcag')
@@ -168,6 +186,7 @@ class RepoContractTests(unittest.TestCase):
         expected = {
             '.gitattributes',
             '.github/workflows/test.yml',
+            '.github/workflows/install-skill.yml',
             '.gitignore',
             '.claude-plugin/plugin.json',
             '.claude-plugin/marketplace.json',
@@ -179,6 +198,9 @@ class RepoContractTests(unittest.TestCase):
             'docs/automations/test-plan-automation.md',
             'docs/automations/test-plan-review-policy.md',
             'docs/automations/agent-installation-expansion-todo.md',
+            'docs/examples/claude/settings.add-dir.sample.json',
+            'docs/examples/ci/install-skill-consumer-sample.yml',
+            'docs/examples/ci/gh-release-download-sample.md',
             'docs/testing/testing-playbook.md',
             'pyproject.toml',
             'scripts/doctor-agent.py',

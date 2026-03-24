@@ -1,0 +1,62 @@
+name: Install Libro.AgentWCAG
+
+on:
+  workflow_call:
+    inputs:
+      agent:
+        description: "codex | claude | gemini | copilot | all"
+        required: true
+        type: string
+      version:
+        description: "Git ref to install from"
+        required: false
+        type: string
+        default: "master"
+      dest:
+        description: "Custom installation path"
+        required: false
+        type: string
+        default: ""
+      force:
+        description: "Replace an existing installation"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Libro.AgentWCAG
+        uses: actions/checkout@v4
+        with:
+          repository: BookHsu/Libro.AgentWCAG.clean
+          ref: ${{ inputs.version }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install skill
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(--agent "${{ inputs.agent }}")
+          if [[ -n "${{ inputs.dest }}" ]]; then
+            args+=(--dest "${{ inputs.dest }}")
+          fi
+          if [[ "${{ inputs.force }}" == "true" ]]; then
+            args+=(--force)
+          fi
+          python scripts/install-agent.py "${args[@]}"
+
+      - name: Verify installation
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=(--agent "${{ inputs.agent }}" --verify-manifest-integrity)
+          if [[ -n "${{ inputs.dest }}" ]]; then
+            args+=(--dest "${{ inputs.dest }}")
+          fi
+          python scripts/doctor-agent.py "${args[@]}"
