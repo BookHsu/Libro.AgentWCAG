@@ -38,6 +38,10 @@ def default_destination(agent: str) -> Path:
     raise ValueError(f"Unsupported agent: {agent}")
 
 
+def workspace_destination(agent: str, workspace_root: Path) -> Path:
+    return workspace_root / f".{agent}" / "skills" / SKILL_NAME
+
+
 def adapter_name(agent: str) -> str:
     return "openai-codex" if agent == "codex" else agent
 
@@ -55,6 +59,10 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Install libro-wcag for a target AI agent.")
     parser.add_argument("--agent", required=True, choices=ALL_AGENTS)
     parser.add_argument("--dest", help="Destination directory. Defaults to the agent-specific path. When --agent all is used, this becomes the base directory.")
+    parser.add_argument(
+        "--workspace-root",
+        help="Install into a project workspace root using .<agent>/skills/libro-wcag. When --agent all is used, installs all supported agent skill directories under that workspace root.",
+    )
     parser.add_argument("--force", action="store_true", help="Replace an existing installation.")
     return parser.parse_args()
 
@@ -130,20 +138,31 @@ def install(agent: str, destination: Path, force: bool) -> Path:
     return destination
 
 
-def install_all(base_destination: Path | None, force: bool) -> list[Path]:
+def install_all(
+    base_destination: Path | None,
+    force: bool,
+    *,
+    workspace_root: Path | None = None,
+) -> list[Path]:
     installed = []
     for agent in SUPPORTED_AGENTS:
-        destination = (base_destination / agent / SKILL_NAME) if base_destination else default_destination(agent)
+        if workspace_root:
+            destination = workspace_destination(agent, workspace_root)
+        else:
+            destination = (base_destination / agent / SKILL_NAME) if base_destination else default_destination(agent)
         installed.append(install(agent, destination, force))
     return installed
 
 
 def main() -> int:
     args = parse_args()
+    if args.dest and args.workspace_root:
+        raise ValueError("--dest and --workspace-root cannot be used together")
     provenance = get_product_provenance()
     if args.agent == "all":
         base_destination = Path(args.dest) if args.dest else None
-        installed = install_all(base_destination, args.force)
+        workspace_root = Path(args.workspace_root) if args.workspace_root else None
+        installed = install_all(base_destination, args.force, workspace_root=workspace_root)
         for path in installed:
             print(
                 f"Installed at: {path} "
@@ -151,7 +170,12 @@ def main() -> int:
             )
         return 0
 
-    destination = Path(args.dest) if args.dest else default_destination(args.agent)
+    workspace_root = Path(args.workspace_root) if args.workspace_root else None
+    destination = (
+        Path(args.dest)
+        if args.dest
+        else (workspace_destination(args.agent, workspace_root) if workspace_root else default_destination(args.agent))
+    )
     installed = install(args.agent, destination, args.force)
     print(
         f"Installed {SKILL_NAME} for {args.agent} at: {installed} "

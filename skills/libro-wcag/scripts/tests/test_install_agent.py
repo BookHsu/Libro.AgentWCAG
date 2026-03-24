@@ -133,6 +133,49 @@ class InstallAgentTests(unittest.TestCase):
         self.assertTrue(payload['version_consistency']['matches']['product_version'])
         self.assertTrue(payload['version_consistency']['matches']['source_revision'])
 
+    def test_installer_can_install_gemini_workspace_skill_layout(self) -> None:
+        workspace_root = self._workspace('gemini-workspace-root')
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'scripts/install-agent.py',
+                '--agent',
+                'gemini',
+                '--workspace-root',
+                str(workspace_root),
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        destination = workspace_root / '.gemini' / 'skills' / 'libro-wcag'
+        self.assertTrue((destination / 'SKILL.md').exists())
+        manifest = json.loads((destination / 'install-manifest.json').read_text(encoding='utf-8'))
+        self.assertEqual(manifest['agent'], 'gemini')
+
+    def test_installer_rejects_dest_with_workspace_root(self) -> None:
+        workspace_root = self._workspace('workspace-root-conflict')
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'scripts/install-agent.py',
+                '--agent',
+                'gemini',
+                '--workspace-root',
+                str(workspace_root),
+                '--dest',
+                str(workspace_root / 'custom'),
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn('--dest and --workspace-root cannot be used together', completed.stderr + completed.stdout)
+
     def test_doctor_fails_when_manifest_provenance_is_missing(self) -> None:
         destination = self._workspace('doctor-missing-provenance') / 'codex-skill'
         install = subprocess.run(
