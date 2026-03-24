@@ -454,6 +454,27 @@ class RunnerTests(unittest.TestCase):
             if output_dir.exists():
                 output_dir.rmdir()
 
+    def test_try_run_axe_supports_list_wrapped_cli_payload(self) -> None:
+        output_dir = Path(__file__).parent / "fixtures" / "_tmp-axe-list-payload"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        axe_json = output_dir / "axe.raw.json"
+        axe_json.write_text('[{"violations": [{"id": "image-alt"}]}]', encoding="utf-8")
+        try:
+            with patch("scanner_runtime._run_command", return_value=(True, "")):
+                payload, err = scanner_runtime._try_run_axe("https://example.com", output_dir, timeout_seconds=15)
+            self.assertIsNone(err)
+            self.assertEqual(payload, {"violations": [{"id": "image-alt"}]})
+        finally:
+            if axe_json.exists():
+                axe_json.unlink()
+            if output_dir.exists():
+                output_dir.rmdir()
+
+    def test_format_cli_output_path_prefers_repo_relative_path(self) -> None:
+        output_path = self.repo_root / ".tmp-test" / "runner" / "axe.raw.json"
+        formatted = scanner_runtime._format_cli_output_path(output_path)
+        self.assertEqual(formatted, ".tmp-test\\runner\\axe.raw.json")
+
     def test_try_run_axe_returns_error_when_output_missing(self) -> None:
         output_dir = Path(__file__).parent / "fixtures"
         with patch("scanner_runtime._run_command", return_value=(True, "")):
@@ -463,10 +484,93 @@ class RunnerTests(unittest.TestCase):
 
     def test_try_run_lighthouse_returns_error_when_output_missing(self) -> None:
         output_dir = Path(__file__).parent / "fixtures"
-        with patch("scanner_runtime._run_command", return_value=(True, "")):
+        with (
+            patch("scanner_runtime._find_browser_executable", return_value="chrome.exe"),
+            patch("scanner_runtime._find_free_port", return_value=9222),
+            patch("scanner_runtime._wait_for_debug_port", return_value=True),
+            patch("scanner_runtime.subprocess.Popen") as mock_popen,
+            patch("scanner_runtime._run_command", return_value=(True, "")),
+        ):
+            process = Mock()
+            process.poll.return_value = None
+            mock_popen.return_value = process
             payload, err = scanner_runtime._try_run_lighthouse("https://example.com", output_dir, timeout_seconds=15)
         self.assertIsNone(payload)
         self.assertEqual(err, "lighthouse did not generate output json")
+
+    def test_try_run_lighthouse_launches_browser_and_connects_over_debug_port(self) -> None:
+        output_dir = Path(__file__).parent / "fixtures" / "_tmp-lighthouse-command"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        lighthouse_json = output_dir / "lighthouse.raw.json"
+        lighthouse_json.write_text('{"audits": {}}', encoding="utf-8")
+        try:
+            process = Mock()
+            process.poll.return_value = None
+            with (
+                patch("scanner_runtime._find_browser_executable", return_value="chrome.exe"),
+                patch("scanner_runtime._find_free_port", return_value=9222),
+                patch("scanner_runtime._wait_for_debug_port", return_value=True),
+                patch("scanner_runtime.subprocess.Popen", return_value=process) as mock_popen,
+                patch("scanner_runtime._run_command", return_value=(True, "")) as mock_run,
+            ):
+                payload, err = scanner_runtime._try_run_lighthouse("https://example.com", output_dir, timeout_seconds=15)
+            self.assertIsNone(err)
+            self.assertEqual(payload, {"audits": {}})
+            browser_command = mock_popen.call_args.args[0]
+            self.assertIn("--remote-debugging-port=9222", browser_command)
+            self.assertIn("--user-data-dir=", " ".join(browser_command))
+            lighthouse_command = mock_run.call_args.args[0]
+            self.assertIn("--port=9222", lighthouse_command)
+            self.assertNotIn("--chrome-flags=", " ".join(lighthouse_command))
+            process.terminate.assert_called_once()
+        finally:
+            if lighthouse_json.exists():
+                lighthouse_json.unlink()
+            temp_root = output_dir / "lighthouse-tmp"
+            if temp_root.exists():
+                import shutil
+                shutil.rmtree(temp_root, ignore_errors=True)
+            if output_dir.exists():
+                output_dir.rmdir()
+
+    def test_try_run_lighthouse_serves_local_files_over_http(self) -> None:
+        output_dir = Path(__file__).parent / "fixtures" / "_tmp-lighthouse-local"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        fixture_path = output_dir / "index.html"
+        fixture_path.write_text("<!doctype html><img>", encoding="utf-8")
+        lighthouse_json = output_dir / "lighthouse.raw.json"
+        lighthouse_json.write_text('{"audits": {}}', encoding="utf-8")
+        fake_server = Mock()
+        fake_thread = Mock()
+        try:
+            process = Mock()
+            process.poll.return_value = None
+            with (
+                patch("scanner_runtime._find_browser_executable", return_value="chrome.exe"),
+                patch("scanner_runtime._find_free_port", return_value=9222),
+                patch("scanner_runtime._wait_for_debug_port", return_value=True),
+                patch("scanner_runtime._start_local_file_server", return_value=(fake_server, fake_thread, "http://127.0.0.1:8123/index.html")),
+                patch("scanner_runtime.subprocess.Popen", return_value=process),
+                patch("scanner_runtime._run_command", return_value=(True, "")) as mock_run,
+            ):
+                payload, err = scanner_runtime._try_run_lighthouse(str(fixture_path), output_dir, timeout_seconds=15)
+            self.assertIsNone(err)
+            self.assertEqual(payload, {"audits": {}})
+            lighthouse_command = mock_run.call_args.args[0]
+            self.assertIn("http://127.0.0.1:8123/index.html", lighthouse_command)
+            fake_server.shutdown.assert_called_once()
+            fake_server.server_close.assert_called_once()
+            fake_thread.join.assert_called_once()
+        finally:
+            for artifact in (lighthouse_json, fixture_path):
+                if artifact.exists():
+                    artifact.unlink()
+            temp_root = output_dir / "lighthouse-tmp"
+            if temp_root.exists():
+                import shutil
+                shutil.rmtree(temp_root, ignore_errors=True)
+            if output_dir.exists():
+                output_dir.rmdir()
 
     @patch("scanner_runtime._tool_available", return_value=True)
     @patch("scanner_runtime._run_command")

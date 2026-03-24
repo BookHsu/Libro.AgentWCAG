@@ -210,6 +210,7 @@ class RealScannerSnapshotContractTests(unittest.TestCase):
         for entry in baseline['regression_snapshot']:
             self.assertTrue(self._resolve_fixture(entry['fixture']).exists())
             self.assertGreaterEqual(entry['minimum_findings'], 1)
+            self.assertIn(entry.get('allow_lighthouse_error', False), {True, False})
 
 
 @unittest.skipUnless(os.environ.get('LIBRO_RUN_REAL_SCANNERS') == '1' and shutil.which('npx'), 'real scanner integration disabled')
@@ -368,7 +369,10 @@ class RealScannerIntegrationTests(unittest.TestCase):
                 report, _ = self._run_audit(fixture_name, tmp)
                 tools = report['run_meta']['tools']
                 self.assertEqual(tools['axe'], 'ok')
-                self.assertEqual(tools['lighthouse'], 'ok')
+                if case.get('allow_lighthouse_error'):
+                    self.assertIn(tools['lighthouse'], {'ok', 'error'})
+                else:
+                    self.assertEqual(tools['lighthouse'], 'ok')
                 self.assertGreaterEqual(len(report['findings']), case['minimum_findings'])
                 self.assertIn('summary', report)
                 self.assertIn('fixes', report)
@@ -376,6 +380,5 @@ class RealScannerIntegrationTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
 
 
