@@ -473,7 +473,7 @@ class RunnerTests(unittest.TestCase):
     def test_format_cli_output_path_prefers_repo_relative_path(self) -> None:
         output_path = self.repo_root / ".tmp-test" / "runner" / "axe.raw.json"
         formatted = scanner_runtime._format_cli_output_path(output_path)
-        self.assertEqual(formatted, ".tmp-test\\runner\\axe.raw.json")
+        self.assertEqual(Path(formatted), Path(".tmp-test") / "runner" / "axe.raw.json")
 
     def test_try_run_axe_returns_error_when_output_missing(self) -> None:
         output_dir = Path(__file__).parent / "fixtures"
