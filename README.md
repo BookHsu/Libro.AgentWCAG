@@ -87,6 +87,35 @@ irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scrip
 python .\scripts\install-agent.py --agent gemini --workspace-root .
 ```
 
+### Claude add-dir / Git Submodule
+
+如果你要把 skill 以 vendor 方式帶進目標專案，可以使用：
+
+```bash
+git submodule add https://github.com/BookHsu/Libro.AgentWCAG.clean.git .vendor/libro-wcag
+claude --add-dir .vendor/libro-wcag
+```
+
+持久化範例可參考 [settings.add-dir.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/claude/settings.add-dir.sample.json)。
+
+### GitHub Actions Reusable Workflow
+
+其他 repo 可以直接重用 [install-skill.yml](/c:/Source/Libro.AgentWCAG.clean/.github/workflows/install-skill.yml)：
+
+```yaml
+jobs:
+  setup:
+    uses: BookHsu/Libro.AgentWCAG.clean/.github/workflows/install-skill.yml@v1
+    with:
+      agent: claude
+```
+
+完整範例可參考 [install-skill-consumer-sample.yml](/c:/Source/Libro.AgentWCAG.clean/docs/examples/ci/install-skill-consumer-sample.yml)。
+
+### gh release download
+
+如果你偏好用 GitHub CLI 抓 release asset，可參考 [gh-release-download-sample.md](/c:/Source/Libro.AgentWCAG.clean/docs/examples/ci/gh-release-download-sample.md)。
+
 ### 2. 驗證安裝
 
 ```powershell
