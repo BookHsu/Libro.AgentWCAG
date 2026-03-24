@@ -66,6 +66,17 @@ If you want to pass parameters directly in PowerShell:
 `bootstrap.sh` supports `--agent / --repo / --ref / --dest / --force`, and `--agent` is required.
 If `bootstrap.ps1` does not receive `-Agent`, it prompts interactively; for non-interactive installs, use the scriptblock form above so parameters can be passed explicitly.
 
+### Claude Plugin Installation
+
+If you use Claude Code, you can also install directly via the plugin marketplace:
+
+```text
+/plugin marketplace add BookHsu/Libro.AgentWCAG.clean
+/plugin install libro-wcag@libro-wcag-marketplace
+```
+
+After installation, invoke with `/libro-wcag:libro-wcag` or let Claude activate it automatically based on context.
+
 ### 2. Verify The Installation
 
 ```powershell
