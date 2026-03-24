@@ -445,11 +445,23 @@ def _prefer_source_location(
     return existing
 
 
-def _map_axe_to_findings(axe_data: dict[str, Any] | None) -> list[dict[str, Any]]:
-    if not axe_data:
+def _normalize_axe_payload(axe_data: Any) -> dict[str, Any] | None:
+    if isinstance(axe_data, dict):
+        return axe_data
+    if isinstance(axe_data, list):
+        for item in axe_data:
+            if isinstance(item, dict):
+                return item
+        return None
+    return None
+
+
+def _map_axe_to_findings(axe_data: Any) -> list[dict[str, Any]]:
+    normalized_axe = _normalize_axe_payload(axe_data)
+    if not normalized_axe:
         return []
     findings: list[dict[str, Any]] = []
-    violations = axe_data.get("violations", [])
+    violations = normalized_axe.get("violations", [])
     for violation in violations:
         rule_id = violation.get("id", "axe-unknown")
         nodes = violation.get("nodes", [])
@@ -775,10 +787,14 @@ def normalize_report(
                 "remediation_priority": strategy["priority"],
             }
         )
+        finding_citations: list[dict[str, Any]] = []
         for sc in sc_values:
             citation = build_citation_url(contract.wcag_version, sc)
             if citation:
-                citations.append({"finding_id": issue_id, "sc": sc, "url": citation})
+                citation_entry = {"finding_id": issue_id, "sc": sc, "url": citation}
+                citations.append(citation_entry)
+                finding_citations.append({"sc": sc, "url": citation})
+        normalized_findings[-1]["citations"] = finding_citations
 
     summary = {
         "total_findings": len(normalized_findings),
@@ -915,4 +931,3 @@ def write_report_files(report: dict[str, Any], json_path: str, markdown_path: st
     markdown_target.parent.mkdir(parents=True, exist_ok=True)
     json_target.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     markdown_target.write_text(to_markdown_table(report), encoding="utf-8")
-
