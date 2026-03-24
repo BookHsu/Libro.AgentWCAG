@@ -9,5 +9,11 @@
   "homepage": "https://github.com/BookHsu/Libro.AgentWCAG.clean",
   "repository": "https://github.com/BookHsu/Libro.AgentWCAG.clean",
   "license": "MIT",
-  "keywords": ["wcag", "accessibility", "a11y", "audit", "remediation"]
+  "keywords": ["wcag", "accessibility", "a11y", "audit", "remediation"],
+  "mcpServers": {
+    "libro-wcag": {
+      "command": "python",
+      "args": ["mcp-server/server.py"]
+    }
+  }
 }

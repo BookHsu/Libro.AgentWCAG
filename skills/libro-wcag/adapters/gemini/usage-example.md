@@ -13,6 +13,13 @@ If you work inside a repo-local Gemini workspace, you can also commit `.gemini/s
 python .\scripts\install-agent.py --agent gemini --workspace-root .
 ```
 
+For MCP-based Gemini integration, install dependencies and emit a workspace-local config:
+
+```powershell
+python -m pip install -r .\mcp-server\requirements.txt
+python .\scripts\install-agent.py --agent gemini --workspace-root . --emit-mcp-config gemini
+```
+
 ## Use
 
 1. Load `adapters/gemini/prompt-template.md` into your Gemini custom instruction or wrapper.

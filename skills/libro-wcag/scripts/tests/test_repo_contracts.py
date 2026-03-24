@@ -94,6 +94,14 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('gh release download', gh_release)
         self.assertIn('install-agent.py --agent claude', gh_release)
 
+    def test_mcp_samples_exist_for_claude_copilot_and_gemini(self) -> None:
+        claude = self._read(self.repo_root / 'docs' / 'examples' / 'claude' / 'mcp.sample.json')
+        copilot = self._read(self.repo_root / 'docs' / 'examples' / 'copilot' / 'mcp.sample.json')
+        gemini = self._read(self.repo_root / 'docs' / 'examples' / 'gemini' / 'settings.mcp.sample.json')
+        self.assertIn('mcp-server/server.py', claude)
+        self.assertIn('"servers"', copilot)
+        self.assertIn('"mcpServers"', gemini)
+
     def test_claude_plugin_json_exists_and_has_required_fields(self) -> None:
         payload = json.loads((self.repo_root / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))
         self.assertEqual(payload['name'], 'libro-wcag')
@@ -101,6 +109,8 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('version', payload)
         self.assertIn('description', payload)
         self.assertEqual(payload['repository'], 'https://github.com/BookHsu/Libro.AgentWCAG.clean')
+        self.assertIn('mcpServers', payload)
+        self.assertIn('libro-wcag', payload['mcpServers'])
 
     def test_claude_marketplace_json_exists_and_references_plugin(self) -> None:
         payload = json.loads((self.repo_root / '.claude-plugin' / 'marketplace.json').read_text(encoding='utf-8'))
@@ -219,9 +229,12 @@ class RepoContractTests(unittest.TestCase):
             'docs/automations/test-plan-automation.md',
             'docs/automations/test-plan-review-policy.md',
             'docs/automations/agent-installation-expansion-todo.md',
+            'docs/examples/claude/mcp.sample.json',
             'docs/examples/claude/settings.add-dir.sample.json',
             'docs/examples/ci/install-skill-consumer-sample.yml',
             'docs/examples/ci/gh-release-download-sample.md',
+            'docs/examples/copilot/mcp.sample.json',
+            'docs/examples/gemini/settings.mcp.sample.json',
             'docs/testing/testing-playbook.md',
             'pyproject.toml',
             'scripts/doctor-agent.py',

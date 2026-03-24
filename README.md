@@ -116,6 +116,30 @@ jobs:
 
 如果你偏好用 GitHub CLI 抓 release asset，可參考 [gh-release-download-sample.md](/c:/Source/Libro.AgentWCAG.clean/docs/examples/ci/gh-release-download-sample.md)。
 
+### MCP Server
+
+`mcp-server/server.py` 提供 `stdio` transport 的 `libro-wcag` MCP server，可同時服務 Claude、Copilot、Gemini。
+
+安裝依賴：
+
+```powershell
+python -m pip install -r .\mcp-server\requirements.txt
+```
+
+sample config：
+
+- Claude: [mcp.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/claude/mcp.sample.json)
+- Copilot: [mcp.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/copilot/mcp.sample.json)
+- Gemini: [settings.mcp.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/gemini/settings.mcp.sample.json)
+
+如果你要直接在專案工作區產生對應設定，可使用：
+
+```powershell
+python .\scripts\install-agent.py --agent gemini --workspace-root . --emit-mcp-config gemini
+python .\scripts\install-agent.py --agent claude --workspace-root . --emit-mcp-config claude
+python .\scripts\install-agent.py --agent copilot --workspace-root . --emit-mcp-config copilot
+```
+
 ### 2. 驗證安裝
 
 ```powershell

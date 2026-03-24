@@ -176,6 +176,49 @@ class InstallAgentTests(unittest.TestCase):
         self.assertNotEqual(completed.returncode, 0)
         self.assertIn('--dest and --workspace-root cannot be used together', completed.stderr + completed.stdout)
 
+    def test_installer_can_emit_workspace_mcp_config(self) -> None:
+        workspace_root = self._workspace('emit-gemini-mcp')
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'scripts/install-agent.py',
+                '--agent',
+                'gemini',
+                '--workspace-root',
+                str(workspace_root),
+                '--emit-mcp-config',
+                'gemini',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        settings_path = workspace_root / '.gemini' / 'settings.json'
+        payload = json.loads(settings_path.read_text(encoding='utf-8'))
+        self.assertIn('mcpServers', payload)
+        self.assertIn('libro-wcag', payload['mcpServers'])
+        self.assertIn('mcp-server/server.py', payload['mcpServers']['libro-wcag']['args'][0])
+
+    def test_emit_mcp_config_requires_workspace_root(self) -> None:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'scripts/install-agent.py',
+                '--agent',
+                'claude',
+                '--emit-mcp-config',
+                'claude',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn('--emit-mcp-config requires --workspace-root', completed.stderr + completed.stdout)
+
     def test_doctor_fails_when_manifest_provenance_is_missing(self) -> None:
         destination = self._workspace('doctor-missing-provenance') / 'codex-skill'
         install = subprocess.run(

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "libro-wcag": {
+      "command": "python",
+      "args": ["mcp-server/server.py"]
+    }
+  }
+}
