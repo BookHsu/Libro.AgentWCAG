@@ -1,8 +1,8 @@
 # Apply-Fixes Scope (M16)
 
 This document defines the productionized `apply-fixes` boundary used by
-`skills/libro-agent-wcag/scripts/run_accessibility_audit.py` and
-`skills/libro-agent-wcag/scripts/auto_fix.py`.
+`skills/libro-wcag/scripts/run_accessibility_audit.py` and
+`skills/libro-wcag/scripts/auto_fix.py`.
 
 ## Behavior Audit (2026-03-12)
 

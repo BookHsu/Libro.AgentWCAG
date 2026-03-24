@@ -1,5 +1,5 @@
 {
-  "skill_name": "libro-agent-wcag",
+  "skill_name": "libro-wcag",
   "product_name": "Libro.AgentWCAG",
   "product_version": "0.1.0",
   "source_revision": "40909dfb06f2ee93fca2b199abea26c4d7357117",
@@ -20,7 +20,7 @@
     }
   },
   "notes": "For non-Codex agents, wire the adapter prompt into your agent's prompt or skill system.",
-  "invoke_example": "Use $libro-agent-wcag to audit or remediate a web page using a selected WCAG version and level.",
+  "invoke_example": "Use $libro-wcag to audit or remediate a web page using a selected WCAG version and level.",
   "doctor_command": "python scripts/doctor-agent.py --agent codex",
   "provenance": {
     "version_source": "pyproject.toml",

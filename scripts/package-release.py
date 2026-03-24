@@ -11,16 +11,16 @@ import sys
 import zipfile
 from pathlib import Path
 
-SCRIPT_ROOT = Path(__file__).resolve().parents[1] / "skills" / "libro-agent-wcag" / "scripts"
+SCRIPT_ROOT = Path(__file__).resolve().parents[1] / "skills" / "libro-wcag" / "scripts"
 if str(SCRIPT_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPT_ROOT))
 
 from shared_constants import get_product_provenance
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SKILL_ROOT = REPO_ROOT / "skills" / "libro-agent-wcag"
+SKILL_ROOT = REPO_ROOT / "skills" / "libro-wcag"
 SUPPORTED_AGENTS = ("codex", "claude", "gemini", "copilot")
-PRODUCT_SLUG = "libro-agent-wcag"
+PRODUCT_SLUG = "libro-wcag"
 FIXED_ZIP_TIMESTAMP = (2024, 1, 1, 0, 0, 0)
 BASE_RELEASE_FILES = (
     Path("README.md"),
@@ -80,9 +80,9 @@ def _iter_release_skill_files(agent: str | None) -> list[Path]:
         parts = relative.parts
         if "__pycache__" in parts:
             continue
-        if parts[:4] == ("skills", "libro-agent-wcag", "scripts", "tests"):
+        if parts[:4] == ("skills", "libro-wcag", "scripts", "tests"):
             continue
-        if parts[:3] == ("skills", "libro-agent-wcag", "adapters") and agent is not None:
+        if parts[:3] == ("skills", "libro-wcag", "adapters") and agent is not None:
             if len(parts) < 4 or parts[3] != _adapter_directory_name(agent):
                 continue
         files.append(path)
@@ -195,7 +195,7 @@ def _write_release_manifest(
         "bundle_contract": {
             "bundle_root_pattern": f"{PRODUCT_SLUG}-<version>-<bundle>",
             "excludes": [
-                "skills/libro-agent-wcag/scripts/tests/**",
+                "skills/libro-wcag/scripts/tests/**",
                 "docs/archive/**",
                 "docs/testing/**",
             ],

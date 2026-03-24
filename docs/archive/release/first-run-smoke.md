@@ -33,7 +33,7 @@ The script executes:
 When `npx @axe-core/cli` and `lighthouse` are available, run real-scanner tests:
 
 - `set LIBRO_RUN_REAL_SCANNERS=1`
-- `python -m unittest skills.libro-agent-wcag.scripts.tests.test_fixtures_and_integration.RealScannerIntegrationTests`
+- `python -m unittest skills.libro-wcag.scripts.tests.test_fixtures_and_integration.RealScannerIntegrationTests`
 
 ## Pass criteria
 

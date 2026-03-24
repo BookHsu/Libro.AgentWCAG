@@ -1864,7 +1864,7 @@
     }
   },
   "report_schema": {
-    "name": "libro-agent-wcag-report",
+    "name": "libro-wcag-report",
     "version": "1.0.0",
     "artifact": "C:\\Source\\Libro.AgentWCAG.clean\\.tmp-realistic-smoke\\run\\audit-output\\schemas\\wcag-report-1.0.0.schema.json",
     "compatibility": "^1.0.0"

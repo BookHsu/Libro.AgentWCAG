@@ -31,8 +31,8 @@ Check the following in order:
 - Manual assets are used only for inherently human-evaluated categories.
 
 5. Validation quality
-- `python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"` passed.
-- `python scripts/validate_skill.py skills/libro-agent-wcag` passed.
+- `python -m unittest discover -s skills/libro-wcag/scripts/tests -p "test_*.py"` passed.
+- `python scripts/validate_skill.py skills/libro-wcag` passed.
 - If installation flows changed, installer and doctor flows were exercised.
 
 6. Safety

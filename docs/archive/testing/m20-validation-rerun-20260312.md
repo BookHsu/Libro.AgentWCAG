@@ -13,7 +13,7 @@ This run re-validated post-M20 behavior for deterministic smoke and real-scanner
 - Deterministic smoke:
   - `python scripts/run-realistic-validation-smoke.py --agent codex`
 - Real-scanner/manual comparison:
-  - `python skills/libro-agent-wcag/scripts/run_accessibility_audit.py --target <fixture> --execution-mode suggest-only|apply-fixes`
+  - `python skills/libro-wcag/scripts/run_accessibility_audit.py --target <fixture> --execution-mode suggest-only|apply-fixes`
   - with `NPM_CONFIG_CACHE=.tmp-npm-cache`
 
 ## Evidence Artifacts
@@ -42,7 +42,7 @@ This run re-validated post-M20 behavior for deterministic smoke and real-scanner
 ## Preflight Snapshot
 
 - Command:
-- `python skills/libro-agent-wcag/scripts/run_accessibility_audit.py --target docs/testing/realistic-sample/mixed-findings.html --preflight-only --output-dir .tmp-test/m20-validation-batch3/preflight-only`
+- `python skills/libro-wcag/scripts/run_accessibility_audit.py --target docs/testing/realistic-sample/mixed-findings.html --preflight-only --output-dir .tmp-test/m20-validation-batch3/preflight-only`
 - Result:
   - `npx`: ok (`npx.cmd --version`)
   - `lighthouse`: ok (`npx.cmd --no-install lighthouse --version`)

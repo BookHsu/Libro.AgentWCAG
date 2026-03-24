@@ -5,7 +5,7 @@ Use these templates when you need consistent, low-friction WCAG runs across adap
 ## 1. Common audit prompt template
 
 ```text
-Use libro-agent-wcag with the following contract:
+Use libro-wcag with the following contract:
 - task_mode: {create|modify}
 - execution_mode: {audit-only|suggest-only|apply-fixes}
 - wcag_version: {2.0|2.1|2.2}
@@ -65,7 +65,7 @@ Review as a pre-release draft and list release-blocking accessibility risks firs
 ### Codex
 
 ```powershell
-python .\skills\libro-agent-wcag\scripts\run_accessibility_audit.py `
+python .\skills\\libro-wcag\scripts\run_accessibility_audit.py `
   --target ".\docs\testing\realistic-sample\mixed-findings.html" `
   --task-mode modify `
   --execution-mode suggest-only `

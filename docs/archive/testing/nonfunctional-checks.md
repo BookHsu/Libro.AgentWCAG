@@ -44,7 +44,7 @@ This file defines the non-functional checks that apply to this repo.
 - Keep dependency and script review before release.
 - Current minimum command set:
   - `python -m pip check`
-  - `python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"`
+  - `python -m unittest discover -s skills/libro-wcag/scripts/tests -p "test_*.py"`
 - If additional dependencies are added later, attach a dedicated dependency scanner.
 
 ## Recovery Test

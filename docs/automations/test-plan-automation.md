@@ -162,19 +162,19 @@ The automation may inspect and modify:
 
 - `TESTING-PLAN.md`
 - `docs/testing/*`
-- `skills/libro-agent-wcag/scripts/tests/*`
+- `skills/libro-wcag/scripts/tests/*`
 - `.github/workflows/test.yml`
 - `README.md` when testing or validation instructions change
 - test fixtures, snapshots, or helper assets created under a test-owned path
 
 The automation may inspect but should not freely rewrite unless required to make valid tests possible:
 
-- `skills/libro-agent-wcag/scripts/*`
+- `skills/libro-wcag/scripts/*`
 - `scripts/*`
-- `skills/libro-agent-wcag/SKILL.md`
-- `skills/libro-agent-wcag/references/*`
-- `skills/libro-agent-wcag/adapters/*`
-- `skills/libro-agent-wcag/agents/openai.yaml`
+- `skills/libro-wcag/SKILL.md`
+- `skills/libro-wcag/references/*`
+- `skills/libro-wcag/adapters/*`
+- `skills/libro-wcag/agents/openai.yaml`
 
 ## Out Of Scope
 
@@ -193,7 +193,7 @@ Do not modify these unless explicitly requested by a human reviewer:
 - canonical JSON key names in the core contract
 - Markdown report column order
 - supported adapter names
-- skill name `libro-agent-wcag`
+- skill name `libro-wcag`
 - repo/product name `Libro.AgentWCAG`
 
 Do not change business semantics just to satisfy tests.
@@ -205,7 +205,7 @@ Do not change business semantics just to satisfy tests.
    - `TESTING-PLAN.md`
    - `README.md`
    - `docs/testing/*`
-   - `skills/libro-agent-wcag/scripts/tests/*`
+   - `skills/libro-wcag/scripts/tests/*`
 3. Detect new, renamed, or removed non-test files.
 4. Detect applicable matrix rows that are still weakly covered or only documented.
 5. Select the next highest-value automatable gap.
@@ -267,8 +267,8 @@ Examples:
 Run all of these after changes:
 
 ```powershell
-python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"
-python scripts/validate_skill.py skills/libro-agent-wcag
+python -m unittest discover -s skills/libro-wcag/scripts/tests -p "test_*.py"
+python scripts/validate_skill.py skills/libro-wcag
 ```
 
 If a change touches installation guidance or wrappers, also verify relevant installer flows with temporary destinations.

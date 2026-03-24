@@ -31,7 +31,7 @@ param(
 
 python "$RepoRoot\scripts\install-agent.py" --agent codex --dest ".\.demo-skill" --force
 python "$RepoRoot\scripts\doctor-agent.py" --agent codex --dest ".\.demo-skill"
-python "$RepoRoot\skills\libro-agent-wcag\scripts\run_accessibility_audit.py" `
+python "$RepoRoot\skills\\libro-wcag\scripts\run_accessibility_audit.py" `
   --target $Target `
   --task-mode modify `
   --execution-mode suggest-only `
@@ -51,7 +51,7 @@ TARGET="${2:-./target/page.html}"
 
 python "$REPO_ROOT/scripts/install-agent.py" --agent codex --dest "./.demo-skill" --force
 python "$REPO_ROOT/scripts/doctor-agent.py" --agent codex --dest "./.demo-skill"
-python "$REPO_ROOT/skills/libro-agent-wcag/scripts/run_accessibility_audit.py" \
+python "$REPO_ROOT/skills/libro-wcag/scripts/run_accessibility_audit.py" \
   --target "$TARGET" \
   --task-mode modify \
   --execution-mode suggest-only \

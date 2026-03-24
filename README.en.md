@@ -58,7 +58,7 @@ python .\scripts\doctor-agent.py --agent codex
 In Codex, invoke:
 
 ```text
-$libro-agent-wcag
+$libro-wcag
 ```
 
 If you use Claude, Gemini, or Copilot, load the corresponding `prompt-template.md` under each adapter as the platform entrypoint.
@@ -72,7 +72,7 @@ Libro.AgentWCAG is not just a single command. It is a shared skill contract that
 After installation, invoke:
 
 ```text
-$libro-agent-wcag
+$libro-wcag
 ```
 
 Common ways to use it:
@@ -84,9 +84,9 @@ Common ways to use it:
 
 ### In Other Agents
 
-- `Claude`: load `skills/libro-agent-wcag/adapters/claude/prompt-template.md`
-- `Gemini`: load `skills/libro-agent-wcag/adapters/gemini/prompt-template.md`
-- `Copilot`: load `skills/libro-agent-wcag/adapters/copilot/prompt-template.md`
+- `Claude`: load `skills/libro-wcag/adapters/claude/prompt-template.md`
+- `Gemini`: load `skills/libro-wcag/adapters/gemini/prompt-template.md`
+- `Copilot`: load `skills/libro-wcag/adapters/copilot/prompt-template.md`
 
 The usual approach is to place the adapter's `prompt-template.md` into the instruction entrypoint for that platform, such as a project prompt, system prompt, custom instruction, or agent wrapper.
 
@@ -114,6 +114,27 @@ pwsh -File .\scripts\install-latest.ps1 -ReleaseBase https://github.com/<owner>/
 
 The install flow automatically verifies `latest-release.json`, the release manifest, and `sha256`, then runs an integrity check after installation.
 
+## Release readiness
+
+- `product_version` comes from `pyproject.toml`
+- `source_revision` can be injected through `LIBRO_AGENTWCAG_SOURCE_REVISION`
+- release packaging is handled by `scripts/package-release.py`
+- key assets include `libro-wcag-<version>-all-in-one.zip` and `libro-wcag-<version>-sha256sums.txt`
+- the release-consumer shortest path uses `install-latest.ps1` and `run-release-adoption-smoke.py`
+- Release-consumer shortest path and Release-consumer quickstart are documented in `docs/release/adoption-smoke-guide.md`
+- release and rollback references live in `docs/release/ga-release-workflow.md`, `docs/release/ga-definition.md`, and `docs/release/rollback-playbook.md`
+- the main operator guide is `docs/release/release-playbook.md`
+- see these docs for scope, prompts, resilient execution, CI examples, and scanner governance:
+- `docs/release/apply-fixes-scope.md`
+- `docs/release/prompt-invocation-templates.md`
+- `docs/release/resilient-run-patterns.md`
+- `docs/examples/ci/github-actions-wcag-ci-sample.yml`
+- `docs/release/real-scanner-ci-lane.md`
+- `docs/release/baseline-governance.md`
+- `docs/release/advanced-ci-gates.md`
+- policy bundle material lives under `docs/policy-bundles/`
+- use `python .\scripts\doctor-agent.py --agent codex --verify-manifest-integrity` for post-install integrity checks
+
 ## Where It Fits Best
 
 - Teams that want accessibility review inside AI-assisted workflows
@@ -123,11 +144,11 @@ The install flow automatically verifies `latest-release.json`, the release manif
 
 ## Project Structure
 
-- `skills/libro-agent-wcag`: installable skill payload
-- `skills/libro-agent-wcag/adapters/openai-codex`: Codex adapter
-- `skills/libro-agent-wcag/adapters/claude`: Claude adapter
-- `skills/libro-agent-wcag/adapters/gemini`: Gemini adapter
-- `skills/libro-agent-wcag/adapters/copilot`: Copilot adapter
+- `skills/libro-wcag`: installable skill payload
+- `skills/libro-wcag/adapters/openai-codex`: Codex adapter
+- `skills/libro-wcag/adapters/claude`: Claude adapter
+- `skills/libro-wcag/adapters/gemini`: Gemini adapter
+- `skills/libro-wcag/adapters/copilot`: Copilot adapter
 - `scripts/install-agent.py`: installer
 - `scripts/doctor-agent.py`: health check and integrity verification
 - `scripts/uninstall-agent.py`: uninstaller
@@ -155,8 +176,8 @@ python .\scripts\uninstall-agent.py --agent codex
 Local validation:
 
 ```powershell
-python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"
-python scripts/validate_skill.py skills/libro-agent-wcag --validate-policy-bundles
+python -m unittest discover -s skills/libro-wcag/scripts/tests -p "test_*.py"
+python scripts/validate_skill.py skills/libro-wcag --validate-policy-bundles
 ```
 
 ## Documentation

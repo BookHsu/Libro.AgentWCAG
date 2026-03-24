@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Uninstall libro-agent-wcag for a target AI agent."""
+"""Uninstall libro-wcag for a target AI agent."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import argparse
 import shutil
 from pathlib import Path
 
-SKILL_NAME = 'libro-agent-wcag'
+SKILL_NAME = 'libro-wcag'
 SUPPORTED_AGENTS = ('codex', 'claude', 'gemini', 'copilot')
 ALL_AGENTS = SUPPORTED_AGENTS + ('all',)
 
@@ -26,7 +26,7 @@ def default_destination(agent: str) -> Path:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description='Uninstall libro-agent-wcag for a target AI agent.')
+    parser = argparse.ArgumentParser(description='Uninstall libro-wcag for a target AI agent.')
     parser.add_argument('--agent', required=True, choices=ALL_AGENTS)
     parser.add_argument('--dest', help='Destination directory. When --agent all is used, this becomes the base directory.')
     return parser.parse_args()
