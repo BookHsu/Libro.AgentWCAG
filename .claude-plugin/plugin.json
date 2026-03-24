@@ -1,0 +1,13 @@
+{
+  "name": "libro-wcag",
+  "version": "1.0.2",
+  "description": "Cross-agent WCAG accessibility audit and remediation skill with selectable WCAG model (2.0/2.1/2.2, A/AA/AAA).",
+  "author": {
+    "name": "Book Hsu",
+    "url": "https://github.com/BookHsu"
+  },
+  "homepage": "https://github.com/BookHsu/Libro.AgentWCAG.clean",
+  "repository": "https://github.com/BookHsu/Libro.AgentWCAG.clean",
+  "license": "MIT",
+  "keywords": ["wcag", "accessibility", "a11y", "audit", "remediation"]
+}

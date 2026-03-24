@@ -66,6 +66,17 @@ irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scrip
 `bootstrap.sh` 支援 `--agent / --repo / --ref / --dest / --force`，其中 `--agent` 為必填。
 `bootstrap.ps1` 若未提供 `-Agent`，會互動提示選擇 agent；若要非互動安裝，請使用上面的 scriptblock 寫法傳入參數。
 
+### Claude Plugin 安裝
+
+如果你使用 Claude Code，也可以直接透過 plugin marketplace 安裝：
+
+```text
+/plugin marketplace add BookHsu/Libro.AgentWCAG.clean
+/plugin install libro-wcag@libro-wcag-marketplace
+```
+
+安裝後可直接使用 `/libro-wcag:libro-wcag` 呼叫，或讓 Claude 依上下文自動啟用。
+
 ### 2. 驗證安裝
 
 ```powershell

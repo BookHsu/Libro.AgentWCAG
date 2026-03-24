@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import tomllib
 import unittest
 from pathlib import Path
 
@@ -26,6 +28,7 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('$libro-wcag', content)
         self.assertIn('scripts/bootstrap.sh', content)
         self.assertIn('scripts/bootstrap.ps1', content)
+        self.assertIn('/plugin install libro-wcag@libro-wcag-marketplace', content)
 
     def test_testing_plan_tracks_matrix_mapping_and_gaps(self) -> None:
         content = self._read(self.repo_root / 'TESTING-PLAN.md')
@@ -35,6 +38,40 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('Coverage Mode', content)
         self.assertIn('Scripted Manual', content)
         self.assertIn('Automated', content)
+
+    def test_agent_installation_expansion_todo_tracks_workspace_plugin_and_mcp_paths(self) -> None:
+        content = self._read(self.repo_root / 'docs' / 'automations' / 'agent-installation-expansion-todo.md')
+        self.assertIn('.gemini/skills/libro-wcag/SKILL.md', content)
+        self.assertIn('.claude-plugin/plugin.json', content)
+        self.assertIn('.claude-plugin/marketplace.json', content)
+        self.assertIn('mcp-server/server.py', content)
+        self.assertIn('.github/workflows/install-skill.yml', content)
+        self.assertIn('vscode-extension/package.json', content)
+
+    def test_claude_plugin_json_exists_and_has_required_fields(self) -> None:
+        payload = json.loads((self.repo_root / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))
+        self.assertEqual(payload['name'], 'libro-wcag')
+        self.assertEqual(payload['license'], 'MIT')
+        self.assertIn('version', payload)
+        self.assertIn('description', payload)
+        self.assertEqual(payload['repository'], 'https://github.com/BookHsu/Libro.AgentWCAG.clean')
+
+    def test_claude_marketplace_json_exists_and_references_plugin(self) -> None:
+        payload = json.loads((self.repo_root / '.claude-plugin' / 'marketplace.json').read_text(encoding='utf-8'))
+        self.assertEqual(payload['name'], 'libro-wcag-marketplace')
+        self.assertEqual(len(payload['plugins']), 1)
+        self.assertEqual(payload['plugins'][0]['name'], 'libro-wcag')
+        self.assertEqual(payload['plugins'][0]['source'], './')
+
+    def test_claude_plugin_version_matches_pyproject(self) -> None:
+        plugin = json.loads((self.repo_root / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))
+        pyproject = tomllib.loads((self.repo_root / 'pyproject.toml').read_text(encoding='utf-8'))
+        self.assertEqual(plugin['version'], pyproject['project']['version'])
+
+    def test_claude_marketplace_version_matches_plugin(self) -> None:
+        plugin = json.loads((self.repo_root / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))
+        marketplace = json.loads((self.repo_root / '.claude-plugin' / 'marketplace.json').read_text(encoding='utf-8'))
+        self.assertEqual(marketplace['plugins'][0]['version'], plugin['version'])
 
     def test_manual_testing_assets_exist_for_non_automated_matrix_types(self) -> None:
         playbook = self._read(self.repo_root / 'docs' / 'testing' / 'testing-playbook.md')
@@ -120,12 +157,15 @@ class RepoContractTests(unittest.TestCase):
             '.gitattributes',
             '.github/workflows/test.yml',
             '.gitignore',
+            '.claude-plugin/plugin.json',
+            '.claude-plugin/marketplace.json',
             'LICENSE',
             'README.md',
             'SKILL-TODO.md',
             'TESTING-PLAN.md',
             'docs/automations/test-plan-automation.md',
             'docs/automations/test-plan-review-policy.md',
+            'docs/automations/agent-installation-expansion-todo.md',
             'docs/testing/testing-playbook.md',
             'pyproject.toml',
             'scripts/doctor-agent.py',
