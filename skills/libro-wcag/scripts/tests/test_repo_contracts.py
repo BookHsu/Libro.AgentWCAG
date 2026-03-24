@@ -69,6 +69,22 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('python scripts/doctor-agent.py', content)
         self.assertIn('--verify-manifest-integrity', content)
 
+    def test_mcp_server_scaffold_exists_with_stdio_transport_and_wrapped_tools(self) -> None:
+        server = self._read(self.repo_root / 'mcp-server' / 'server.py')
+        requirements = self._read(self.repo_root / 'mcp-server' / 'requirements.txt')
+        audit_tool = self._read(self.repo_root / 'mcp-server' / 'tools' / 'audit_page.py')
+        suggest_tool = self._read(self.repo_root / 'mcp-server' / 'tools' / 'suggest_fixes.py')
+        normalize_tool = self._read(self.repo_root / 'mcp-server' / 'tools' / 'normalize_report.py')
+        self.assertIn('FastMCP("libro-wcag")', server)
+        self.assertIn('@mcp.tool()', server)
+        self.assertIn('libro_wcag_audit', server)
+        self.assertIn('libro_wcag_suggest', server)
+        self.assertIn('libro_wcag_normalize', server)
+        self.assertIn('mcp>=', requirements)
+        self.assertIn('run_accessibility_audit.py', audit_tool)
+        self.assertIn('get_strategy', suggest_tool)
+        self.assertIn('normalize_report', normalize_tool)
+
     def test_examples_cover_add_dir_reusable_workflow_and_gh_release_download(self) -> None:
         add_dir = self._read(self.repo_root / 'docs' / 'examples' / 'claude' / 'settings.add-dir.sample.json')
         reusable = self._read(self.repo_root / 'docs' / 'examples' / 'ci' / 'install-skill-consumer-sample.yml')
@@ -191,6 +207,11 @@ class RepoContractTests(unittest.TestCase):
             '.claude-plugin/plugin.json',
             '.claude-plugin/marketplace.json',
             '.gemini/skills/libro-wcag/SKILL.md',
+            'mcp-server/server.py',
+            'mcp-server/requirements.txt',
+            'mcp-server/tools/audit_page.py',
+            'mcp-server/tools/suggest_fixes.py',
+            'mcp-server/tools/normalize_report.py',
             'LICENSE',
             'README.md',
             'SKILL-TODO.md',
