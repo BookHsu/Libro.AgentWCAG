@@ -116,6 +116,30 @@ See [install-skill-consumer-sample.yml](/c:/Source/Libro.AgentWCAG.clean/docs/ex
 
 If you prefer downloading release assets with GitHub CLI, see [gh-release-download-sample.md](/c:/Source/Libro.AgentWCAG.clean/docs/examples/ci/gh-release-download-sample.md).
 
+### MCP Server
+
+`mcp-server/server.py` provides a `stdio` `libro-wcag` MCP server that can serve Claude, Copilot, and Gemini from one integration point.
+
+Install dependencies:
+
+```powershell
+python -m pip install -r .\mcp-server\requirements.txt
+```
+
+Sample configs:
+
+- Claude: [mcp.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/claude/mcp.sample.json)
+- Copilot: [mcp.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/copilot/mcp.sample.json)
+- Gemini: [settings.mcp.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/gemini/settings.mcp.sample.json)
+
+To emit a workspace-local config directly, run:
+
+```powershell
+python .\scripts\install-agent.py --agent gemini --workspace-root . --emit-mcp-config gemini
+python .\scripts\install-agent.py --agent claude --workspace-root . --emit-mcp-config claude
+python .\scripts\install-agent.py --agent copilot --workspace-root . --emit-mcp-config copilot
+```
+
 ### 2. Verify The Installation
 
 ```powershell

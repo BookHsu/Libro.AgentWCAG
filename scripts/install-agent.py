@@ -19,6 +19,7 @@ from shared_constants import get_product_provenance
 SKILL_NAME = "libro-wcag"
 SUPPORTED_AGENTS = ("codex", "claude", "gemini", "copilot")
 ALL_AGENTS = SUPPORTED_AGENTS + ("all",)
+MCP_CLIENTS = ("claude", "copilot", "gemini")
 
 
 def source_directory() -> Path:
@@ -55,6 +56,39 @@ def invoke_example(agent: str) -> str:
     )
 
 
+def mcp_server_entrypoint() -> Path:
+    return Path(__file__).resolve().parents[1] / "mcp-server" / "server.py"
+
+
+def mcp_server_config_payload() -> dict[str, object]:
+    return {
+        "command": "python",
+        "args": [mcp_server_entrypoint().as_posix()],
+    }
+
+
+def mcp_config_path(client: str, workspace_root: Path) -> Path:
+    if client == "claude":
+        return workspace_root / ".mcp.json"
+    if client == "copilot":
+        return workspace_root / ".vscode" / "mcp.json"
+    if client == "gemini":
+        return workspace_root / ".gemini" / "settings.json"
+    raise ValueError(f"Unsupported MCP client: {client}")
+
+
+def write_mcp_config(client: str, workspace_root: Path) -> Path:
+    path = mcp_config_path(client, workspace_root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = mcp_server_config_payload()
+    if client == "copilot":
+        document = {"servers": {SKILL_NAME: payload}}
+    else:
+        document = {"mcpServers": {SKILL_NAME: payload}}
+    path.write_text(json.dumps(document, indent=2, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Install libro-wcag for a target AI agent.")
     parser.add_argument("--agent", required=True, choices=ALL_AGENTS)
@@ -62,6 +96,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--workspace-root",
         help="Install into a project workspace root using .<agent>/skills/libro-wcag. When --agent all is used, installs all supported agent skill directories under that workspace root.",
+    )
+    parser.add_argument(
+        "--emit-mcp-config",
+        action="append",
+        default=[],
+        choices=MCP_CLIENTS,
+        help="Write a workspace-local MCP config for claude, copilot, or gemini. Requires --workspace-root.",
     )
     parser.add_argument("--force", action="store_true", help="Replace an existing installation.")
     return parser.parse_args()
@@ -158,16 +199,23 @@ def main() -> int:
     args = parse_args()
     if args.dest and args.workspace_root:
         raise ValueError("--dest and --workspace-root cannot be used together")
+    if args.emit_mcp_config and not args.workspace_root:
+        raise ValueError("--emit-mcp-config requires --workspace-root")
     provenance = get_product_provenance()
+    written_mcp_configs: list[Path] = []
     if args.agent == "all":
         base_destination = Path(args.dest) if args.dest else None
         workspace_root = Path(args.workspace_root) if args.workspace_root else None
         installed = install_all(base_destination, args.force, workspace_root=workspace_root)
+        if workspace_root:
+            written_mcp_configs = [write_mcp_config(client, workspace_root) for client in args.emit_mcp_config]
         for path in installed:
             print(
                 f"Installed at: {path} "
                 f"(version {provenance['product_version']}, source_revision {provenance['source_revision']})"
             )
+        for path in written_mcp_configs:
+            print(f"Wrote MCP config: {path}")
         return 0
 
     workspace_root = Path(args.workspace_root) if args.workspace_root else None
@@ -177,11 +225,15 @@ def main() -> int:
         else (workspace_destination(args.agent, workspace_root) if workspace_root else default_destination(args.agent))
     )
     installed = install(args.agent, destination, args.force)
+    if workspace_root:
+        written_mcp_configs = [write_mcp_config(client, workspace_root) for client in args.emit_mcp_config]
     print(
         f"Installed {SKILL_NAME} for {args.agent} at: {installed} "
         f"(version {provenance['product_version']}, source_revision {provenance['source_revision']})"
     )
     print(f"Installation manifest: {installed / 'install-manifest.json'}")
+    for path in written_mcp_configs:
+        print(f"Wrote MCP config: {path}")
     return 0
 
 
