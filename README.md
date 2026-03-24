@@ -77,6 +77,16 @@ irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scrip
 
 安裝後可直接使用 `/libro-wcag:libro-wcag` 呼叫，或讓 Claude 依上下文自動啟用。
 
+### Gemini Workspace Skill
+
+如果你直接在 Gemini workspace 中開啟這個 repo，Gemini 可以從 [SKILL.md](/c:/Source/Libro.AgentWCAG.clean/.gemini/skills/libro-wcag/SKILL.md) 自動發現 `libro-wcag`。
+
+如果你要把 skill 安裝到其他專案工作區，也可以使用：
+
+```powershell
+python .\scripts\install-agent.py --agent gemini --workspace-root .
+```
+
 ### 2. 驗證安裝
 
 ```powershell

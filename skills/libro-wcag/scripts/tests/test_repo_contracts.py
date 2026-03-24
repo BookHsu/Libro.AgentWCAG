@@ -29,6 +29,7 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('scripts/bootstrap.sh', content)
         self.assertIn('scripts/bootstrap.ps1', content)
         self.assertIn('/plugin install libro-wcag@libro-wcag-marketplace', content)
+        self.assertIn('--workspace-root', content)
 
     def test_testing_plan_tracks_matrix_mapping_and_gaps(self) -> None:
         content = self._read(self.repo_root / 'TESTING-PLAN.md')
@@ -47,6 +48,17 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('mcp-server/server.py', content)
         self.assertIn('.github/workflows/install-skill.yml', content)
         self.assertIn('vscode-extension/package.json', content)
+
+    def test_gemini_workspace_skill_exists_and_tracks_core_contract(self) -> None:
+        core_skill = self._read(self.skill_root / 'SKILL.md')
+        workspace_skill = self._read(self.repo_root / '.gemini' / 'skills' / 'libro-wcag' / 'SKILL.md')
+        self.assertIn('name: libro-wcag', workspace_skill)
+        self.assertIn('Gemini-specific note', workspace_skill)
+        self.assertIn('execution_mode', workspace_skill)
+        self.assertIn('safe first-pass remediations', workspace_skill)
+        self.assertIn('Use `adapters/gemini/prompt-template.md`', workspace_skill)
+        self.assertIn('JSON top-level keys', workspace_skill)
+        self.assertIn('JSON top-level keys', core_skill)
 
     def test_claude_plugin_json_exists_and_has_required_fields(self) -> None:
         payload = json.loads((self.repo_root / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))
@@ -159,6 +171,7 @@ class RepoContractTests(unittest.TestCase):
             '.gitignore',
             '.claude-plugin/plugin.json',
             '.claude-plugin/marketplace.json',
+            '.gemini/skills/libro-wcag/SKILL.md',
             'LICENSE',
             'README.md',
             'SKILL-TODO.md',

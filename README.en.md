@@ -77,6 +77,16 @@ If you use Claude Code, you can also install directly via the plugin marketplace
 
 After installation, invoke with `/libro-wcag:libro-wcag` or let Claude activate it automatically based on context.
 
+### Gemini Workspace Skill
+
+If you open this repository directly in a Gemini workspace, Gemini can auto-discover `libro-wcag` from [.gemini/skills/libro-wcag/SKILL.md](/c:/Source/Libro.AgentWCAG.clean/.gemini/skills/libro-wcag/SKILL.md).
+
+To install the same workspace skill into another project root, run:
+
+```powershell
+python .\scripts\install-agent.py --agent gemini --workspace-root .
+```
+
 ### 2. Verify The Installation
 
 ```powershell

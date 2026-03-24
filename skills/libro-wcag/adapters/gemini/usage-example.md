@@ -7,6 +7,12 @@ python .\scripts\install-agent.py --agent gemini
 python .\scripts\doctor-agent.py --agent gemini
 ```
 
+If you work inside a repo-local Gemini workspace, you can also commit `.gemini/skills/libro-wcag/SKILL.md` and let Gemini discover the skill without a user-home install. To materialize the same layout into another workspace root, run:
+
+```powershell
+python .\scripts\install-agent.py --agent gemini --workspace-root .
+```
+
 ## Use
 
 1. Load `adapters/gemini/prompt-template.md` into your Gemini custom instruction or wrapper.
