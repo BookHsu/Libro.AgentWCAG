@@ -1,199 +1,173 @@
 # Libro.AgentWCAG
 
-中文說明為預設版本。English version: [README.en.md](/c:/Source/Libro.AgentWCAG.clean/README.en.md)
+Libro.AgentWCAG 是一套跨代理的 WCAG 網頁無障礙 skill repository。它用同一份 vendor-neutral contract，讓 Codex、Claude、Gemini、Copilot 能以一致方式執行無障礙稽核、提出修正建議，並在明確授權下套用安全範圍內的自動修正。
 
-Libro.AgentWCAG 是一個可安裝、可發佈的跨代理 WCAG 網頁無障礙 skill repository，支援以一致的 vendor-neutral contract 讓不同 AI agent 執行稽核、建議修正與部分自動修正。
+## 為什麼是 Libro.AgentWCAG
 
-## 專案重點
+做網頁無障礙，真正麻煩的通常不是「找不到工具」，而是不同 agent、不同流程、不同輸出格式之間缺乏一致性。Libro.AgentWCAG 的目標，是把這件事整理成可安裝、可驗證、可發佈、可落地的標準工作流。
 
-- 支援代理：Codex、Claude、Gemini、Copilot
-- 安裝方式：repo 直接安裝，或從 release 資產快速安裝
-- 發佈方式：可產生版本化 zip、checksum、release manifest
-- 核心能力：`audit-only`、`suggest-only`、`apply-fixes`
+- 同一份 contract，可對接多種 AI agent
+- 同一套任務模式，可涵蓋稽核、建議與部分修正
+- 同一條 release 路徑，可支援安裝、驗證與版本管理
 
-## Repo 結構
+## 能幫你做到什麼
 
-- `skills/libro-agent-wcag`: 可安裝 skill 主體
-- `skills/libro-agent-wcag/adapters/openai-codex`: Codex adapter
-- `skills/libro-agent-wcag/adapters/claude`: Claude adapter
-- `skills/libro-agent-wcag/adapters/gemini`: Gemini adapter
-- `skills/libro-agent-wcag/adapters/copilot`: Copilot adapter
-- `scripts/install-agent.py`: 直接安裝指定 agent bundle
-- `scripts/doctor-agent.py`: 安裝後健康檢查與完整性驗證
-- `scripts/uninstall-agent.py`: 卸載工具
+- 快速檢查頁面是否存在 WCAG 無障礙問題
+- 以一致格式產出問題摘要與修正建議
+- 在明確要求修改時，對支援的本機檔案執行安全的一階修正
+- 讓團隊在不同 agent 之間維持相同的工作方式與輸出預期
 
-## 安裝
+## 支援的 AI agent
 
-### 從目前 repo 直接安裝
+- Codex
+- Claude
+- Gemini
+- Copilot
+
+## 三種工作模式
+
+- `audit-only`：只找出問題
+- `suggest-only`：找出問題並提出修正建議
+- `apply-fixes`：在明確授權下，對支援的本機檔案套用安全修正
+
+## 三分鐘開始使用
+
+### 1. 安裝
 
 ```powershell
 python .\scripts\install-agent.py --agent codex
+```
+
+如果你要安裝到其他 agent：
+
+```powershell
 python .\scripts\install-agent.py --agent claude
 python .\scripts\install-agent.py --agent gemini
 python .\scripts\install-agent.py --agent copilot
 python .\scripts\install-agent.py --agent all
 ```
 
-### 從本地 release 資產安裝
+### 2. 驗證安裝
+
+```powershell
+python .\scripts\doctor-agent.py --agent codex
+```
+
+### 3. 開始使用
+
+在 Codex 中，安裝完成後可直接呼叫：
+
+```text
+$libro-agent-wcag
+```
+
+如果你是使用 Claude、Gemini 或 Copilot，請載入各自 adapter 下的 `prompt-template.md` 作為對應平台的指令入口。
+
+## Skill 使用方式
+
+Libro.AgentWCAG 的核心不是單一指令，而是一套可被不同 AI agent 共用的 skill contract。實際使用時，你可以依照目前任務選擇「只稽核」、「提出建議」或「直接修正」。
+
+### 在 Codex 中使用
+
+安裝完成後，可直接呼叫：
+
+```text
+$libro-agent-wcag
+```
+
+常見使用方式：
+
+- 請它檢查某個頁面或元件的 WCAG 問題
+- 請它只列出問題，不修改檔案
+- 請它先提出修正建議，再由你決定是否套用
+- 在你明確授權下，請它對支援的本機檔案執行安全修正
+
+### 在其他 agent 中使用
+
+- `Claude`：載入 `skills/libro-agent-wcag/adapters/claude/prompt-template.md`
+- `Gemini`：載入 `skills/libro-agent-wcag/adapters/gemini/prompt-template.md`
+- `Copilot`：載入 `skills/libro-agent-wcag/adapters/copilot/prompt-template.md`
+
+做法是把對應 adapter 的 `prompt-template.md` 放進你使用的平台指令入口，例如 project prompt、system prompt、custom instruction 或 agent wrapper，讓該平台依同一份 contract 執行。
+
+### 建議的互動方式
+
+- 稽核頁面時，先用 `audit-only`
+- 想看修法但還不想改檔時，使用 `suggest-only`
+- 確認要落地修改時，再使用 `apply-fixes`
+
+這樣可以先把問題看清楚，再進入修改流程，避免過早自動改動。
+
+## 從 release 安裝
+
+如果你是 release 使用者，建議直接從已封裝好的資產安裝：
 
 ```powershell
 pwsh -File .\scripts\install-latest.ps1 -ReleaseBase .\dist\release -Agent codex
 ```
 
-```sh
-sh ./scripts/install-latest.sh --release-base ./dist/release --agent codex
-```
-
-### 從 GitHub 已發佈版本快速安裝
+或從已發佈的 GitHub Release 安裝：
 
 ```powershell
 pwsh -File .\scripts\install-latest.ps1 -ReleaseBase https://github.com/<owner>/<repo>/releases/download/vX.Y.Z -Agent codex
 ```
 
-- 把 `vX.Y.Z` 換成實際 tag，例如 `v1.0.1`
-- 安裝流程會自動驗證 `latest-release.json` / release manifest / `sha256`
-- 安裝完成後會自動執行 `doctor-agent.py --verify-manifest-integrity`
+安裝流程會自動驗證 `latest-release.json`、release manifest 與 `sha256`，並在完成後執行完整性檢查。
 
-### 預設安裝位置
+## 適合哪些情境
 
-- `codex`: `~/.codex/skills/libro-agent-wcag`
-- `claude`: `~/.claude/skills/libro-agent-wcag`
-- `gemini`: `~/.gemini/skills/libro-agent-wcag`
-- `copilot`: `~/.copilot/skills/libro-agent-wcag`
+- 想把無障礙檢查納入 AI 協作流程的團隊
+- 想在多種 agent 之間共用同一套規格與輸出格式的團隊
+- 需要可安裝、可驗證、可版本化管理的 skill 發佈流程
+- 希望先從安全、可預期的自動修正開始導入的專案
 
-## 驗證安裝
+## 專案結構
+
+- `skills/libro-agent-wcag`：可安裝的 skill 主體
+- `skills/libro-agent-wcag/adapters/openai-codex`：Codex adapter
+- `skills/libro-agent-wcag/adapters/claude`：Claude adapter
+- `skills/libro-agent-wcag/adapters/gemini`：Gemini adapter
+- `skills/libro-agent-wcag/adapters/copilot`：Copilot adapter
+- `scripts/install-agent.py`：安裝工具
+- `scripts/doctor-agent.py`：健康檢查與完整性驗證
+- `scripts/uninstall-agent.py`：卸載工具
+
+## 常用指令
+
+安裝：
 
 ```powershell
-python .\scripts\doctor-agent.py --agent codex
-python .\scripts\doctor-agent.py --agent codex --verify-manifest-integrity
-python .\scripts\doctor-agent.py --agent all
+python .\scripts\install-agent.py --agent codex
 ```
 
-## 卸載
+驗證：
+
+```powershell
+python .\scripts\doctor-agent.py --agent codex --verify-manifest-integrity
+```
+
+卸載：
 
 ```powershell
 python .\scripts\uninstall-agent.py --agent codex
-python .\scripts\uninstall-agent.py --agent all
 ```
 
-## 使用方式
-
-共用 contract 位於：
-
-- `skills/libro-agent-wcag/SKILL.md`
-- `skills/libro-agent-wcag/references/core-spec.md`
-- `skills/libro-agent-wcag/references/adapter-mapping.md`
-
-支援的任務模式：
-
-- `audit-only`: 只找問題
-- `suggest-only`: 找問題並提出修正建議
-- `apply-fixes`: 在明確要求修改時，對支援的本地檔案做安全範圍內修正
-
-支援的任務意圖：
-
-- `create`: 對草稿、模板、未上線頁面做檢查
-- `modify`: 對既有頁面先稽核再修正
-
-初次在 Codex 使用時可直接呼叫 `$libro-agent-wcag`。
-
-## 本地驗證
+本地驗證：
 
 ```powershell
 python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"
 python scripts/validate_skill.py skills/libro-agent-wcag --validate-policy-bundles
 ```
 
-- 測試策略與覆蓋矩陣見 `TESTING-PLAN.md`
+## 文件入口
 
-## 發佈
-
-### 產出 release 資產
-
-```powershell
-python .\scripts\package-release.py --output-dir .\dist\release --overwrite
-```
-
-會產出：
-
-- `libro-agent-wcag-<version>-codex.zip`
-- `libro-agent-wcag-<version>-claude.zip`
-- `libro-agent-wcag-<version>-gemini.zip`
-- `libro-agent-wcag-<version>-copilot.zip`
-- `libro-agent-wcag-<version>-all-in-one.zip`
-- `libro-agent-wcag-<version>-sha256sums.txt`
-- `libro-agent-wcag-<version>-release-manifest.json`
-- `latest-release.json`
-
-### GitHub Release 自動化
-
-- `.github/workflows/release.yml` 現在支援三種入口：
-  - push `v*` tag
-  - 手動執行 `workflow_dispatch`
-  - 在 GitHub UI 將 Release 設為 `published`
-- 這代表如果先在 GitHub 手動發佈 release，也會自動補上 zip 與其他 release assets
-
-## Release-consumer shortest path
-
-1. Download the published release assets for `vX.Y.Z`.
-2. Verify `libro-agent-wcag-X.Y.Z-sha256sums.txt`.
-3. Run `install-latest.ps1` or `install-latest.sh` against the release asset directory or URL.
-
-## Release-consumer quickstart
-
-1. Install from release assets.
-2. `install-latest.ps1` / `install-latest.sh` automatically runs `doctor-agent.py --verify-manifest-integrity` after install succeeds.
-3. Run a first audit with `python .\skills\libro-agent-wcag\scripts\run_accessibility_audit.py --target <file-or-url> --output-dir out`.
-4. Remove the skill with `python .\scripts\uninstall-agent.py --agent codex`.
-
-## Release readiness
-
-- `scripts/install-agent.py`, `scripts/doctor-agent.py`, and report artifacts derive `product_version` from `pyproject.toml`.
-- `source_revision` resolves from `LIBRO_AGENTWCAG_SOURCE_REVISION` when provided, otherwise from local git `HEAD`.
-- Package release assets with `python .\scripts\package-release.py --output-dir .\dist\release --overwrite`.
-- Packaging emits `libro-agent-wcag-<version>-all-in-one.zip` and `libro-agent-wcag-<version>-sha256sums.txt` alongside the agent bundles.
-- Clean release-consumer validation is available via `python .\scripts\run-release-adoption-smoke.py --release-dir .\dist\release --agent codex`.
-- Key release references:
-  - `docs/release/release-playbook.md`
-  - `docs/release/ga-release-workflow.md`
-  - `docs/release/ga-definition.md`
-  - `docs/release/rollback-playbook.md`
-  - `docs/release/adoption-smoke-guide.md`
-  - `docs/release/apply-fixes-scope.md`
-  - `docs/release/prompt-invocation-templates.md`
-  - `docs/release/resilient-run-patterns.md`
-  - `docs/examples/ci/github-actions-wcag-ci-sample.yml`
-  - `docs/release/real-scanner-ci-lane.md`
-  - `docs/release/baseline-governance.md`
-  - `docs/release/advanced-ci-gates.md`
-  - `docs/policy-bundles/`
-
-## PR 規則與 owner bypass
-
-- `owner can bypass` 不是 repo 檔案本身能強制控制的功能，必須在 GitHub repository settings 設定
-- 建議用 branch ruleset / branch protection 設定：
-  - required pull request
-  - required status checks
-  - 必要檢查包含 `libro-agent-wcag-real-scanner`
-  - bypass list 加入 repo owner / admin 或 maintainer team
-- 詳細操作說明見 [docs/release/repo-admin-setup.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/repo-admin-setup.md)
-
-## 重要文件
-
-- 中文首頁：`README.md`
-- 英文版本：[README.en.md](/c:/Source/Libro.AgentWCAG.clean/README.en.md)
 - Release 流程：[docs/release/ga-release-workflow.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/ga-release-workflow.md)
-- Release 管理設定：[docs/release/repo-admin-setup.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/repo-admin-setup.md)
-- Release 操作手冊：[docs/release/release-playbook.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/release-playbook.md)
-- 安裝與 smoke：[docs/release/adoption-smoke-guide.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/adoption-smoke-guide.md)
+- 發佈操作手冊：[docs/release/release-playbook.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/release-playbook.md)
+- 安裝與 smoke 指引：[docs/release/adoption-smoke-guide.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/adoption-smoke-guide.md)
+- `apply-fixes` 範圍說明：[docs/release/apply-fixes-scope.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/apply-fixes-scope.md)
 - 支援環境：[docs/release/supported-environments.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/supported-environments.md)
+- 測試計畫：[TESTING-PLAN.md](/c:/Source/Libro.AgentWCAG.clean/TESTING-PLAN.md)
 
-## 備註
+## 英文版
 
-- 深入的技術文件目前多數仍以英文撰寫，中文首頁先負責安裝、發佈與管理入口整理。
-- 如果要把整套 release / testing / governance 文件全部改成雙語，下一步應該是先決定是 `README + docs/zh-TW/`，還是每份文件中英分檔。
-
-## Codex Automation
-
-- Use `docs/automations/test-plan-automation.md` as the execution spec for scheduled Codex test-development automation. This lane focuses only on test development, testing-plan updates, commits, and pushes.
-- Use `docs/automations/test-plan-review-policy.md` as the review policy before accepting automation-generated changes.
+- [README.en.md](/c:/Source/Libro.AgentWCAG.clean/README.en.md)
