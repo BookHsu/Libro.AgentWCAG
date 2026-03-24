@@ -4,13 +4,13 @@ This guide defines the live real-scanner GitHub Actions lane used as the formal 
 
 ## Workflow contract
 
-- Workflow path: [`.github/workflows/libro-agent-wcag-real-scanner.yml`](../../.github/workflows/libro-agent-wcag-real-scanner.yml)
-- Workflow name: `libro-agent-wcag-real-scanner`
-- Job name: `libro-agent-wcag-real-scanner`
+- Workflow path: [`.github/workflows/libro-wcag-real-scanner.yml`](../../.github/workflows/libro-wcag-real-scanner.yml)
+- Workflow name: `libro-wcag-real-scanner`
+- Job name: `libro-wcag-real-scanner`
 - Trigger events:
   - `pull_request`
   - `workflow_dispatch`
-- Required check name for branch protection: `libro-agent-wcag-real-scanner`
+- Required check name for branch protection: `libro-wcag-real-scanner`
 
 This lane is live-only. It does not fall back to mock scanner payloads.
 
@@ -65,7 +65,7 @@ Expected triage artifacts:
   - `live/wcag-report.sarif`
   - `live/artifact-manifest.json`
 
-The uploaded GitHub artifact name is `libro-agent-wcag-real-scanner-artifacts`.
+The uploaded GitHub artifact name is `libro-wcag-real-scanner-artifacts`.
 
 ## Capability negotiation artifact
 

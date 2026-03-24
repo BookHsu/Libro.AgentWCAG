@@ -18,7 +18,7 @@
 
 #### 1.0 前置盤點與重構設計
 
-- [x] 盤點 `skills/libro-agent-wcag/scripts/run_accessibility_audit.py` 目前所有責任區塊
+- [x] 盤點 `skills/libro-wcag/scripts/run_accessibility_audit.py` 目前所有責任區塊
 - [x] 列出目前所有常數、CLI flags、exit codes、schema version 常數與其歸屬
 - [x] 列出目前所有內部 helper 與它們之間的呼叫依賴
 - [x] 標記哪些函式是純邏輯、哪些是 I/O、哪些是 orchestration
@@ -33,12 +33,12 @@
 
 #### 1.1 新增模組骨架
 
-- [x] 新增 `skills/libro-agent-wcag/scripts/scanner_runtime.py`
-- [x] 新增 `skills/libro-agent-wcag/scripts/policy_controls.py`
-- [x] 新增 `skills/libro-agent-wcag/scripts/baseline_governance.py`
-- [x] 新增 `skills/libro-agent-wcag/scripts/advanced_gates.py`
-- [x] 新增 `skills/libro-agent-wcag/scripts/report_artifacts.py`
-- [x] 視需要新增 `skills/libro-agent-wcag/scripts/shared_constants.py`
+- [x] 新增 `skills/libro-wcag/scripts/scanner_runtime.py`
+- [x] 新增 `skills/libro-wcag/scripts/policy_controls.py`
+- [x] 新增 `skills/libro-wcag/scripts/baseline_governance.py`
+- [x] 新增 `skills/libro-wcag/scripts/advanced_gates.py`
+- [x] 新增 `skills/libro-wcag/scripts/report_artifacts.py`
+- [x] 視需要新增 `skills/libro-wcag/scripts/shared_constants.py`
 - [x] 確認新增檔案命名與責任清楚，不和 `wcag_workflow.py`、`auto_fix.py` 重疊
 
 #### 1.2 Scanner Runtime 拆分
@@ -174,7 +174,7 @@
 - [x] 確認主檔仍容易追蹤 `main()` 流程
 - [x] 檢查主檔長度是否顯著下降
 - [x] 檢查 argparse help 文案未意外變更
-- [x] 驗證 CLI 執行方式仍為 `python skills/libro-agent-wcag/scripts/run_accessibility_audit.py`
+- [x] 驗證 CLI 執行方式仍為 `python skills/libro-wcag/scripts/run_accessibility_audit.py`
 
 #### 1.8 共用常數與相依整理
 
@@ -241,7 +241,7 @@
 - [x] scanner 安裝方式採用固定版本安裝
 - [x] 掃描目標先固定為 `docs/testing/realistic-sample/mixed-findings.html`
 - [x] live scanner 不可用時直接 fail，照樣阻擋 PR
-- [x] required check 命名策略固定為 `libro-agent-wcag-real-scanner`
+- [x] required check 命名策略固定為 `libro-wcag-real-scanner`
 - [x] runner 固定採用 `ubuntu-latest`
 - [x] browser 策略固定為「驗證可用，不額外安裝 Chrome」
 - [x] artifact retention 固定為 `14` 天
@@ -250,11 +250,11 @@
 #### 2.1 Workflow 事件與 Gate 形態
 
 - [x] 新增 real-scanner workflow 檔案
-- [x] 將 workflow `name` 固定為 `libro-agent-wcag-real-scanner`
-- [x] 將主要 job `name` 固定為 `libro-agent-wcag-real-scanner`
+- [x] 將 workflow `name` 固定為 `libro-wcag-real-scanner`
+- [x] 將主要 job `name` 固定為 `libro-wcag-real-scanner`
 - [x] workflow 加入 `pull_request` trigger
 - [x] workflow 加入 `workflow_dispatch` trigger
-- [x] 文件中明確記錄 branch protection required check 名稱為 `libro-agent-wcag-real-scanner`
+- [x] 文件中明確記錄 branch protection required check 名稱為 `libro-wcag-real-scanner`
 - [x] 確保 workflow 與 job 名稱不會因 artifact/step 調整而改動
 - [x] 在文件中明確定義此 lane 失敗即阻擋 PR merge
 
@@ -347,7 +347,7 @@
 - [x] 保留既有 deterministic lane workflow 不刪除
 - [x] 文件明確區分 deterministic lane 與 live lane 用途
 - [x] 確保 deterministic lane 不是 required check
-- [x] 確保 `libro-agent-wcag-real-scanner` 是 required check
+- [x] 確保 `libro-wcag-real-scanner` 是 required check
 - [x] 確保兩條 lane 的 artifact 名稱不衝突
 - [x] 確保 reviewer 能從名稱分辨 mock lane 與 live lane
 - [x] 補測試或文件以防止之後把兩條 lane 混成同一條
@@ -390,8 +390,8 @@
 
 #### 2.12 最小交付標準
 
-- [x] PR 開啟時會自動觸發 `libro-agent-wcag-real-scanner`
-- [x] `workflow_dispatch` 可手動重跑 `libro-agent-wcag-real-scanner`
+- [x] PR 開啟時會自動觸發 `libro-wcag-real-scanner`
+- [x] `workflow_dispatch` 可手動重跑 `libro-wcag-real-scanner`
 - [x] lane 失敗時會阻擋 PR
 - [x] browser / scanner 不可用時不降級為 mock，直接 fail
 - [x] mixed-findings target 可穩定執行
@@ -401,7 +401,7 @@
 
 #### 2.13 最終驗收條件
 
-- [x] `libro-agent-wcag-real-scanner` 已成為正式 required PR check
+- [x] `libro-wcag-real-scanner` 已成為正式 required PR check
 - [x] 固定版本的 scanner toolchain 可重現
 - [x] scanner / browser / preflight 失敗時有足夠 artifact 可排查
 - [x] 現有 deterministic lane 仍可正常運作
@@ -730,11 +730,11 @@
 允許修改檔案：
 
 - [ ] `pyproject.toml`
-- [x] `skills/libro-agent-wcag/scripts/shared_constants.py`
-- [x] `skills/libro-agent-wcag/scripts/report_artifacts.py`
+- [x] `skills/libro-wcag/scripts/shared_constants.py`
+- [x] `skills/libro-wcag/scripts/report_artifacts.py`
 - [x] `scripts/install-agent.py`
 - [x] `scripts/doctor-agent.py`
-- [x] `skills/libro-agent-wcag/scripts/tests/`
+- [x] `skills/libro-wcag/scripts/tests/`
 - [x] `README.md`
 - [x] `docs/release/release-playbook.md`
 
@@ -760,7 +760,7 @@
 
 建議驗證命令：
 
-- [ ] `python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"`
+- [ ] `python -m unittest discover -s skills/libro-wcag/scripts/tests -p "test_*.py"`
 
 #### 3.21 Agent Batch B: Installer / Doctor / Report Version Injection
 
@@ -774,10 +774,10 @@
 - [ ] `scripts/install-agent.ps1`
 - [ ] `scripts/install-agent.sh`
 - [x] `scripts/doctor-agent.py`
-- [x] `skills/libro-agent-wcag/scripts/run_accessibility_audit.py`
-- [x] `skills/libro-agent-wcag/scripts/report_artifacts.py`
+- [x] `skills/libro-wcag/scripts/run_accessibility_audit.py`
+- [x] `skills/libro-wcag/scripts/report_artifacts.py`
 - [x] `docs/testing/realistic-sample/artifacts/`
-- [x] `skills/libro-agent-wcag/scripts/tests/`
+- [x] `skills/libro-wcag/scripts/tests/`
 - [x] `README.md`
 - [x] `docs/release/adoption-smoke-guide.md`
 
@@ -804,7 +804,7 @@
 
 建議驗證命令：
 
-- [ ] `python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"`
+- [ ] `python -m unittest discover -s skills/libro-wcag/scripts/tests -p "test_*.py"`
 
 #### 3.22 Agent Batch C: Release Packaging And Checksum
 
@@ -819,7 +819,7 @@
 - [x] `docs/release/release-playbook.md`
 - [x] `docs/release/supported-environments.md`
 - [x] `docs/release/adoption-smoke-guide.md`
-- [x] `skills/libro-agent-wcag/scripts/tests/`
+- [x] `skills/libro-wcag/scripts/tests/`
 
 主要工作：
 
@@ -844,7 +844,7 @@
 
 建議驗證命令：
 
-- [ ] `python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"`
+- [ ] `python -m unittest discover -s skills/libro-wcag/scripts/tests -p "test_*.py"`
 
 #### 3.23 Agent Batch D: Bootstrap Installers And Clean Release Smoke
 
@@ -860,7 +860,7 @@
 - [x] `docs/release/adoption-smoke-guide.md`
 - [x] `docs/release/supported-environments.md`
 - [x] `README.md`
-- [x] `skills/libro-agent-wcag/scripts/tests/`
+- [x] `skills/libro-wcag/scripts/tests/`
 
 主要工作：
 
@@ -884,7 +884,7 @@
 
 建議驗證命令：
 
-- [ ] `python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"`
+- [ ] `python -m unittest discover -s skills/libro-wcag/scripts/tests -p "test_*.py"`
 
 #### 3.24 Agent Batch E: GitHub Release Workflow, GA Definition, Rollback
 
@@ -904,7 +904,7 @@
 - [x] `docs/release/release-playbook.md`
 - [x] `docs/release/adoption-smoke-guide.md`
 - [x] `docs/release/supported-environments.md`
-- [x] `skills/libro-agent-wcag/scripts/tests/`
+- [x] `skills/libro-wcag/scripts/tests/`
 
 主要工作：
 
@@ -929,7 +929,7 @@
 
 建議驗證命令：
 
-- [ ] `python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"`
+- [ ] `python -m unittest discover -s skills/libro-wcag/scripts/tests -p "test_*.py"`
 
 #### 3.25 AI 執行順序
 

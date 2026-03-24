@@ -37,7 +37,7 @@ This matrix defines the currently supported runtime and scanner prerequisites.
    - `mkdir -p .ci/scanner-toolchain`
    - `npm install --prefix .ci/scanner-toolchain --package-lock-only @axe-core/cli@4.10.2 lighthouse@12.3.0`
 3. Capture resolved versions for triage evidence:
-   - `python skills/libro-agent-wcag/scripts/run_accessibility_audit.py --preflight-only`
+   - `python skills/libro-wcag/scripts/run_accessibility_audit.py --preflight-only`
    - Preserve `checks[].version`, `checks[].resolved_command`, and `checks[].version_provenance` in build artifacts.
 
 ### CI workflow

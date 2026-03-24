@@ -74,7 +74,7 @@ def main() -> int:
     output_dir = run_dir / 'audit-output'
     audit_cmd = [
         sys.executable,
-        'skills/libro-agent-wcag/scripts/run_accessibility_audit.py',
+        'skills/libro-wcag/scripts/run_accessibility_audit.py',
         '--target',
         str(working_target),
         '--output-dir',
@@ -130,4 +130,3 @@ def main() -> int:
 
 if __name__ == '__main__':
     raise SystemExit(main())
-

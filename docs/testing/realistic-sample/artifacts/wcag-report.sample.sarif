@@ -5,7 +5,7 @@
     {
       "tool": {
         "driver": {
-          "name": "libro-agent-wcag",
+          "name": "libro-wcag",
           "version": "0.1.0",
           "rules": [
             {

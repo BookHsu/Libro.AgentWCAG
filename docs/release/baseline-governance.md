@@ -39,7 +39,7 @@ Every waiver entry must include exactly `signature`, `owner`, `approved_at`, `ex
 Generate baseline evidence artifacts:
 
 ```powershell
-python skills/libro-agent-wcag/scripts/run_accessibility_audit.py `
+python skills/libro-wcag/scripts/run_accessibility_audit.py `
   --target <target> `
   --output-dir out/baseline `
   --baseline-evidence-mode hash `
@@ -54,7 +54,7 @@ Expected outputs:
 ## Verification Before Diff Gating
 
 ```powershell
-python skills/libro-agent-wcag/scripts/run_accessibility_audit.py `
+python skills/libro-wcag/scripts/run_accessibility_audit.py `
   --target <target> `
   --output-dir out/compare `
   --baseline-report out/baseline/wcag-report.json `

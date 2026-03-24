@@ -1,0 +1,170 @@
+name: libro-wcag-real-scanner
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  LIBRO_REAL_SCANNER_TARGET: docs/testing/realistic-sample/mixed-findings.html
+  LIBRO_REAL_SCANNER_OUTPUT_DIR: out/real-scanner/live
+  LIBRO_REAL_SCANNER_ARTIFACT_ROOT: out/real-scanner
+  LIBRO_REAL_SCANNER_PYTHON_VERSION: "3.12"
+  LIBRO_REAL_SCANNER_NODE_VERSION: "20"
+  LIBRO_REAL_SCANNER_AXE_VERSION: "4.10.2"
+  LIBRO_REAL_SCANNER_LIGHTHOUSE_VERSION: "12.3.0"
+  LIBRO_REAL_SCANNER_RETENTION_DAYS: "14"
+
+jobs:
+  libro-wcag-real-scanner:
+    name: libro-wcag-real-scanner
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.LIBRO_REAL_SCANNER_PYTHON_VERSION }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.LIBRO_REAL_SCANNER_NODE_VERSION }}
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml
+
+      - name: Install fixed scanner toolchain
+        run: |
+          npm install --global @axe-core/cli@${{ env.LIBRO_REAL_SCANNER_AXE_VERSION }} lighthouse@${{ env.LIBRO_REAL_SCANNER_LIGHTHOUSE_VERSION }}
+
+      - name: Prepare artifact folders
+        run: |
+          mkdir -p "${{ env.LIBRO_REAL_SCANNER_ARTIFACT_ROOT }}/raw"
+          mkdir -p "${{ env.LIBRO_REAL_SCANNER_OUTPUT_DIR }}"
+
+      - name: Capture tool versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python --version | tee "${{ env.LIBRO_REAL_SCANNER_ARTIFACT_ROOT }}/raw/python.version.log"
+          node --version | tee "${{ env.LIBRO_REAL_SCANNER_ARTIFACT_ROOT }}/raw/node.version.log"
+          npx --no-install @axe-core/cli --version | tee "${{ env.LIBRO_REAL_SCANNER_ARTIFACT_ROOT }}/raw/axe.version.log"
+          npx --no-install lighthouse --version | tee "${{ env.LIBRO_REAL_SCANNER_ARTIFACT_ROOT }}/raw/lighthouse.version.log"
+
+      - name: Verify browser availability
+        shell: bash
+        run: |
+          set -euo pipefail
+          if command -v google-chrome >/dev/null 2>&1; then
+            google-chrome --version | tee "${{ env.LIBRO_REAL_SCANNER_ARTIFACT_ROOT }}/raw/browser.version.log"
+          elif command -v chromium >/dev/null 2>&1; then
+            chromium --version | tee "${{ env.LIBRO_REAL_SCANNER_ARTIFACT_ROOT }}/raw/browser.version.log"
+          elif command -v chromium-browser >/dev/null 2>&1; then
+            chromium-browser --version | tee "${{ env.LIBRO_REAL_SCANNER_ARTIFACT_ROOT }}/raw/browser.version.log"
+          else
+            echo "No supported Chrome/Chromium executable found on runner." | tee "${{ env.LIBRO_REAL_SCANNER_ARTIFACT_ROOT }}/raw/browser.version.log"
+            exit 1
+          fi
+
+      - name: Run scanner preflight
+        run: |
+          python skills/libro-wcag/scripts/run_accessibility_audit.py --preflight-only > "${{ env.LIBRO_REAL_SCANNER_ARTIFACT_ROOT }}/preflight.json"
+
+      - name: Run live real-scanner audit
+        run: |
+          python skills/libro-wcag/scripts/run_accessibility_audit.py \
+            --target "${{ env.LIBRO_REAL_SCANNER_TARGET }}" \
+            --execution-mode suggest-only \
+            --output-language en \
+            --output-dir "${{ env.LIBRO_REAL_SCANNER_OUTPUT_DIR }}" \
+            --summary-only > "${{ env.LIBRO_REAL_SCANNER_ARTIFACT_ROOT }}/normalized-summary.live.json"
+
+      - name: Build SARIF artifact from normalized report
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          repo_root = Path.cwd()
+          sys.path.insert(0, str(repo_root / "skills" / "libro-wcag" / "scripts"))
+
+          import run_accessibility_audit as runner
+
+          target_path = (repo_root / "docs" / "testing" / "realistic-sample" / "mixed-findings.html").resolve()
+          output_dir = repo_root / "out" / "real-scanner" / "live"
+          report_path = output_dir / "wcag-report.json"
+          sarif_path = output_dir / "wcag-report.sarif"
+
+          report = json.loads(report_path.read_text(encoding="utf-8"))
+          product = report.get("run_meta", {}).get("product", {})
+          product_metadata = {
+              "name": product.get("product_name", "Libro.AgentWCAG"),
+              "product_version": product["product_version"],
+              "source_revision": product["source_revision"],
+              "report_schema_version": product["report_schema_version"],
+          }
+          if product.get("build_timestamp"):
+              product_metadata["build_timestamp"] = product["build_timestamp"]
+          sarif = runner._report_to_sarif(report, target_path.as_uri(), target_path, product_metadata)
+          sarif_path.write_text(json.dumps(sarif, ensure_ascii=False, indent=2), encoding="utf-8")
+          PY
+
+      - name: Write capability negotiation artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          artifact_root = Path("out/real-scanner")
+          output_dir = Path("out/real-scanner/live")
+          payload = {
+              "lane_mode": "live",
+              "scanners_available": True,
+              "required_check": "libro-wcag-real-scanner",
+              "target": "docs/testing/realistic-sample/mixed-findings.html",
+              "summary_artifacts": {
+                  "live": str(artifact_root / "normalized-summary.live.json"),
+              },
+              "report_artifacts": {
+                  "json": str(output_dir / "wcag-report.json"),
+                  "markdown": str(output_dir / "wcag-report.md"),
+                  "sarif": str(output_dir / "wcag-report.sarif"),
+              },
+              "raw_scanner_logs": [
+                  str(artifact_root / "raw" / "python.version.log"),
+                  str(artifact_root / "raw" / "node.version.log"),
+                  str(artifact_root / "raw" / "axe.version.log"),
+                  str(artifact_root / "raw" / "lighthouse.version.log"),
+                  str(artifact_root / "raw" / "browser.version.log"),
+              ],
+          }
+          (artifact_root / "capability-negotiation.json").write_text(
+              json.dumps(payload, ensure_ascii=False, indent=2),
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Upload live real-scanner artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: libro-wcag-real-scanner-artifacts
+          path: |
+            ${{ env.LIBRO_REAL_SCANNER_ARTIFACT_ROOT }}/raw
+            ${{ env.LIBRO_REAL_SCANNER_ARTIFACT_ROOT }}/preflight.json
+            ${{ env.LIBRO_REAL_SCANNER_ARTIFACT_ROOT }}/normalized-summary.live.json
+            ${{ env.LIBRO_REAL_SCANNER_ARTIFACT_ROOT }}/capability-negotiation.json
+            ${{ env.LIBRO_REAL_SCANNER_OUTPUT_DIR }}/wcag-report.json
+            ${{ env.LIBRO_REAL_SCANNER_OUTPUT_DIR }}/wcag-report.md
+            ${{ env.LIBRO_REAL_SCANNER_OUTPUT_DIR }}/wcag-report.sarif
+            ${{ env.LIBRO_REAL_SCANNER_OUTPUT_DIR }}/artifact-manifest.json
+          retention-days: 14

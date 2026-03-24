@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://libro-agentwcag.dev/schemas/wcag-report-1.0.0.schema.json",
+  "title": "Libro Agent WCAG Report 1.0.0",
+  "type": "object",
+  "required": [
+    "report_schema",
+    "run_meta",
+    "target",
+    "standard",
+    "findings",
+    "fixes",
+    "citations",
+    "summary"
+  ],
+  "properties": {
+    "report_schema": {
+      "type": "object",
+      "required": ["name", "version", "artifact", "compatibility"],
+      "properties": {
+        "name": {"type": "string", "const": "libro-wcag-report"},
+        "version": {"type": "string", "const": "1.0.0"},
+        "artifact": {"type": "string"},
+        "compatibility": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "run_meta": {
+      "type": "object",
+      "required": [
+        "generated_at",
+        "workflow_version",
+        "execution_mode",
+        "output_language",
+        "files_modified",
+        "modification_owner",
+        "diff_artifacts",
+        "verification_evidence",
+        "tools",
+        "notes",
+        "report_schema_version"
+      ],
+      "properties": {
+        "report_schema_version": {"type": "string", "const": "1.0.0"},
+        "report_schema_artifact": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "target": {
+      "type": "object",
+      "required": ["value", "task_mode"],
+      "properties": {
+        "value": {"type": "string"},
+        "task_mode": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "standard": {
+      "type": "object",
+      "required": ["wcag_version", "conformance_level"],
+      "properties": {
+        "wcag_version": {"type": "string"},
+        "conformance_level": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "source", "rule_id", "severity", "changed_target", "status"],
+        "properties": {
+          "id": {"type": "string"},
+          "source": {"type": "string"},
+          "rule_id": {"type": "string"},
+          "severity": {"type": "string"},
+          "changed_target": {"type": "string"},
+          "status": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "fixes": {
+      "type": "array",
+      "items": {"type": "object", "additionalProperties": true}
+    },
+    "citations": {
+      "type": "array",
+      "items": {"type": "object", "additionalProperties": true}
+    },
+    "summary": {
+      "type": "object",
+      "required": ["total_findings"],
+      "properties": {
+        "total_findings": {"type": "integer"}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

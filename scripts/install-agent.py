@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install libro-agent-wcag for a target AI agent."""
+"""Install libro-wcag for a target AI agent."""
 
 from __future__ import annotations
 
@@ -10,13 +10,13 @@ import shutil
 import sys
 from pathlib import Path
 
-SCRIPT_ROOT = Path(__file__).resolve().parents[1] / "skills" / "libro-agent-wcag" / "scripts"
+SCRIPT_ROOT = Path(__file__).resolve().parents[1] / "skills" / "libro-wcag" / "scripts"
 if str(SCRIPT_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPT_ROOT))
 
 from shared_constants import get_product_provenance
 
-SKILL_NAME = "libro-agent-wcag"
+SKILL_NAME = "libro-wcag"
 SUPPORTED_AGENTS = ("codex", "claude", "gemini", "copilot")
 ALL_AGENTS = SUPPORTED_AGENTS + ("all",)
 
@@ -44,7 +44,7 @@ def adapter_name(agent: str) -> str:
 
 def invoke_example(agent: str) -> str:
     if agent == "codex":
-        return "Use $libro-agent-wcag to audit or remediate a web page using a selected WCAG version and level."
+        return "Use $libro-wcag to audit or remediate a web page using a selected WCAG version and level."
     return (
         "Load the adapter prompt from "
         f"adapters/{adapter_name(agent)}/prompt-template.md and inject the shared contract into your agent workflow."
@@ -52,7 +52,7 @@ def invoke_example(agent: str) -> str:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Install libro-agent-wcag for a target AI agent.")
+    parser = argparse.ArgumentParser(description="Install libro-wcag for a target AI agent.")
     parser.add_argument("--agent", required=True, choices=ALL_AGENTS)
     parser.add_argument("--dest", help="Destination directory. Defaults to the agent-specific path. When --agent all is used, this becomes the base directory.")
     parser.add_argument("--force", action="store_true", help="Replace an existing installation.")
