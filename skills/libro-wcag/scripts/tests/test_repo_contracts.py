@@ -24,6 +24,8 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('uninstall-agent.py --agent codex', content)
         self.assertIn('TESTING-PLAN.md', content)
         self.assertIn('$libro-wcag', content)
+        self.assertIn('scripts/bootstrap.sh', content)
+        self.assertIn('scripts/bootstrap.ps1', content)
 
     def test_testing_plan_tracks_matrix_mapping_and_gaps(self) -> None:
         content = self._read(self.repo_root / 'TESTING-PLAN.md')
@@ -127,6 +129,8 @@ class RepoContractTests(unittest.TestCase):
             'docs/testing/testing-playbook.md',
             'pyproject.toml',
             'scripts/doctor-agent.py',
+            'scripts/bootstrap.ps1',
+            'scripts/bootstrap.sh',
             'scripts/install-agent.ps1',
             'scripts/install-agent.py',
             'scripts/install-agent.sh',

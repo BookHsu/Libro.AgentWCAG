@@ -47,6 +47,25 @@ python .\scripts\install-agent.py --agent copilot
 python .\scripts\install-agent.py --agent all
 ```
 
+如果你不想先 clone repo，也可以直接用 GitHub bootstrap：
+
+```sh
+curl -sL https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scripts/bootstrap.sh | sh -s -- --agent claude
+```
+
+```powershell
+irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scripts/bootstrap.ps1 | iex
+```
+
+如果你想在 PowerShell 直接帶參數：
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scripts/bootstrap.ps1))) -Agent claude
+```
+
+`bootstrap.sh` 支援 `--agent / --repo / --ref / --dest / --force`，其中 `--agent` 為必填。
+`bootstrap.ps1` 若未提供 `-Agent`，會互動提示選擇 agent；若要非互動安裝，請使用上面的 scriptblock 寫法傳入參數。
+
 ### 2. 驗證安裝
 
 ```powershell
