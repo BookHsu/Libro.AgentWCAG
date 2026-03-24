@@ -47,6 +47,25 @@ python .\scripts\install-agent.py --agent copilot
 python .\scripts\install-agent.py --agent all
 ```
 
+If you do not want to clone the repository first, you can also bootstrap directly from GitHub:
+
+```sh
+curl -sL https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scripts/bootstrap.sh | sh -s -- --agent claude
+```
+
+```powershell
+irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scripts/bootstrap.ps1 | iex
+```
+
+If you want to pass parameters directly in PowerShell:
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scripts/bootstrap.ps1))) -Agent claude
+```
+
+`bootstrap.sh` supports `--agent / --repo / --ref / --dest / --force`, and `--agent` is required.
+If `bootstrap.ps1` does not receive `-Agent`, it prompts interactively; for non-interactive installs, use the scriptblock form above so parameters can be passed explicitly.
+
 ### 2. Verify The Installation
 
 ```powershell
