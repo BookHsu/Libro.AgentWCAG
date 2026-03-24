@@ -46,7 +46,13 @@
       "risk_level": "low",
       "rule_family": "general",
       "downgrade_reason": "manual-review-required",
-      "before_after_targets": []
+      "before_after_targets": [],
+      "citations": [
+        {
+          "sc": "2.4.11",
+          "url": "https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum"
+        }
+      ]
     },
     {
       "id": "ISSUE-002",
@@ -71,7 +77,13 @@
       "risk_level": "low",
       "rule_family": "general",
       "downgrade_reason": "manual-review-required",
-      "before_after_targets": []
+      "before_after_targets": [],
+      "citations": [
+        {
+          "sc": "2.4.12",
+          "url": "https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-enhanced"
+        }
+      ]
     },
     {
       "id": "ISSUE-003",
@@ -96,7 +108,13 @@
       "risk_level": "low",
       "rule_family": "general",
       "downgrade_reason": "manual-review-required",
-      "before_after_targets": []
+      "before_after_targets": [],
+      "citations": [
+        {
+          "sc": "2.4.13",
+          "url": "https://www.w3.org/WAI/WCAG22/Understanding/focus-appearance"
+        }
+      ]
     },
     {
       "id": "ISSUE-004",
@@ -121,7 +139,13 @@
       "risk_level": "low",
       "rule_family": "general",
       "downgrade_reason": "manual-review-required",
-      "before_after_targets": []
+      "before_after_targets": [],
+      "citations": [
+        {
+          "sc": "2.5.7",
+          "url": "https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements"
+        }
+      ]
     },
     {
       "id": "ISSUE-005",
@@ -146,7 +170,13 @@
       "risk_level": "low",
       "rule_family": "general",
       "downgrade_reason": "manual-review-required",
-      "before_after_targets": []
+      "before_after_targets": [],
+      "citations": [
+        {
+          "sc": "2.5.8",
+          "url": "https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum"
+        }
+      ]
     },
     {
       "id": "ISSUE-006",
@@ -171,7 +201,13 @@
       "risk_level": "low",
       "rule_family": "general",
       "downgrade_reason": "manual-review-required",
-      "before_after_targets": []
+      "before_after_targets": [],
+      "citations": [
+        {
+          "sc": "3.2.6",
+          "url": "https://www.w3.org/WAI/WCAG22/Understanding/consistent-help"
+        }
+      ]
     },
     {
       "id": "ISSUE-007",
@@ -196,7 +232,13 @@
       "risk_level": "low",
       "rule_family": "general",
       "downgrade_reason": "manual-review-required",
-      "before_after_targets": []
+      "before_after_targets": [],
+      "citations": [
+        {
+          "sc": "3.3.7",
+          "url": "https://www.w3.org/WAI/WCAG22/Understanding/redundant-entry"
+        }
+      ]
     },
     {
       "id": "ISSUE-008",
@@ -221,7 +263,13 @@
       "risk_level": "low",
       "rule_family": "general",
       "downgrade_reason": "manual-review-required",
-      "before_after_targets": []
+      "before_after_targets": [],
+      "citations": [
+        {
+          "sc": "3.3.8",
+          "url": "https://www.w3.org/WAI/WCAG22/Understanding/accessible-authentication-minimum"
+        }
+      ]
     },
     {
       "id": "ISSUE-009",
@@ -246,7 +294,13 @@
       "risk_level": "low",
       "rule_family": "general",
       "downgrade_reason": "manual-review-required",
-      "before_after_targets": []
+      "before_after_targets": [],
+      "citations": [
+        {
+          "sc": "3.3.9",
+          "url": "https://www.w3.org/WAI/WCAG22/Understanding/accessible-authentication-enhanced"
+        }
+      ]
     }
   ],
   "fixes": [

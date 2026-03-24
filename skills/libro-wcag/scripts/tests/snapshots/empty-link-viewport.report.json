@@ -48,7 +48,17 @@
       "risk_level": "high",
       "rule_family": "accessible-name",
       "downgrade_reason": null,
-      "before_after_targets": []
+      "before_after_targets": [],
+      "citations": [
+        {
+          "sc": "2.4.4",
+          "url": "https://www.w3.org/WAI/WCAG21/Understanding/link-purpose-in-context"
+        },
+        {
+          "sc": "4.1.2",
+          "url": "https://www.w3.org/WAI/WCAG21/Understanding/name-role-value"
+        }
+      ]
     },
     {
       "id": "ISSUE-002",
@@ -75,7 +85,17 @@
       "risk_level": "high",
       "rule_family": "visual",
       "downgrade_reason": null,
-      "before_after_targets": []
+      "before_after_targets": [],
+      "citations": [
+        {
+          "sc": "1.4.10",
+          "url": "https://www.w3.org/WAI/WCAG21/Understanding/reflow"
+        },
+        {
+          "sc": "1.4.4",
+          "url": "https://www.w3.org/WAI/WCAG21/Understanding/resize-text"
+        }
+      ]
     }
   ],
   "fixes": [

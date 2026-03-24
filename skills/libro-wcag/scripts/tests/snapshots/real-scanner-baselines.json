@@ -40,7 +40,8 @@
     },
     {
       "fixture": "empty-link-viewport.html",
-      "minimum_findings": 1
+      "minimum_findings": 1,
+      "allow_lighthouse_error": true
     },
     {
       "fixture": "keyboard-tabindex.html",

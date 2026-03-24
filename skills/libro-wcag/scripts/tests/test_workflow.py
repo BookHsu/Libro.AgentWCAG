@@ -114,6 +114,40 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(report["run_meta"]["tools"]["axe"], "error")
         self.assertTrue(any(item["status"] == "needs-review" for item in report["findings"]))
 
+    def test_axe_list_payload_is_normalized_before_mapping(self) -> None:
+        contract = resolve_contract({"target": "https://example.com"})
+        axe_data = [
+            {
+                "violations": [
+                    {
+                        "id": "image-alt",
+                        "impact": "serious",
+                        "description": "Images must have alternate text",
+                        "nodes": [{"target": ["img.hero"]}],
+                    }
+                ]
+            }
+        ]
+        report = normalize_report(contract, axe_data, {"audits": {}})
+        self.assertTrue(any(item["rule_id"] == "image-alt" for item in report["findings"]))
+
+    def test_findings_include_inline_citations_for_selected_wcag_version(self) -> None:
+        contract = resolve_contract({"target": "https://example.com", "wcag_version": "2.0"})
+        axe_data = {
+            "violations": [
+                {
+                    "id": "image-alt",
+                    "impact": "serious",
+                    "description": "Images must have alternate text",
+                    "nodes": [{"target": ["img.hero"]}],
+                }
+            ]
+        }
+        report = normalize_report(contract, axe_data, {"audits": {}})
+        finding = next(item for item in report["findings"] if item["rule_id"] == "image-alt")
+        urls = [item["url"] for item in finding["citations"]]
+        self.assertTrue(any("/WCAG20/" in url for url in urls))
+
     def test_skipped_tool_is_not_reported_as_error(self) -> None:
         contract = resolve_contract({"target": "https://example.com"})
         report = normalize_report(
@@ -612,4 +646,3 @@ class WorkflowTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
