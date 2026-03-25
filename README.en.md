@@ -72,37 +72,6 @@ If you prefer wrappers:
 ./scripts/libro.sh doctor claude
 ```
 
-### Advanced Install And Integration
-
-If you do not want to clone the repository first, bootstrap directly from GitHub:
-
-```sh
-curl -sL https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG/master/scripts/bootstrap.sh | sh -s -- --agent claude
-```
-
-```powershell
-irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG/master/scripts/bootstrap.ps1 | iex
-```
-
-```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG/master/scripts/bootstrap.ps1))) -Agent claude
-```
-
-If you need workspace MCP, `mcp-server/server.py` provides one `libro-wcag` MCP server for Claude, Copilot, and Gemini.
-
-```powershell
-python -m pip install -r .\mcp-server\requirements.txt
-python .\scripts\libro.py install claude --workspace-root . --emit-mcp-config claude
-python .\scripts\libro.py install gemini --workspace-root . --emit-mcp-config gemini
-python .\scripts\libro.py install copilot --workspace-root . --emit-mcp-config copilot
-```
-
-Sample configs:
-
-- Claude: [mcp.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/claude/mcp.sample.json)
-- Copilot: [mcp.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/copilot/mcp.sample.json)
-- Gemini: [settings.mcp.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/gemini/settings.mcp.sample.json)
-
 ## How To Use The Skill
 
 Libro.AgentWCAG is not just a single command. It is a shared skill contract that different AI agents can follow. In practice, you choose whether you want to audit only, get suggestions, or apply fixes.
