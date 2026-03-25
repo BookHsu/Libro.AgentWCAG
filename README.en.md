@@ -30,8 +30,11 @@ The hard part of web accessibility work is usually not finding a tool. It is kee
 
 ```powershell
 npm install -g libro-cli
-libro install claude
-libro doctor claude
+libro install claude   # Claude Code
+libro install gemini   # Gemini CLI
+libro install copilot  # Copilot
+libro install codex    # Codex
+libro doctor claude    # verify Claude installation
 ```
 
 ### Clone + CLI
@@ -48,18 +51,6 @@ Verification and removal:
 ```powershell
 python .\scripts\libro.py doctor claude --verify-manifest-integrity
 python .\scripts\libro.py remove claude
-```
-
-If you prefer wrappers:
-
-```powershell
-.\scripts\libro.ps1 install claude
-.\scripts\libro.ps1 doctor claude
-```
-
-```sh
-./scripts/libro.sh install claude
-./scripts/libro.sh doctor claude
 ```
 
 ### Other Command Entrypoints
