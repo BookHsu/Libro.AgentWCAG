@@ -79,6 +79,19 @@ Three working modes:
 | `suggest-only` | Yes | Yes | No |
 | `apply-fixes` | Yes | Yes | Yes, only for supported local files |
 
+Usage examples:
+
+```text
+Audit only
+Use audit-only mode to review https://example.com for WCAG 2.1 AA.
+
+Suggest only
+Use suggest-only mode to review src/page.html and provide fix suggestions without editing files.
+
+Apply fixes
+Use apply-fixes mode to review src/page.html and apply safe fixes to supported local issues.
+```
+
 - Start with `audit-only` when you want a clean accessibility review
 - Use `suggest-only` when you want remediation ideas before changing files
 - Move to `apply-fixes` only when you want the changes carried out
