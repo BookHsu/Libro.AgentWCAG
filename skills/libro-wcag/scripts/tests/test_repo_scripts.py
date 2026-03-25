@@ -243,6 +243,29 @@ class RepoScriptTests(unittest.TestCase):
         self.assertIn('codex|claude|gemini|copilot|all', wrapper)
         self.assertIn('python "$SCRIPT_DIR/libro.py" "$COMMAND" "$AGENT" "$@"', wrapper)
 
+    def test_npm_cli_wrapper_invokes_bundled_python_entrypoint(self) -> None:
+        wrapper = (self.repo_root / 'bin' / 'libro.js').read_text(encoding='utf-8')
+        self.assertIn('scripts", "libro.py"', wrapper)
+        self.assertIn('python3', wrapper)
+        self.assertIn('command: "py"', wrapper)
+        self.assertIn('args: ["-3"]', wrapper)
+        self.assertIn('process.argv.slice(2)', wrapper)
+
+    def test_npm_cli_wrapper_can_run_help(self) -> None:
+        completed = subprocess.run(
+            [
+                'node',
+                'bin/libro.js',
+                '--help',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        self.assertIn('Unified CLI for installing and validating Libro.AgentWCAG', completed.stdout)
+
     def test_libro_cli_wraps_install_doctor_and_remove(self) -> None:
         cli = (self.repo_root / 'scripts' / 'libro.py').read_text(encoding='utf-8')
         self.assertIn('subparsers.add_parser("install"', cli)
