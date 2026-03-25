@@ -45,7 +45,7 @@ class ReleaseWorkflowTests(unittest.TestCase):
         self.assertIn('${{ env.LIBRO_RELEASE_ARTIFACT_DIR }}/*', content)
         self.assertIn('id-token: write', content)
         self.assertIn('registry-url: https://registry.npmjs.org', content)
-        self.assertIn('npm publish', content)
+        self.assertIn('npm publish --provenance --access public', content)
 
     def test_release_workflow_does_not_modify_real_scanner_required_lane(self) -> None:
         content = self.workflow_path.read_text(encoding='utf-8')
