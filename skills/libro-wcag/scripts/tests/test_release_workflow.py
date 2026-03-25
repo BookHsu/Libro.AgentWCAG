@@ -61,8 +61,19 @@ class ReleaseWorkflowTests(unittest.TestCase):
         self.assertIn('registry-url: https://registry.npmjs.org', content)
         self.assertIn('node-version: "24"', content)
         self.assertIn('python scripts/apply-release-version.py --version', content)
+        self.assertIn('python -m pip install pyyaml', content)
         self.assertIn('npm pack', content)
         self.assertIn('npm publish --access public', content)
+
+    def test_publish_npm_workflow_exports_provenance_after_tests(self) -> None:
+        content = self.publish_npm_workflow_path.read_text(encoding='utf-8')
+        tests_index = content.index('Run automated tests')
+        validate_index = content.index('Validate repo skill contract')
+        export_index = content.index('Export provenance inputs')
+        pack_index = content.index('Pack npm tarball')
+        self.assertLess(tests_index, validate_index)
+        self.assertLess(validate_index, export_index)
+        self.assertLess(export_index, pack_index)
 
     def test_release_workflow_does_not_modify_real_scanner_required_lane(self) -> None:
         content = self.workflow_path.read_text(encoding='utf-8')
