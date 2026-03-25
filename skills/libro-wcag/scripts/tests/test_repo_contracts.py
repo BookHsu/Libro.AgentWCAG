@@ -22,8 +22,13 @@ class RepoContractTests(unittest.TestCase):
     def test_readme_covers_installation_validation_and_testing_plan(self) -> None:
         content = self._read(self.repo_root / 'README.md')
         self.assertIn('## 專案的用途與說明', content)
+        self.assertIn('## 前置需求', content)
         self.assertIn('## 安裝方式', content)
         self.assertIn('## 使用方式', content)
+        self.assertIn('python --version', content)
+        self.assertIn('brew install python3', content)
+        self.assertIn('sudo apt update && sudo apt install python3', content)
+        self.assertIn('winget install Python.Python.3.12', content)
         self.assertIn('### Claude Marketplace (Claude Code)', content)
         self.assertIn('### npm CLI', content)
         self.assertIn('### Clone + CLI', content)

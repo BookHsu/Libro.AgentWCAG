@@ -17,6 +17,20 @@ The hard part of web accessibility work is usually not finding a tool. It is kee
 - Apply safe first-pass fixes to supported local files when modification is explicitly requested
 - Keep cross-agent accessibility work aligned across teams
 
+## Prerequisites
+
+Python 3 is required.
+
+```powershell
+python --version
+```
+
+```sh
+brew install python3
+sudo apt update && sudo apt install python3
+winget install Python.Python.3.12
+```
+
 ## Install
 
 ### Claude Marketplace (Claude Code)
