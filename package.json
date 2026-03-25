@@ -1,6 +1,6 @@
 {
   "name": "librowcag-cli",
-  "version": "1.1.2",
+  "version": "1.2.1",
   "description": "Global CLI wrapper for Libro.AgentWCAG skill installation.",
   "license": "MIT",
   "homepage": "https://github.com/BookHsu/Libro.AgentWCAG",
@@ -11,11 +11,16 @@
   "publishConfig": {
     "access": "public"
   },
+  "scripts": {
+    "apply-release-version": "python scripts/apply-release-version.py",
+    "prepack": "python scripts/write-package-provenance.py"
+  },
   "bin": {
     "libro": "bin/libro.js"
   },
   "files": [
     "bin/",
+    "package-provenance.json",
     "mcp-server/requirements.txt",
     "mcp-server/server.py",
     "mcp-server/tools/*.py",

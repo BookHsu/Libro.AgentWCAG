@@ -101,6 +101,14 @@ class RepoScriptTests(unittest.TestCase):
         self.assertNotEqual(completed.returncode, 0)
         self.assertIn('Missing SKILL.md', completed.stderr + completed.stdout)
 
+    def test_apply_release_version_script_targets_repo_version_files(self) -> None:
+        script = (self.repo_root / 'scripts' / 'apply-release-version.py').read_text(encoding='utf-8')
+        self.assertIn('pyproject.toml', script)
+        self.assertIn('package.json', script)
+        self.assertIn('.claude-plugin', script)
+        self.assertIn('marketplace.json', script)
+        self.assertIn('Semantic version', script)
+
     def test_doctor_all_reports_each_supported_agent(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             install = subprocess.run(
