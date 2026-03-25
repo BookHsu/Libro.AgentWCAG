@@ -34,7 +34,7 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('### Clone + CLI', content)
         self.assertIn('/plugin marketplace add BookHsu/Libro.AgentWCAG', content)
         self.assertIn('/plugin install libro-wcag@libro-wcag-marketplace', content)
-        self.assertIn('npm install -g libro-cli', content)
+        self.assertIn('npm install -g librowcag-cli', content)
         self.assertIn('libro install claude   # Claude Code', content)
         self.assertIn('libro install gemini   # Gemini CLI', content)
         self.assertIn('libro install copilot  # Copilot', content)
@@ -56,7 +56,7 @@ class RepoContractTests(unittest.TestCase):
 
     def test_package_json_exposes_global_libro_cli(self) -> None:
         payload = json.loads((self.repo_root / 'package.json').read_text(encoding='utf-8'))
-        self.assertEqual(payload['name'], 'libro-cli')
+        self.assertEqual(payload['name'], 'librowcag-cli')
         self.assertEqual(payload['version'], tomllib.loads((self.repo_root / 'pyproject.toml').read_text(encoding='utf-8'))['project']['version'])
         self.assertEqual(payload['bin']['libro'], 'bin/libro.js')
         self.assertIn('scripts/*.py', payload['files'])
