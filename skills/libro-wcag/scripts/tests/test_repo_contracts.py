@@ -28,8 +28,10 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('$libro-wcag', content)
         self.assertIn('scripts/bootstrap.sh', content)
         self.assertIn('scripts/bootstrap.ps1', content)
-        self.assertIn('/plugin install libro-wcag@libro-wcag-marketplace', content)
-        self.assertIn('.claude/skills/libro-wcag/SKILL.md', content)
+        self.assertIn('進階安裝與整合', content)
+        self.assertIn('只找出問題', content)
+        self.assertIn('提出修正建議，但不改檔', content)
+        self.assertIn('對支援的本機檔案套用安全修正', content)
 
     def test_testing_plan_tracks_matrix_mapping_and_gaps(self) -> None:
         content = self._read(self.repo_root / 'TESTING-PLAN.md')

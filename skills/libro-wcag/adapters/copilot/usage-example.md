@@ -7,7 +7,7 @@ python .\scripts\libro.py install copilot
 python .\scripts\libro.py doctor copilot
 ```
 
-For MCP-based Copilot workspace integration, install dependencies and emit a local `.vscode/mcp.json`:
+If you need workspace MCP, install dependencies and emit a local `.vscode/mcp.json`:
 
 ```powershell
 python -m pip install -r .\mcp-server\requirements.txt

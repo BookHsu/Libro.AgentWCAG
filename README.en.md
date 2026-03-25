@@ -27,7 +27,7 @@ The hard part of web accessibility work is usually not finding a tool. It is kee
 ## Three Working Modes
 
 - `audit-only`: find issues only
-- `suggest-only`: find issues and propose fixes
+- `suggest-only`: find issues and propose fixes without editing files
 - `apply-fixes`: apply safe fixes to supported local files when explicitly authorized
 
 ## Quick Start
@@ -41,13 +41,12 @@ python .\scripts\libro.py install claude
 python .\scripts\libro.py doctor claude
 ```
 
-The same commands work across the main agents:
+For installation into the target skill location, the same commands work across the main agents:
 
 ```powershell
 python .\scripts\libro.py install claude
 python .\scripts\libro.py install gemini
 python .\scripts\libro.py install copilot
-python .\scripts\libro.py install all
 ```
 
 Verification and removal:
@@ -69,23 +68,21 @@ If you prefer wrappers:
 ./scripts/libro.sh doctor claude
 ```
 
-### Recommended Path By Agent
+### Other Command Entrypoints
 
-- `Claude`: start with `python .\scripts\libro.py install claude`; for repo-open discovery, Claude can also read [.claude/skills/libro-wcag/SKILL.md](/c:/Source/Libro.AgentWCAG.clean/.claude/skills/libro-wcag/SKILL.md)
-- `Gemini`: start with `python .\scripts\libro.py install gemini`; for repo-open discovery, Gemini can also read [.gemini/skills/libro-wcag/SKILL.md](/c:/Source/Libro.AgentWCAG.clean/.gemini/skills/libro-wcag/SKILL.md)
-- `Copilot`: start with `python .\scripts\libro.py install copilot`; for workspace MCP, add `--workspace-root` and `--emit-mcp-config`
+If you prefer wrappers:
 
-### Claude Repo-Open And Plugin
-
-- after cloning the repo, Claude can discover `libro-wcag` from [.claude/skills/libro-wcag/SKILL.md](/c:/Source/Libro.AgentWCAG.clean/.claude/skills/libro-wcag/SKILL.md)
-- for the plugin path:
-
-```text
-/plugin marketplace add BookHsu/Libro.AgentWCAG.clean
-/plugin install libro-wcag@libro-wcag-marketplace
+```powershell
+.\scripts\libro.ps1 install claude
+.\scripts\libro.ps1 doctor claude
 ```
 
-### GitHub Bootstrap
+```sh
+./scripts/libro.sh install claude
+./scripts/libro.sh doctor claude
+```
+
+### Advanced Install And Integration
 
 If you do not want to clone the repository first, bootstrap directly from GitHub:
 
@@ -101,9 +98,7 @@ irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scrip
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scripts/bootstrap.ps1))) -Agent claude
 ```
 
-### Workspace MCP
-
-`mcp-server/server.py` provides one `libro-wcag` MCP server for Claude, Copilot, and Gemini.
+If you need workspace MCP, `mcp-server/server.py` provides one `libro-wcag` MCP server for Claude, Copilot, and Gemini.
 
 ```powershell
 python -m pip install -r .\mcp-server\requirements.txt
@@ -189,6 +184,7 @@ The install flow automatically verifies `latest-release.json`, the release manif
 - `docs/release/advanced-ci-gates.md`
 - policy bundle material lives under `docs/policy-bundles/`
 - use `python .\scripts\doctor-agent.py --agent codex --verify-manifest-integrity` for post-install integrity checks
+- use `python .\scripts\libro.py doctor claude --verify-manifest-integrity` for post-install integrity checks
 
 ## Where It Fits Best
 
@@ -207,6 +203,7 @@ The install flow automatically verifies `latest-release.json`, the release manif
 - `scripts/install-agent.py`: installer
 - `scripts/doctor-agent.py`: health check and integrity verification
 - `scripts/uninstall-agent.py`: uninstaller
+- `scripts/libro.py`: unified CLI entrypoint
 
 ## Common Commands
 
