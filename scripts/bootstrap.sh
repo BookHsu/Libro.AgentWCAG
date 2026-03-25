@@ -19,7 +19,7 @@ import zipfile
 from pathlib import Path
 
 
-DEFAULT_REPO = "BookHsu/Libro.AgentWCAG.clean"
+DEFAULT_REPO = "BookHsu/Libro.AgentWCAG"
 DEFAULT_REF = "master"
 SUPPORTED_AGENTS = ["codex", "claude", "gemini", "copilot", "all"]
 SOURCE_REVISION_ENV_VAR = "LIBRO_AGENTWCAG_SOURCE_REVISION"

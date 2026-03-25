@@ -6,6 +6,31 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-03-25
+
+### Added
+
+- Unified `libro` CLI entrypoints for install, verification, and removal across supported agents.
+- npm-publishable global CLI package `librowcag-cli`.
+- Claude plugin marketplace manifests and workspace skill discovery support.
+- Gemini workspace skill support, MCP server scaffolding, and reusable install workflow examples.
+
+### Changed
+
+- README and README.en now focus on project purpose, install, usage, and license only.
+- Installation docs now prioritize Claude Marketplace, npm CLI, and clone-plus-CLI paths.
+- Usage docs now show minimal execution-mode examples for `audit-only`, `suggest-only`, and `apply-fixes`.
+
+### Install / Verify
+
+- Install the npm CLI with `npm install -g librowcag-cli`.
+- Install a target agent with `libro install claude`.
+- Verify installation with `libro doctor claude`.
+
+### Known Limitations
+
+- Publishing `librowcag-cli` to npm still depends on the publisher account satisfying npm 2FA policy.
+
 ## [1.0.2] - 2026-03-23
 
 ### Added

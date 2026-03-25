@@ -5,7 +5,7 @@ on:
 
 jobs:
   setup-libro-wcag:
-    uses: BookHsu/Libro.AgentWCAG.clean/.github/workflows/install-skill.yml@v1
+    uses: BookHsu/Libro.AgentWCAG/.github/workflows/install-skill.yml@v1
     with:
       agent: claude
       version: master
