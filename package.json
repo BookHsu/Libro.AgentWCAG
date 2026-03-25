@@ -9,8 +9,7 @@
     "url": "git+https://github.com/BookHsu/Libro.AgentWCAG.git"
   },
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   },
   "bin": {
     "libro": "bin/libro.js"
