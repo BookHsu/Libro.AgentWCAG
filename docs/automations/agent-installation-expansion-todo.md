@@ -1,13 +1,18 @@
 # Agent Installation Expansion TODO
 
-此文件整理後續安裝能力擴充的實體檔案待辦，範圍聚焦在 Gemini workspace skill、Claude plugin、MCP server、CI reusable workflow 與相關文件樣板。
+此文件整理後續安裝能力擴充的實體檔案待辦。現階段主軸已收斂為：
+
+- 三大 agent `Claude`、`Gemini`、`Copilot` 都要能簡單安裝
+- 對外以單一 CLI 入口為主，不再讓使用者先理解多條安裝腳本
+- README 要優先呈現最短安裝路徑，進階模式退到次要段落
+- 不新增 package manager distribution，維持 repo 內簡單交付
 
 ## 目前狀態
 
 - [x] Phase 1 已完成：Gemini workspace skill、Claude plugin manifests、reusable workflow、submodule/add-dir 與 `gh release download` 文件樣板已落地
 - [x] Phase 2 已完成：`stdio` MCP server 與三個 tool wrapper 已落地
 - [x] Phase 3 已完成：Claude/Copilot/Gemini MCP sample configs、installer MCP config emission、README/adapter 文件同步已落地
-- [ ] 剩餘工作以手動驗證與發佈策略為主，不再是核心開發缺口
+- [ ] 下一階段改為產品化安裝體驗：單一 CLI、簡化 README、Claude repo-open 即用
 
 ## 原則
 
@@ -15,6 +20,60 @@
 - canonical skill id 維持 `libro-wcag`。
 - 新機制優先避免複製多份核心 contract；若必須複製，需補一致性檢查。
 - Claude plugin / marketplace 與 Gemini extension 機制是否可正式採用，仍需先做手動驗證。
+- 使用者主路徑應優先是簡短指令，而不是 Python 腳本檔名。
+
+## 新主線：Unified CLI + Simple Install
+
+目標：讓 `Claude`、`Gemini`、`Copilot` 使用者都能用一組簡短命令完成安裝與驗證，並讓 repo 首頁優先呈現這條路。
+
+### 實體檔案 TODO
+
+- [ ] 新增 `scripts/libro.py`
+- [ ] 新增 `scripts/libro.ps1`
+- [ ] 新增 `scripts/libro.sh`
+- [ ] 更新 `README.md`，改成以 unified CLI 為主的 quick start
+- [ ] 更新 `README.en.md`，改成以 unified CLI 為主的 quick start
+- [ ] 更新 `skills/libro-wcag/adapters/claude/usage-example.md`
+- [ ] 更新 `skills/libro-wcag/adapters/gemini/usage-example.md`
+- [ ] 更新 `skills/libro-wcag/adapters/copilot/usage-example.md`
+- [ ] 視需要更新 `skills/libro-wcag/adapters/openai-codex/usage-example.md`
+- [ ] 新增 unified CLI contract tests 到 `skills/libro-wcag/scripts/tests/test_repo_scripts.py`
+- [ ] 新增 unified CLI / README 靜態檢查到 `skills/libro-wcag/scripts/tests/test_repo_contracts.py`
+
+### CLI 功能範圍
+
+- [ ] `init --ai <agent>`：安裝 skill
+- [ ] `doctor --ai <agent>`：驗證安裝
+- [ ] `remove --ai <agent>`：移除安裝
+- [ ] 支援 `claude`、`gemini`、`copilot`、`codex`、`all`
+- [ ] 支援 `--workspace-root`
+- [ ] 支援 `--emit-mcp-config`
+- [ ] 支援 `--dest`
+- [ ] 支援 `--force`
+
+### 文件目標
+
+- [ ] README 首屏只保留「安裝」「驗證」「Claude repo-open / plugin」「進階選項入口」
+- [ ] 將 bootstrap / reusable workflow / MCP / submodule 等收斂到 secondary sections
+- [ ] 對三大 agent 提供最短指令示例
+- [ ] 明確標出 `Claude`、`Gemini`、`Copilot` 的最推薦安裝路徑
+
+## Claude Repo-Open 體驗
+
+目標：repo 被 Claude 開啟後，盡量不必先跑 installer 就能發現 `libro-wcag`。
+
+### 實體檔案 TODO
+
+- [ ] 新增 `.claude/skills/libro-wcag/SKILL.md`
+- [ ] 規劃 `.claude/skills/libro-wcag/SKILL.md` 與 `skills/libro-wcag/SKILL.md` 的同步策略
+- [ ] 新增一致性檢查測試到 `skills/libro-wcag/scripts/tests/test_repo_contracts.py`
+- [ ] 更新 `README.md`
+- [ ] 更新 `README.en.md`
+
+### 手動驗證 TODO
+
+- [ ] 驗證 clone repo 後 Claude 可直接發現 `.claude/skills/libro-wcag/SKILL.md`
+- [ ] 驗證與 `.claude-plugin/` 路徑並存時的優先順序與 namespace 行為
 
 ## B. Gemini Workspace Skill
 
@@ -197,6 +256,8 @@
 
 ## 文件同步原則
 
+- [ ] 若新增 `scripts/libro.py`，需同步檢查 `README.md`、`README.en.md` 與各 agent adapter 文件
+- [ ] 若新增 `.claude/skills/libro-wcag/SKILL.md`，需同步檢查 `skills/libro-wcag/SKILL.md`
 - [ ] 若新增 `.gemini/skills/libro-wcag/SKILL.md`，需同步檢查 `skills/libro-wcag/SKILL.md`
 - [ ] 若新增 `.claude-plugin/plugin.json`，需同步檢查 `pyproject.toml` 版本
 - [ ] 若新增 reusable workflow，需同步更新 `README.md` 與 `README.en.md`
