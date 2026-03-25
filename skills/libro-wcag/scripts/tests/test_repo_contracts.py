@@ -21,15 +21,15 @@ class RepoContractTests(unittest.TestCase):
 
     def test_readme_covers_installation_validation_and_testing_plan(self) -> None:
         content = self._read(self.repo_root / 'README.md')
-        self.assertIn('install-agent.py --agent codex', content)
-        self.assertIn('doctor-agent.py --agent codex', content)
-        self.assertIn('uninstall-agent.py --agent codex', content)
+        self.assertIn('libro.py install claude', content)
+        self.assertIn('libro.py doctor claude', content)
+        self.assertIn('libro.py remove claude', content)
         self.assertIn('TESTING-PLAN.md', content)
         self.assertIn('$libro-wcag', content)
         self.assertIn('scripts/bootstrap.sh', content)
         self.assertIn('scripts/bootstrap.ps1', content)
         self.assertIn('/plugin install libro-wcag@libro-wcag-marketplace', content)
-        self.assertIn('--workspace-root', content)
+        self.assertIn('.claude/skills/libro-wcag/SKILL.md', content)
 
     def test_testing_plan_tracks_matrix_mapping_and_gaps(self) -> None:
         content = self._read(self.repo_root / 'TESTING-PLAN.md')
@@ -40,14 +40,28 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('Scripted Manual', content)
         self.assertIn('Automated', content)
 
-    def test_agent_installation_expansion_todo_tracks_workspace_plugin_and_mcp_paths(self) -> None:
+    def test_agent_installation_expansion_todo_tracks_unified_cli_and_workspace_paths(self) -> None:
         content = self._read(self.repo_root / 'docs' / 'automations' / 'agent-installation-expansion-todo.md')
+        self.assertIn('scripts/libro.py', content)
+        self.assertIn('scripts/libro.ps1', content)
+        self.assertIn('scripts/libro.sh', content)
+        self.assertIn('.claude/skills/libro-wcag/SKILL.md', content)
         self.assertIn('.gemini/skills/libro-wcag/SKILL.md', content)
         self.assertIn('.claude-plugin/plugin.json', content)
         self.assertIn('.claude-plugin/marketplace.json', content)
         self.assertIn('mcp-server/server.py', content)
         self.assertIn('.github/workflows/install-skill.yml', content)
-        self.assertIn('vscode-extension/package.json', content)
+
+    def test_claude_workspace_skill_exists_and_tracks_core_contract(self) -> None:
+        core_skill = self._read(self.skill_root / 'SKILL.md')
+        workspace_skill = self._read(self.repo_root / '.claude' / 'skills' / 'libro-wcag' / 'SKILL.md')
+        self.assertIn('name: libro-wcag', workspace_skill)
+        self.assertIn('Claude-specific note', workspace_skill)
+        self.assertIn('execution_mode', workspace_skill)
+        self.assertIn('safe first-pass remediations', workspace_skill)
+        self.assertIn('Use `adapters/claude/prompt-template.md`', workspace_skill)
+        self.assertIn('JSON top-level keys', workspace_skill)
+        self.assertIn('JSON top-level keys', core_skill)
 
     def test_gemini_workspace_skill_exists_and_tracks_core_contract(self) -> None:
         core_skill = self._read(self.skill_root / 'SKILL.md')
@@ -214,6 +228,7 @@ class RepoContractTests(unittest.TestCase):
             '.github/workflows/test.yml',
             '.github/workflows/install-skill.yml',
             '.gitignore',
+            '.claude/skills/libro-wcag/SKILL.md',
             '.claude-plugin/plugin.json',
             '.claude-plugin/marketplace.json',
             '.gemini/skills/libro-wcag/SKILL.md',
@@ -237,6 +252,9 @@ class RepoContractTests(unittest.TestCase):
             'docs/examples/gemini/settings.mcp.sample.json',
             'docs/testing/testing-playbook.md',
             'pyproject.toml',
+            'scripts/libro.ps1',
+            'scripts/libro.py',
+            'scripts/libro.sh',
             'scripts/doctor-agent.py',
             'scripts/bootstrap.ps1',
             'scripts/bootstrap.sh',
