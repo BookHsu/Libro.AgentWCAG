@@ -26,9 +26,9 @@ python --version
 ```
 
 ```sh
-brew install python3
-sudo apt update && sudo apt install python3
-winget install Python.Python.3.12
+brew install python3                         # macOS
+sudo apt update && sudo apt install python3 # Ubuntu / Debian
+winget install Python.Python.3.12           # Windows
 ```
 
 ## Install
