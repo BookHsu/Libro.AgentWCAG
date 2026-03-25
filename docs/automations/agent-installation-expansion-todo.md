@@ -42,9 +42,9 @@
 
 ### CLI 功能範圍
 
-- [ ] `init --ai <agent>`：安裝 skill
-- [ ] `doctor --ai <agent>`：驗證安裝
-- [ ] `remove --ai <agent>`：移除安裝
+- [ ] `install <agent>`：安裝 skill
+- [ ] `doctor <agent>`：驗證安裝
+- [ ] `remove <agent>`：移除安裝
 - [ ] 支援 `claude`、`gemini`、`copilot`、`codex`、`all`
 - [ ] 支援 `--workspace-root`
 - [ ] 支援 `--emit-mcp-config`
