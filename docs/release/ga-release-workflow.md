@@ -14,7 +14,7 @@ Use this workflow when publishing a formal GitHub release for `Libro.AgentWCAG`.
 2. Finalize the matching `CHANGELOG.md` section.
 3. Validate release assets and clean smoke locally when needed.
 4. Create and push tag `vX.Y.Z`.
-5. Let `release.yml` perform validate -> package -> smoke -> publish.
+5. Let `release.yml` perform validate -> package -> smoke -> GitHub Release publish -> npm publish.
 6. If the release was created in the GitHub UI after the tag already existed, publishing the release also triggers the same asset pipeline.
 
 ## Pipeline Stages
@@ -34,6 +34,10 @@ Use this workflow when publishing a formal GitHub release for `Libro.AgentWCAG`.
 4. `publish-release`
    - runs only after `package-release` and `clean-release-smoke` succeed
    - publishes all staged release assets as the GitHub Release payload
+5. `publish-npm`
+   - runs only after `validate` and `clean-release-smoke` succeed
+   - publishes `librowcag-cli` to npm
+   - uses GitHub Actions OIDC / npm trusted publishing rather than a stored `NPM_TOKEN`
 
 ## Post-Publish Verification
 

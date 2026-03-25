@@ -43,7 +43,8 @@ Use this playbook as the primary release-readiness document for `libro-wcag`.
 - Ensure `CHANGELOG.md` has a dated version section with highlights and known limits.
 - Follow the version bump order in `docs/release/ga-release-workflow.md`: update `pyproject.toml`, finalize `CHANGELOG.md`, then create tag `vX.Y.Z`.
 - Confirm all blocking defects are closed or explicitly listed as known limitations.
-- Confirm `.github/workflows/release.yml` still uses the documented validate -> package-release -> clean-release-smoke -> publish-release gate order.
+- Confirm `.github/workflows/release.yml` still uses the documented validate -> package-release -> clean-release-smoke -> publish-release -> publish-npm gate order.
+- Confirm npm trusted publishing is configured for `librowcag-cli`; the release workflow should not require a stored `NPM_TOKEN`.
 - For significant remediation changes, attach baseline refresh evidence and approver context.
 - Run baseline governance checks described in `docs/release/baseline-governance.md`.
 - Run advanced CI gate reviews described in `docs/release/advanced-ci-gates.md`.
