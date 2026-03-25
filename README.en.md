@@ -2,7 +2,7 @@
 
 Libro.AgentWCAG is a cross-agent WCAG web accessibility skill repository. It uses one vendor-neutral contract so Codex, Claude, Gemini, and Copilot can audit accessibility, propose fixes, and apply safe first-pass fixes in a consistent way when explicitly authorized.
 
-## Why Libro.AgentWCAG
+## Purpose
 
 The hard part of web accessibility work is usually not finding a tool. It is keeping workflows, outputs, and remediation expectations consistent across different agents and teams. Libro.AgentWCAG turns that into an installable, verifiable, releasable workflow.
 
@@ -17,20 +17,7 @@ The hard part of web accessibility work is usually not finding a tool. It is kee
 - Apply safe first-pass fixes to supported local files when modification is explicitly requested
 - Keep cross-agent accessibility work aligned across teams
 
-## Supported AI Agents
-
-- Codex
-- Claude
-- Gemini
-- Copilot
-
-## Three Working Modes
-
-- `audit-only`: find issues only
-- `suggest-only`: find issues and propose fixes without editing files
-- `apply-fixes`: apply safe fixes to supported local files when explicitly authorized
-
-## Quick Start
+## Install
 
 ```powershell
 git clone https://github.com/BookHsu/Libro.AgentWCAG.git
@@ -72,130 +59,24 @@ If you prefer wrappers:
 ./scripts/libro.sh doctor claude
 ```
 
-## How To Use The Skill
+## Use
 
 Libro.AgentWCAG is not just a single command. It is a shared skill contract that different AI agents can follow. In practice, you choose whether you want to audit only, get suggestions, or apply fixes.
 
-### In Codex
+Three working modes:
 
-After installation, invoke:
+- `audit-only`: find issues only
+- `suggest-only`: find issues and propose fixes without editing files
+- `apply-fixes`: apply safe fixes to supported local files when explicitly authorized
+
+After installation, Codex can invoke:
 
 ```text
 $libro-wcag
 ```
-
-Common ways to use it:
-
-- Ask it to inspect a page or component for WCAG issues
-- Ask it to report issues only without changing files
-- Ask it to propose fixes before you decide whether to apply them
-- Ask it to apply safe fixes to supported local files only when you explicitly want changes
-
-### In Other Agents
-
-- `Claude`: load `skills/libro-wcag/adapters/claude/prompt-template.md`
-- `Gemini`: load `skills/libro-wcag/adapters/gemini/prompt-template.md`
-- `Copilot`: load `skills/libro-wcag/adapters/copilot/prompt-template.md`
-
-The usual approach is to place the adapter's `prompt-template.md` into the instruction entrypoint for that platform, such as a project prompt, system prompt, custom instruction, or agent wrapper.
-
-### Recommended Interaction Pattern
 
 - Start with `audit-only` when you want a clean accessibility review
 - Use `suggest-only` when you want remediation ideas before changing files
 - Move to `apply-fixes` only when you want the changes carried out
 
 This keeps review and modification separate, which makes the workflow easier to control.
-
-## Install From A Release
-
-If you are consuming a packaged release, install directly from release assets:
-
-```powershell
-pwsh -File .\scripts\install-latest.ps1 -ReleaseBase .\dist\release -Agent codex
-```
-
-Or install from a published GitHub Release:
-
-```powershell
-pwsh -File .\scripts\install-latest.ps1 -ReleaseBase https://github.com/<owner>/<repo>/releases/download/vX.Y.Z -Agent codex
-```
-
-The install flow automatically verifies `latest-release.json`, the release manifest, and `sha256`, then runs an integrity check after installation.
-
-## Release readiness
-
-- `product_version` comes from `pyproject.toml`
-- `source_revision` can be injected through `LIBRO_AGENTWCAG_SOURCE_REVISION`
-- release packaging is handled by `scripts/package-release.py`
-- key assets include `libro-wcag-<version>-all-in-one.zip` and `libro-wcag-<version>-sha256sums.txt`
-- the release-consumer shortest path uses `install-latest.ps1` and `run-release-adoption-smoke.py`
-- Release-consumer shortest path and Release-consumer quickstart are documented in `docs/release/adoption-smoke-guide.md`
-- release and rollback references live in `docs/release/ga-release-workflow.md`, `docs/release/ga-definition.md`, and `docs/release/rollback-playbook.md`
-- the main operator guide is `docs/release/release-playbook.md`
-- see these docs for scope, prompts, resilient execution, CI examples, and scanner governance:
-- `docs/release/apply-fixes-scope.md`
-- `docs/release/prompt-invocation-templates.md`
-- `docs/release/resilient-run-patterns.md`
-- `docs/examples/ci/github-actions-wcag-ci-sample.yml`
-- `docs/release/real-scanner-ci-lane.md`
-- `docs/release/baseline-governance.md`
-- `docs/release/advanced-ci-gates.md`
-- policy bundle material lives under `docs/policy-bundles/`
-- use `python .\scripts\doctor-agent.py --agent codex --verify-manifest-integrity` for post-install integrity checks
-- use `python .\scripts\libro.py doctor claude --verify-manifest-integrity` for post-install integrity checks
-
-## Where It Fits Best
-
-- Teams that want accessibility review inside AI-assisted workflows
-- Teams that need one shared contract across multiple agents
-- Projects that need installable, verifiable, versioned skill delivery
-- Adoption paths that want to start with safe, predictable remediation
-
-## Project Structure
-
-- `skills/libro-wcag`: installable skill payload
-- `skills/libro-wcag/adapters/openai-codex`: Codex adapter
-- `skills/libro-wcag/adapters/claude`: Claude adapter
-- `skills/libro-wcag/adapters/gemini`: Gemini adapter
-- `skills/libro-wcag/adapters/copilot`: Copilot adapter
-- `scripts/install-agent.py`: installer
-- `scripts/doctor-agent.py`: health check and integrity verification
-- `scripts/uninstall-agent.py`: uninstaller
-- `scripts/libro.py`: unified CLI entrypoint
-
-## Common Commands
-
-Install:
-
-```powershell
-python .\scripts\libro.py install claude
-```
-
-Verify:
-
-```powershell
-python .\scripts\libro.py doctor claude --verify-manifest-integrity
-```
-
-Uninstall:
-
-```powershell
-python .\scripts\libro.py remove claude
-```
-
-Local validation:
-
-```powershell
-python -m unittest discover -s skills/libro-wcag/scripts/tests -p "test_*.py"
-python scripts/validate_skill.py skills/libro-wcag --validate-policy-bundles
-```
-
-## Documentation
-
-- Release workflow: [docs/release/ga-release-workflow.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/ga-release-workflow.md)
-- Release playbook: [docs/release/release-playbook.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/release-playbook.md)
-- Install and smoke guide: [docs/release/adoption-smoke-guide.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/adoption-smoke-guide.md)
-- `apply-fixes` scope: [docs/release/apply-fixes-scope.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/apply-fixes-scope.md)
-- Supported environments: [docs/release/supported-environments.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/supported-environments.md)
-- Test plan: [TESTING-PLAN.md](/c:/Source/Libro.AgentWCAG.clean/TESTING-PLAN.md)

@@ -21,10 +21,12 @@ class RepoContractTests(unittest.TestCase):
 
     def test_readme_covers_installation_validation_and_testing_plan(self) -> None:
         content = self._read(self.repo_root / 'README.md')
+        self.assertIn('## 專案的用途與說明', content)
+        self.assertIn('## 安裝方式', content)
+        self.assertIn('## 使用方式', content)
         self.assertIn('libro.py install claude', content)
         self.assertIn('libro.py doctor claude', content)
         self.assertIn('libro.py remove claude', content)
-        self.assertIn('TESTING-PLAN.md', content)
         self.assertIn('$libro-wcag', content)
         self.assertIn('只找出問題', content)
         self.assertIn('提出修正建議，但不改檔', content)
