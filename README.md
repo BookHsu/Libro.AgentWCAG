@@ -97,3 +97,7 @@ Apply fixes
 - 確認要落地修改時，再使用 `apply-fixes`
 
 這樣可以先把問題看清楚，再進入修改流程，避免過早自動改動。
+
+## License
+
+MIT. See [LICENSE](LICENSE).

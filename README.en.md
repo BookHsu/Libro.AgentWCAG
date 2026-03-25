@@ -97,3 +97,7 @@ Use apply-fixes mode to review src/page.html and apply safe fixes to supported l
 - Move to `apply-fixes` only when you want the changes carried out
 
 This keeps review and modification separate, which makes the workflow easier to control.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
