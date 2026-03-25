@@ -21,15 +21,53 @@ class RepoContractTests(unittest.TestCase):
 
     def test_readme_covers_installation_validation_and_testing_plan(self) -> None:
         content = self._read(self.repo_root / 'README.md')
-        self.assertIn('install-agent.py --agent codex', content)
-        self.assertIn('doctor-agent.py --agent codex', content)
-        self.assertIn('uninstall-agent.py --agent codex', content)
-        self.assertIn('TESTING-PLAN.md', content)
-        self.assertIn('$libro-wcag', content)
-        self.assertIn('scripts/bootstrap.sh', content)
-        self.assertIn('scripts/bootstrap.ps1', content)
+        self.assertIn('## 專案的用途與說明', content)
+        self.assertIn('## 前置需求', content)
+        self.assertIn('## 安裝方式', content)
+        self.assertIn('## 使用方式', content)
+        self.assertIn('python --version', content)
+        self.assertIn('brew install python3                         # macOS', content)
+        self.assertIn('sudo apt update && sudo apt install python3 # Ubuntu / Debian', content)
+        self.assertIn('winget install Python.Python.3.12           # Windows', content)
+        self.assertIn('### Claude Marketplace (Claude Code)', content)
+        self.assertIn('### npm CLI', content)
+        self.assertIn('### Clone + CLI', content)
+        self.assertIn('/plugin marketplace add BookHsu/Libro.AgentWCAG', content)
         self.assertIn('/plugin install libro-wcag@libro-wcag-marketplace', content)
-        self.assertIn('--workspace-root', content)
+        self.assertIn('npm install -g librowcag-cli', content)
+        self.assertIn('libro install claude   # Claude Code', content)
+        self.assertIn('libro install gemini   # Gemini CLI', content)
+        self.assertIn('libro install copilot  # Copilot', content)
+        self.assertIn('libro install codex    # Codex', content)
+        self.assertIn('libro doctor claude    # verify Claude installation', content)
+        self.assertIn('libro.py install claude', content)
+        self.assertIn('libro.py doctor claude', content)
+        self.assertIn('libro.py remove claude', content)
+        self.assertIn('| 模式 | 會找問題 | 會給修正建議 | 會改檔 |', content)
+        self.assertIn('| `audit-only` | 是 | 否 | 否 |', content)
+        self.assertIn('| `suggest-only` | 是 | 是 | 否 |', content)
+        self.assertIn('| `apply-fixes` | 是 | 是 | 是，僅限支援的本機檔案 |', content)
+        self.assertIn('使用範例：', content)
+        self.assertIn('請用 audit-only 模式檢查 https://example.com，WCAG 2.1 AA。', content)
+        self.assertIn('請用 suggest-only 模式檢查 src/page.html，並提供修正建議，但不要改檔。', content)
+        self.assertIn('請用 apply-fixes 模式檢查 src/page.html，並在安全範圍內直接修正可處理的問題。', content)
+        self.assertIn('## License', content)
+        self.assertIn('MIT. See [LICENSE](LICENSE).', content)
+
+    def test_package_json_exposes_global_libro_cli(self) -> None:
+        payload = json.loads((self.repo_root / 'package.json').read_text(encoding='utf-8'))
+        self.assertEqual(payload['name'], 'librowcag-cli')
+        self.assertEqual(payload['version'], tomllib.loads((self.repo_root / 'pyproject.toml').read_text(encoding='utf-8'))['project']['version'])
+        self.assertEqual(payload['bin']['libro'], 'bin/libro.js')
+        self.assertIn('scripts/*.py', payload['files'])
+        self.assertIn('scripts/*.ps1', payload['files'])
+        self.assertIn('skills/libro-wcag/scripts/*.py', payload['files'])
+
+    def test_npmignore_excludes_tests_and_python_cache_from_published_cli(self) -> None:
+        content = self._read(self.repo_root / '.npmignore')
+        self.assertIn('**/__pycache__/', content)
+        self.assertIn('**/*.pyc', content)
+        self.assertIn('skills/libro-wcag/scripts/tests/', content)
 
     def test_testing_plan_tracks_matrix_mapping_and_gaps(self) -> None:
         content = self._read(self.repo_root / 'TESTING-PLAN.md')
@@ -40,14 +78,28 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('Scripted Manual', content)
         self.assertIn('Automated', content)
 
-    def test_agent_installation_expansion_todo_tracks_workspace_plugin_and_mcp_paths(self) -> None:
+    def test_agent_installation_expansion_todo_tracks_unified_cli_and_workspace_paths(self) -> None:
         content = self._read(self.repo_root / 'docs' / 'automations' / 'agent-installation-expansion-todo.md')
+        self.assertIn('scripts/libro.py', content)
+        self.assertIn('scripts/libro.ps1', content)
+        self.assertIn('scripts/libro.sh', content)
+        self.assertIn('.claude/skills/libro-wcag/SKILL.md', content)
         self.assertIn('.gemini/skills/libro-wcag/SKILL.md', content)
         self.assertIn('.claude-plugin/plugin.json', content)
         self.assertIn('.claude-plugin/marketplace.json', content)
         self.assertIn('mcp-server/server.py', content)
         self.assertIn('.github/workflows/install-skill.yml', content)
-        self.assertIn('vscode-extension/package.json', content)
+
+    def test_claude_workspace_skill_exists_and_tracks_core_contract(self) -> None:
+        core_skill = self._read(self.skill_root / 'SKILL.md')
+        workspace_skill = self._read(self.repo_root / '.claude' / 'skills' / 'libro-wcag' / 'SKILL.md')
+        self.assertIn('name: libro-wcag', workspace_skill)
+        self.assertIn('Claude-specific note', workspace_skill)
+        self.assertIn('execution_mode', workspace_skill)
+        self.assertIn('safe first-pass remediations', workspace_skill)
+        self.assertIn('Use `adapters/claude/prompt-template.md`', workspace_skill)
+        self.assertIn('JSON top-level keys', workspace_skill)
+        self.assertIn('JSON top-level keys', core_skill)
 
     def test_gemini_workspace_skill_exists_and_tracks_core_contract(self) -> None:
         core_skill = self._read(self.skill_root / 'SKILL.md')
@@ -90,7 +142,7 @@ class RepoContractTests(unittest.TestCase):
         reusable = self._read(self.repo_root / 'docs' / 'examples' / 'ci' / 'install-skill-consumer-sample.yml')
         gh_release = self._read(self.repo_root / 'docs' / 'examples' / 'ci' / 'gh-release-download-sample.md')
         self.assertIn('.vendor/libro-wcag', add_dir)
-        self.assertIn('uses: BookHsu/Libro.AgentWCAG.clean/.github/workflows/install-skill.yml@v1', reusable)
+        self.assertIn('uses: BookHsu/Libro.AgentWCAG/.github/workflows/install-skill.yml@v1', reusable)
         self.assertIn('gh release download', gh_release)
         self.assertIn('install-agent.py --agent claude', gh_release)
 
@@ -108,7 +160,7 @@ class RepoContractTests(unittest.TestCase):
         self.assertEqual(payload['license'], 'MIT')
         self.assertIn('version', payload)
         self.assertIn('description', payload)
-        self.assertEqual(payload['repository'], 'https://github.com/BookHsu/Libro.AgentWCAG.clean')
+        self.assertEqual(payload['repository'], 'https://github.com/BookHsu/Libro.AgentWCAG')
         self.assertIn('mcpServers', payload)
         self.assertIn('libro-wcag', payload['mcpServers'])
 
@@ -214,6 +266,7 @@ class RepoContractTests(unittest.TestCase):
             '.github/workflows/test.yml',
             '.github/workflows/install-skill.yml',
             '.gitignore',
+            '.claude/skills/libro-wcag/SKILL.md',
             '.claude-plugin/plugin.json',
             '.claude-plugin/marketplace.json',
             '.gemini/skills/libro-wcag/SKILL.md',
@@ -222,6 +275,7 @@ class RepoContractTests(unittest.TestCase):
             'mcp-server/tools/audit_page.py',
             'mcp-server/tools/suggest_fixes.py',
             'mcp-server/tools/normalize_report.py',
+            'bin/libro.js',
             'LICENSE',
             'README.md',
             'SKILL-TODO.md',
@@ -236,7 +290,11 @@ class RepoContractTests(unittest.TestCase):
             'docs/examples/copilot/mcp.sample.json',
             'docs/examples/gemini/settings.mcp.sample.json',
             'docs/testing/testing-playbook.md',
+            'package.json',
             'pyproject.toml',
+            'scripts/libro.ps1',
+            'scripts/libro.py',
+            'scripts/libro.sh',
             'scripts/doctor-agent.py',
             'scripts/bootstrap.ps1',
             'scripts/bootstrap.sh',

@@ -8,6 +8,7 @@ Use this note to keep release publishing and PR governance aligned for this repo
   - tag push for `v*`
   - manual `workflow_dispatch`
   - GitHub Release `published`
+- npm publishing should be configured through npm trusted publishing for this repository, so release automation can publish `librowcag-cli` without storing an `NPM_TOKEN`.
 - The `published` trigger matters when an operator creates or publishes a release from the GitHub UI. Without that trigger, a manually published release can exist without the packaged zip assets.
 - Published release assets should include:
   - `libro-wcag-<version>-codex.zip`

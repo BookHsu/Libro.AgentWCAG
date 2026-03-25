@@ -3,15 +3,15 @@
 ## Install
 
 ```powershell
-python .\scripts\install-agent.py --agent claude
-python .\scripts\doctor-agent.py --agent claude
+python .\scripts\libro.py install claude
+python .\scripts\libro.py doctor claude
 ```
 
-For MCP-based Claude workspace integration, install dependencies and use the sample config in `docs/examples/claude/mcp.sample.json`. You can also emit a local config directly:
+If you need workspace MCP, install dependencies and use the sample config in `docs/examples/claude/mcp.sample.json`. You can also emit a local config directly:
 
 ```powershell
 python -m pip install -r .\mcp-server\requirements.txt
-python .\scripts\install-agent.py --agent claude --workspace-root . --emit-mcp-config claude
+python .\scripts\libro.py install claude --workspace-root . --emit-mcp-config claude
 ```
 
 ## Use

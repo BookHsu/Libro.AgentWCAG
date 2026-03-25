@@ -1,0 +1,12 @@
+**/__pycache__/
+**/*.pyc
+skills/libro-wcag/scripts/tests/
+docs/
+.github/
+.codex/
+.claude/
+.gemini/
+out/
+dist/
+.tmp/
+.tmp-test/
