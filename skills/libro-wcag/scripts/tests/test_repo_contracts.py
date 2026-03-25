@@ -27,10 +27,10 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('libro.py install claude', content)
         self.assertIn('libro.py doctor claude', content)
         self.assertIn('libro.py remove claude', content)
-        self.assertIn('$libro-wcag', content)
-        self.assertIn('只找出問題', content)
-        self.assertIn('提出修正建議，但不改檔', content)
-        self.assertIn('對支援的本機檔案套用安全修正', content)
+        self.assertIn('| 模式 | 會找問題 | 會給修正建議 | 會改檔 |', content)
+        self.assertIn('| `audit-only` | 是 | 否 | 否 |', content)
+        self.assertIn('| `suggest-only` | 是 | 是 | 否 |', content)
+        self.assertIn('| `apply-fixes` | 是 | 是 | 是，僅限支援的本機檔案 |', content)
 
     def test_testing_plan_tracks_matrix_mapping_and_gaps(self) -> None:
         content = self._read(self.repo_root / 'TESTING-PLAN.md')
