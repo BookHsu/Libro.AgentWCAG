@@ -1,7 +1,7 @@
 param(
   [ValidateSet('codex','claude','gemini','copilot','all')]
   [string]$Agent,
-  [string]$Repo = 'BookHsu/Libro.AgentWCAG.clean',
+  [string]$Repo = 'BookHsu/Libro.AgentWCAG',
   [string]$Ref = 'master',
   [string]$ArchivePath,
   [string]$Dest,

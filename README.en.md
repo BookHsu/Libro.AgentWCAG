@@ -32,21 +32,11 @@ The hard part of web accessibility work is usually not finding a tool. It is kee
 
 ## Quick Start
 
-### Shortest Path
-
 ```powershell
-git clone https://github.com/BookHsu/Libro.AgentWCAG.clean.git
-cd Libro.AgentWCAG.clean
+git clone https://github.com/BookHsu/Libro.AgentWCAG.git
+cd Libro.AgentWCAG
 python .\scripts\libro.py install claude
 python .\scripts\libro.py doctor claude
-```
-
-For installation into the target skill location, the same commands work across the main agents:
-
-```powershell
-python .\scripts\libro.py install claude
-python .\scripts\libro.py install gemini
-python .\scripts\libro.py install copilot
 ```
 
 Verification and removal:
@@ -87,15 +77,15 @@ If you prefer wrappers:
 If you do not want to clone the repository first, bootstrap directly from GitHub:
 
 ```sh
-curl -sL https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scripts/bootstrap.sh | sh -s -- --agent claude
+curl -sL https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG/master/scripts/bootstrap.sh | sh -s -- --agent claude
 ```
 
 ```powershell
-irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scripts/bootstrap.ps1 | iex
+irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG/master/scripts/bootstrap.ps1 | iex
 ```
 
 ```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scripts/bootstrap.ps1))) -Agent claude
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG/master/scripts/bootstrap.ps1))) -Agent claude
 ```
 
 If you need workspace MCP, `mcp-server/server.py` provides one `libro-wcag` MCP server for Claude, Copilot, and Gemini.

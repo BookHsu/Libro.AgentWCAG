@@ -40,7 +40,7 @@ class RepoScriptTests(unittest.TestCase):
                 if '.git' in path.parts or '.tmp-test' in path.parts or '__pycache__' in path.parts:
                     continue
                 relative = path.relative_to(self.repo_root)
-                archive.write(path, Path('Libro.AgentWCAG.clean-master') / relative)
+                archive.write(path, Path('Libro.AgentWCAG-master') / relative)
         return archive_path
 
     def _git_head_revision(self) -> str:
@@ -312,7 +312,7 @@ class RepoScriptTests(unittest.TestCase):
 
     def test_bootstrap_ps1_downloads_repo_archive_and_runs_install_and_doctor(self) -> None:
         wrapper = (self.repo_root / 'scripts' / 'bootstrap.ps1').read_text(encoding='utf-8')
-        self.assertIn("BookHsu/Libro.AgentWCAG.clean", wrapper)
+        self.assertIn("BookHsu/Libro.AgentWCAG", wrapper)
         self.assertIn("archive/$Ref.zip", wrapper)
         self.assertIn('Resolve-SourceRevision', wrapper)
         self.assertIn('LIBRO_AGENTWCAG_SOURCE_REVISION', wrapper)
@@ -324,7 +324,7 @@ class RepoScriptTests(unittest.TestCase):
 
     def test_bootstrap_sh_downloads_repo_archive_and_runs_install_and_doctor(self) -> None:
         wrapper = (self.repo_root / 'scripts' / 'bootstrap.sh').read_text(encoding='utf-8')
-        self.assertIn('BookHsu/Libro.AgentWCAG.clean', wrapper)
+        self.assertIn('BookHsu/Libro.AgentWCAG', wrapper)
         self.assertIn('archive/{ref}.zip', wrapper)
         self.assertIn('--archive-path', wrapper)
         self.assertIn('LIBRO_AGENTWCAG_SOURCE_REVISION', wrapper)

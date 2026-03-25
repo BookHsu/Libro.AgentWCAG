@@ -6,8 +6,8 @@
     "name": "Book Hsu",
     "url": "https://github.com/BookHsu"
   },
-  "homepage": "https://github.com/BookHsu/Libro.AgentWCAG.clean",
-  "repository": "https://github.com/BookHsu/Libro.AgentWCAG.clean",
+  "homepage": "https://github.com/BookHsu/Libro.AgentWCAG",
+  "repository": "https://github.com/BookHsu/Libro.AgentWCAG",
   "license": "MIT",
   "keywords": ["wcag", "accessibility", "a11y", "audit", "remediation"],
   "mcpServers": {
