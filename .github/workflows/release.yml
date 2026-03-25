@@ -205,4 +205,4 @@ jobs:
           python-version: ${{ env.LIBRO_RELEASE_PYTHON_VERSION }}
 
       - name: Publish npm package
-        run: npm publish
+        run: npm publish --provenance --access public
