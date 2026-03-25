@@ -50,17 +50,17 @@ python .\scripts\install-agent.py --agent all
 如果你不想先 clone repo，也可以直接用 GitHub bootstrap：
 
 ```sh
-curl -sL https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scripts/bootstrap.sh | sh -s -- --agent claude
+curl -sL https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG/master/scripts/bootstrap.sh | sh -s -- --agent claude
 ```
 
 ```powershell
-irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scripts/bootstrap.ps1 | iex
+irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG/master/scripts/bootstrap.ps1 | iex
 ```
 
 如果你想在 PowerShell 直接帶參數：
 
 ```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scripts/bootstrap.ps1))) -Agent claude
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG/master/scripts/bootstrap.ps1))) -Agent claude
 ```
 
 `bootstrap.sh` 支援 `--agent / --repo / --ref / --dest / --force`，其中 `--agent` 為必填。
@@ -71,7 +71,7 @@ irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scrip
 如果你使用 Claude Code，也可以直接透過 plugin marketplace 安裝：
 
 ```text
-/plugin marketplace add BookHsu/Libro.AgentWCAG.clean
+/plugin marketplace add BookHsu/Libro.AgentWCAG
 /plugin install libro-wcag@libro-wcag-marketplace
 ```
 
@@ -79,7 +79,7 @@ irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scrip
 
 ### Gemini Workspace Skill
 
-如果你直接在 Gemini workspace 中開啟這個 repo，Gemini 可以從 [SKILL.md](/c:/Source/Libro.AgentWCAG.clean/.gemini/skills/libro-wcag/SKILL.md) 自動發現 `libro-wcag`。
+如果你直接在 Gemini workspace 中開啟這個 repo，Gemini 可以從 [SKILL.md](/c:/Source/Libro.AgentWCAG/.gemini/skills/libro-wcag/SKILL.md) 自動發現 `libro-wcag`。
 
 如果你要把 skill 安裝到其他專案工作區，也可以使用：
 
@@ -92,29 +92,29 @@ python .\scripts\install-agent.py --agent gemini --workspace-root .
 如果你要把 skill 以 vendor 方式帶進目標專案，可以使用：
 
 ```bash
-git submodule add https://github.com/BookHsu/Libro.AgentWCAG.clean.git .vendor/libro-wcag
+git submodule add https://github.com/BookHsu/Libro.AgentWCAG.git .vendor/libro-wcag
 claude --add-dir .vendor/libro-wcag
 ```
 
-持久化範例可參考 [settings.add-dir.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/claude/settings.add-dir.sample.json)。
+持久化範例可參考 [settings.add-dir.sample.json](/c:/Source/Libro.AgentWCAG/docs/examples/claude/settings.add-dir.sample.json)。
 
 ### GitHub Actions Reusable Workflow
 
-其他 repo 可以直接重用 [install-skill.yml](/c:/Source/Libro.AgentWCAG.clean/.github/workflows/install-skill.yml)：
+其他 repo 可以直接重用 [install-skill.yml](/c:/Source/Libro.AgentWCAG/.github/workflows/install-skill.yml)：
 
 ```yaml
 jobs:
   setup:
-    uses: BookHsu/Libro.AgentWCAG.clean/.github/workflows/install-skill.yml@v1
+    uses: BookHsu/Libro.AgentWCAG/.github/workflows/install-skill.yml@v1
     with:
       agent: claude
 ```
 
-完整範例可參考 [install-skill-consumer-sample.yml](/c:/Source/Libro.AgentWCAG.clean/docs/examples/ci/install-skill-consumer-sample.yml)。
+完整範例可參考 [install-skill-consumer-sample.yml](/c:/Source/Libro.AgentWCAG/docs/examples/ci/install-skill-consumer-sample.yml)。
 
 ### gh release download
 
-如果你偏好用 GitHub CLI 抓 release asset，可參考 [gh-release-download-sample.md](/c:/Source/Libro.AgentWCAG.clean/docs/examples/ci/gh-release-download-sample.md)。
+如果你偏好用 GitHub CLI 抓 release asset，可參考 [gh-release-download-sample.md](/c:/Source/Libro.AgentWCAG/docs/examples/ci/gh-release-download-sample.md)。
 
 ### MCP Server
 
@@ -128,9 +128,9 @@ python -m pip install -r .\mcp-server\requirements.txt
 
 sample config：
 
-- Claude: [mcp.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/claude/mcp.sample.json)
-- Copilot: [mcp.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/copilot/mcp.sample.json)
-- Gemini: [settings.mcp.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/gemini/settings.mcp.sample.json)
+- Claude: [mcp.sample.json](/c:/Source/Libro.AgentWCAG/docs/examples/claude/mcp.sample.json)
+- Copilot: [mcp.sample.json](/c:/Source/Libro.AgentWCAG/docs/examples/copilot/mcp.sample.json)
+- Gemini: [settings.mcp.sample.json](/c:/Source/Libro.AgentWCAG/docs/examples/gemini/settings.mcp.sample.json)
 
 如果你要直接在專案工作區產生對應設定，可使用：
 
@@ -276,13 +276,13 @@ python scripts/validate_skill.py skills/libro-wcag --validate-policy-bundles
 
 ## 文件入口
 
-- Release 流程：[docs/release/ga-release-workflow.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/ga-release-workflow.md)
-- 發佈操作手冊：[docs/release/release-playbook.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/release-playbook.md)
-- 安裝與 smoke 指引：[docs/release/adoption-smoke-guide.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/adoption-smoke-guide.md)
-- `apply-fixes` 範圍說明：[docs/release/apply-fixes-scope.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/apply-fixes-scope.md)
-- 支援環境：[docs/release/supported-environments.md](/c:/Source/Libro.AgentWCAG.clean/docs/release/supported-environments.md)
-- 測試計畫：[TESTING-PLAN.md](/c:/Source/Libro.AgentWCAG.clean/TESTING-PLAN.md)
+- Release 流程：[docs/release/ga-release-workflow.md](/c:/Source/Libro.AgentWCAG/docs/release/ga-release-workflow.md)
+- 發佈操作手冊：[docs/release/release-playbook.md](/c:/Source/Libro.AgentWCAG/docs/release/release-playbook.md)
+- 安裝與 smoke 指引：[docs/release/adoption-smoke-guide.md](/c:/Source/Libro.AgentWCAG/docs/release/adoption-smoke-guide.md)
+- `apply-fixes` 範圍說明：[docs/release/apply-fixes-scope.md](/c:/Source/Libro.AgentWCAG/docs/release/apply-fixes-scope.md)
+- 支援環境：[docs/release/supported-environments.md](/c:/Source/Libro.AgentWCAG/docs/release/supported-environments.md)
+- 測試計畫：[TESTING-PLAN.md](/c:/Source/Libro.AgentWCAG/TESTING-PLAN.md)
 
 ## 英文版
 
-- [README.en.md](/c:/Source/Libro.AgentWCAG.clean/README.en.md)
+- [README.en.md](/c:/Source/Libro.AgentWCAG/README.en.md)
