@@ -12,13 +12,13 @@ Before consumer smoke, stage versioned release assets:
 
 Expected release assets:
 
-- `libro-agent-wcag-<version>-codex.zip`
-- `libro-agent-wcag-<version>-claude.zip`
-- `libro-agent-wcag-<version>-gemini.zip`
-- `libro-agent-wcag-<version>-copilot.zip`
-- `libro-agent-wcag-<version>-all-in-one.zip`
-- `libro-agent-wcag-<version>-release-manifest.json`
-- `libro-agent-wcag-<version>-sha256sums.txt`
+- `libro-wcag-<version>-codex.zip`
+- `libro-wcag-<version>-claude.zip`
+- `libro-wcag-<version>-gemini.zip`
+- `libro-wcag-<version>-copilot.zip`
+- `libro-wcag-<version>-all-in-one.zip`
+- `libro-wcag-<version>-release-manifest.json`
+- `libro-wcag-<version>-sha256sums.txt`
 - `latest-release.json`
 
 ## Release Consumer Flow
@@ -28,7 +28,7 @@ Use the packaged bootstrap installers instead of repo-relative source paths:
 - `pwsh -File .\scripts\install-latest.ps1 -ReleaseBase .\dist\release -Agent codex`
 - `sh ./scripts/install-latest.sh --release-base ./dist/release --agent codex`
 
-Both flows support latest resolution through `latest-release.json` and pinned installs through `--version <semver>`. They must verify `libro-agent-wcag-<version>-sha256sums.txt` before invoking the packaged installer.
+Both flows support latest resolution through `latest-release.json` and pinned installs through `--version <semver>`. They must verify `libro-wcag-<version>-sha256sums.txt` before invoking the packaged installer.
 
 Clean-environment scripted smoke:
 
@@ -98,7 +98,7 @@ Use thin wrapper scripts to call:
 
 - `scripts/install-agent.py`
 - `scripts/doctor-agent.py`
-- `skills/libro-agent-wcag/scripts/run_accessibility_audit.py`
+- `skills/libro-wcag/scripts/run_accessibility_audit.py`
 
 Keep this workflow script-first and minimal. For deterministic smoke artifacts, reuse `docs/testing/realistic-sample/` plus mock scanner payloads.
 
@@ -122,7 +122,7 @@ If integrity fails:
 
 - reinstall with `--force`
 - re-run doctor with `--verify-manifest-integrity`
-- compare installed adapter contents against `skills/libro-agent-wcag/adapters/<adapter>/`
+- compare installed adapter contents against `skills/libro-wcag/adapters/<adapter>/`
 
 ## Troubleshooting Intake
 

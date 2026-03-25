@@ -6,7 +6,7 @@ This playbook consolidates the repository's manual, scenario, system, end-to-end
 
 ### Acceptance Test / UAT
 
-- Install `libro-agent-wcag` for the target agent.
+- Install `libro-wcag` for the target agent.
 - Invoke the skill on one existing page in `audit-only`, `suggest-only`, and `apply-fixes` intent.
 - Confirm the result includes Markdown and JSON outputs with aligned issue IDs.
 - Confirm the result explains whether files were modified.
@@ -138,7 +138,7 @@ This playbook consolidates the repository's manual, scenario, system, end-to-end
 - Keep dependency and script review before release.
 - Current minimum command set:
   - `python -m pip check`
-  - `python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"`
+  - `python -m unittest discover -s skills/libro-wcag/scripts/tests -p "test_*.py"`
 - If additional dependencies are added later, attach a dedicated dependency scanner.
 
 ### Recovery Test

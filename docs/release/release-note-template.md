@@ -27,8 +27,8 @@ python .\scripts\doctor-agent.py --agent codex --verify-manifest-integrity
 
 ## Checksum Verification
 
-- Verify `libro-agent-wcag-<version>-sha256sums.txt` before installation.
-- Confirm the selected bundle checksum matches both the checksum file and `libro-agent-wcag-<version>-release-manifest.json`.
+- Verify `libro-wcag-<version>-sha256sums.txt` before installation.
+- Confirm the selected bundle checksum matches both the checksum file and `libro-wcag-<version>-release-manifest.json`.
 
 ## Rollback / Hotfix Context
 

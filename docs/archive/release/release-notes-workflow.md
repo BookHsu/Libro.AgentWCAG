@@ -1,6 +1,6 @@
 # Release Notes Workflow
 
-This workflow standardizes versioned updates for `libro-agent-wcag`.
+This workflow standardizes versioned updates for `libro-wcag`.
 
 ## When to update
 

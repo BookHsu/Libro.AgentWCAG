@@ -1,7 +1,7 @@
 # `run_accessibility_audit.py` Refactor Plan
 
 This document inventories the current responsibilities in
-`skills/libro-agent-wcag/scripts/run_accessibility_audit.py` and defines the
+`skills/libro-wcag/scripts/run_accessibility_audit.py` and defines the
 target module split for TODO section `### 1. 重構 run_accessibility_audit.py`.
 
 ## Current Responsibility Blocks
@@ -471,7 +471,7 @@ The import direction should stay acyclic:
 
 ## Non-Negotiable Compatibility List
 
-- Keep `python skills/libro-agent-wcag/scripts/run_accessibility_audit.py` as
+- Keep `python skills/libro-wcag/scripts/run_accessibility_audit.py` as
   the supported invocation path
 - Preserve existing flag names, defaults, and argparse help text where possible
 - Preserve all current exit codes
@@ -483,16 +483,16 @@ The import direction should stay acyclic:
 
 ## Files Expected to Change During Refactor
 
-- `skills/libro-agent-wcag/scripts/run_accessibility_audit.py`
-- `skills/libro-agent-wcag/scripts/scanner_runtime.py`
-- `skills/libro-agent-wcag/scripts/policy_controls.py`
-- `skills/libro-agent-wcag/scripts/baseline_governance.py`
-- `skills/libro-agent-wcag/scripts/advanced_gates.py`
-- `skills/libro-agent-wcag/scripts/report_artifacts.py`
-- `skills/libro-agent-wcag/scripts/shared_constants.py` if needed
-- `skills/libro-agent-wcag/scripts/tests/test_runner.py`
-- `skills/libro-agent-wcag/scripts/tests/test_cli_flows.py`
-- `skills/libro-agent-wcag/scripts/tests/test_real_scanner_ci_lane.py`
+- `skills/libro-wcag/scripts/run_accessibility_audit.py`
+- `skills/libro-wcag/scripts/scanner_runtime.py`
+- `skills/libro-wcag/scripts/policy_controls.py`
+- `skills/libro-wcag/scripts/baseline_governance.py`
+- `skills/libro-wcag/scripts/advanced_gates.py`
+- `skills/libro-wcag/scripts/report_artifacts.py`
+- `skills/libro-wcag/scripts/shared_constants.py` if needed
+- `skills/libro-wcag/scripts/tests/test_runner.py`
+- `skills/libro-wcag/scripts/tests/test_cli_flows.py`
+- `skills/libro-wcag/scripts/tests/test_real_scanner_ci_lane.py`
 
 ## Primary Refactor Risks
 

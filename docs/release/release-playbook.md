@@ -1,6 +1,6 @@
 # Release Playbook
 
-Use this playbook as the primary release-readiness document for `libro-agent-wcag`.
+Use this playbook as the primary release-readiness document for `libro-wcag`.
 
 ## Packaging Readiness
 
@@ -8,26 +8,26 @@ Use this playbook as the primary release-readiness document for `libro-agent-wca
 - Confirm adapter prompt templates and usage examples are synchronized across supported agents.
 - Confirm `scripts/install-agent.py`, wrapper scripts, and uninstall flow remain aligned.
 - Run `python scripts/package-release.py --output-dir dist/release --overwrite` from the repo root to stage versioned release assets.
-- Confirm `skills/libro-agent-wcag/agents/openai.yaml` and manifest references are valid.
+- Confirm `skills/libro-wcag/agents/openai.yaml` and manifest references are valid.
 - Confirm `pyproject.toml` remains the single source for `product_version`.
 - Confirm release automation sets `LIBRO_AGENTWCAG_SOURCE_REVISION`; if not set, verify the build runs from a git checkout where `HEAD` resolves cleanly.
 - If release packaging needs a pinned timestamp, set `LIBRO_AGENTWCAG_BUILD_TIMESTAMP` as a UTC ISO-8601 value; invalid or missing required provenance must fail fast rather than writing partial metadata.
 - Confirm release asset names match the documented contract:
-  - `libro-agent-wcag-<version>-<agent>.zip` for `codex`, `claude`, `gemini`, and `copilot`
-  - `libro-agent-wcag-<version>-all-in-one.zip`
-  - `libro-agent-wcag-<version>-release-manifest.json`
-  - `libro-agent-wcag-<version>-sha256sums.txt`
+  - `libro-wcag-<version>-<agent>.zip` for `codex`, `claude`, `gemini`, and `copilot`
+  - `libro-wcag-<version>-all-in-one.zip`
+  - `libro-wcag-<version>-release-manifest.json`
+  - `libro-wcag-<version>-sha256sums.txt`
   - `latest-release.json`
-- Confirm release bundles exclude `skills/libro-agent-wcag/scripts/tests/`, `docs/testing/`, and `docs/archive/`.
+- Confirm release bundles exclude `skills/libro-wcag/scripts/tests/`, `docs/testing/`, and `docs/archive/`.
 
 ## Validation Readiness
 
 - Run unit and integration suite:
-  - `python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"`
+  - `python -m unittest discover -s skills/libro-wcag/scripts/tests -p "test_*.py"`
 - Run skill structural validation:
-  - `python scripts/validate_skill.py skills/libro-agent-wcag --validate-policy-bundles`
-- Verify `.github/workflows/libro-agent-wcag-real-scanner.yml` still defines workflow/job name `libro-agent-wcag-real-scanner`.
-- Verify the required PR check name remains `libro-agent-wcag-real-scanner`.
+  - `python scripts/validate_skill.py skills/libro-wcag --validate-policy-bundles`
+- Verify `.github/workflows/libro-wcag-real-scanner.yml` still defines workflow/job name `libro-wcag-real-scanner`.
+- Verify the required PR check name remains `libro-wcag-real-scanner`.
 - Verify the real-scanner lane still targets `docs/testing/realistic-sample/mixed-findings.html`.
 - Verify the real-scanner lane still retains artifacts for `14` days and uploads `wcag-report.sarif`.
 - Run dependency-audit lane (`pip-audit --strict` and `npm audit --audit-level=high`) with archived logs.
@@ -73,7 +73,7 @@ Use this playbook as the primary release-readiness document for `libro-agent-wca
 ## Post-Publish Verification
 
 - Download the published assets from the GitHub Release page.
-- Verify `libro-agent-wcag-<version>-sha256sums.txt`.
+- Verify `libro-wcag-<version>-sha256sums.txt`.
 - Run `install-latest.ps1` or `install-latest.sh`; successful bootstrap must automatically complete doctor verification.
 - Run a first audit and then uninstall the skill.
 

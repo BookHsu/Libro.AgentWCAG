@@ -4,7 +4,7 @@ This file covers the applicable manual test types that cannot be fully automated
 
 ## Acceptance Test / UAT
 
-- Install `libro-agent-wcag` for the target agent.
+- Install `libro-wcag` for the target agent.
 - Invoke the skill on one existing page in `audit-only`, `suggest-only`, and `apply-fixes` intent.
 - Confirm the result includes Markdown and JSON outputs with aligned issue IDs.
 - Confirm the result explains whether files were modified.

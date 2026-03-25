@@ -11,7 +11,7 @@ Use replay verification to confirm remediation stability across repeated runs an
 ## CLI
 
 ```powershell
-python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
+python skills/libro-wcag/scripts/run_accessibility_audit.py \
   --target C:\repo\sample.html \
   --output-dir out-replay \
   --replay-verify-from out-baseline \

@@ -51,7 +51,7 @@ Schema is strict: every waiver entry must include exactly `signature`, `owner`, 
 1. Run baseline diff audit:
 
 ```powershell
-python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
+python skills/libro-wcag/scripts/run_accessibility_audit.py \
   --target <target> \
   --output-dir out/debt-lifecycle \
   --baseline-report .ci/wcag-baseline.json \
@@ -67,7 +67,7 @@ python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
 3. Enforce renewal on release pipelines:
 
 ```powershell
-python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
+python skills/libro-wcag/scripts/run_accessibility_audit.py \
   --target <target> \
   --output-dir out/debt-release-gate \
   --baseline-report .ci/wcag-baseline.json \
@@ -90,7 +90,7 @@ python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
 Use debt trend mode to track baseline debt movement across repeated runs:
 
 ```powershell
-python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
+python skills/libro-wcag/scripts/run_accessibility_audit.py \
   --target <target> \
   --output-dir out/debt-trend \
   --baseline-report .ci/wcag-baseline.json \

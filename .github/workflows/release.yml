@@ -20,7 +20,7 @@ on:
 env:
   LIBRO_RELEASE_PYTHON_VERSION: "3.12"
   LIBRO_RELEASE_NODE_VERSION: "20"
-  LIBRO_RELEASE_ARTIFACT_NAME: libro-agent-wcag-release-assets
+  LIBRO_RELEASE_ARTIFACT_NAME: libro-wcag-release-assets
   LIBRO_RELEASE_ARTIFACT_DIR: dist/release
   LIBRO_RELEASE_RETENTION_DAYS: "14"
 
@@ -53,10 +53,10 @@ jobs:
           python -m pip install pyyaml
 
       - name: Run automated tests
-        run: python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"
+        run: python -m unittest discover -s skills/libro-wcag/scripts/tests -p "test_*.py"
 
       - name: Validate repo skill contract
-        run: python scripts/validate_skill.py skills/libro-agent-wcag --validate-policy-bundles
+        run: python scripts/validate_skill.py skills/libro-wcag --validate-policy-bundles
 
   package-release:
     name: package-release
@@ -151,7 +151,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: libro-agent-wcag-release-smoke
+          name: libro-wcag-release-smoke
           path: |
             ${{ env.LIBRO_RELEASE_ARTIFACT_DIR }}/smoke-summary.json
             ${{ env.LIBRO_RELEASE_ARTIFACT_DIR }}

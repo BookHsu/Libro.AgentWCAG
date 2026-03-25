@@ -25,7 +25,7 @@ Purpose: compare a current run against a prior run directory and fail only on de
 CLI:
 
 ```powershell
-python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
+python skills/libro-wcag/scripts/run_accessibility_audit.py \
   --target C:\repo\sample.html \
   --output-dir out-replay \
   --replay-verify-from out-baseline \

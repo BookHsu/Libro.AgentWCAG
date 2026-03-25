@@ -27,7 +27,7 @@ python .\scripts\doctor-agent.py --agent codex --verify-manifest-integrity
 
 ## Checksum Verification
 
-- Verify `libro-agent-wcag-<version>-sha256sums.txt`.
+- Verify `libro-wcag-<version>-sha256sums.txt`.
 
 ## Known Remaining Limits
 
