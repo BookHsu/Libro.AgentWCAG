@@ -1,12 +1,15 @@
 {
   "name": "librowcag-cli",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Global CLI wrapper for Libro.AgentWCAG skill installation.",
   "license": "MIT",
   "homepage": "https://github.com/BookHsu/Libro.AgentWCAG",
   "repository": {
     "type": "git",
-    "url": "https://github.com/BookHsu/Libro.AgentWCAG.git"
+    "url": "git+https://github.com/BookHsu/Libro.AgentWCAG.git"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "bin": {
     "libro": "bin/libro.js"
