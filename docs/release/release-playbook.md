@@ -7,9 +7,11 @@ Use this playbook as the primary release-readiness document for `libro-wcag`.
 - Confirm `README.md` install and usage sections reflect current repo behavior.
 - Confirm adapter prompt templates and usage examples are synchronized across supported agents.
 - Confirm `scripts/install-agent.py`, wrapper scripts, and uninstall flow remain aligned.
+- Confirm the release tag `vX.Y.Z` is the single version source for this publish.
+- Run `python scripts/apply-release-version.py --version X.Y.Z` when staging a local dry run from a tag candidate.
 - Run `python scripts/package-release.py --output-dir dist/release --overwrite` from the repo root to stage versioned release assets.
 - Confirm `skills/libro-wcag/agents/openai.yaml` and manifest references are valid.
-- Confirm `pyproject.toml` remains the single source for `product_version`.
+- Confirm `pyproject.toml`, `package.json`, and `.claude-plugin/*.json` were all updated by the tag-derived version injection step.
 - Confirm release automation sets `LIBRO_AGENTWCAG_SOURCE_REVISION`; if not set, verify the build runs from a git checkout where `HEAD` resolves cleanly.
 - If release packaging needs a pinned timestamp, set `LIBRO_AGENTWCAG_BUILD_TIMESTAMP` as a UTC ISO-8601 value; invalid or missing required provenance must fail fast rather than writing partial metadata.
 - Confirm release asset names match the documented contract:
@@ -40,11 +42,11 @@ Use this playbook as the primary release-readiness document for `libro-wcag`.
 ## Publish Readiness
 
 - Confirm target version tag and release title are finalized.
-- Ensure `CHANGELOG.md` has a dated version section with highlights and known limits.
-- Follow the version bump order in `docs/release/ga-release-workflow.md`: update `pyproject.toml`, finalize `CHANGELOG.md`, then create tag `vX.Y.Z`.
+- Confirm the Git tag `vX.Y.Z` is ready to become the single release version source.
 - Confirm all blocking defects are closed or explicitly listed as known limitations.
-- Confirm `.github/workflows/release.yml` still uses the documented validate -> package-release -> clean-release-smoke -> publish-release -> publish-npm gate order.
-- Confirm npm trusted publishing is configured for `librowcag-cli`; the release workflow should not require a stored `NPM_TOKEN`.
+- Confirm `.github/workflows/release.yml` still uses the documented validate -> package-release -> clean-release-smoke -> publish-release gate order.
+- Confirm `.github/workflows/publish-npm.yml` is the workflow filename configured in npm trusted publishing for `librowcag-cli`.
+- Confirm npm trusted publishing is configured for `librowcag-cli`; the publish workflow should not require a stored `NPM_TOKEN`.
 - For significant remediation changes, attach baseline refresh evidence and approver context.
 - Run baseline governance checks described in `docs/release/baseline-governance.md`.
 - Run advanced CI gate reviews described in `docs/release/advanced-ci-gates.md`.
@@ -59,17 +61,10 @@ Use this playbook as the primary release-readiness document for `libro-wcag`.
 
 ## Release Notes Workflow
 
-1. Create a new version header in `CHANGELOG.md` using `## [X.Y.Z] - YYYY-MM-DD`.
-2. Move validated items from `[Unreleased]` into that version section.
-3. Group notes under these buckets when applicable:
-   - `Added`
-   - `Changed`
-   - `Fixed`
-   - `Removed`
-4. Include known limitations that affect adoption or behavior.
-5. Cross-check release notes against merged PRs and test outcomes.
-6. Link the changelog section in the release announcement.
-7. Use `docs/release/release-note-template.md` for standard releases and `docs/release/hotfix-release-note-template.md` for hotfixes.
+1. Keep `CHANGELOG.md` as human-facing history, but do not use it to drive release version selection.
+2. Let GitHub auto-generated release notes draft the release body from merged changes.
+3. Review the generated notes before publishing and add any missing known limitations or operator guidance.
+4. Use `docs/release/release-note-template.md` for standard release guidance and `docs/release/hotfix-release-note-template.md` for hotfix guidance.
 
 ## Post-Publish Verification
 
@@ -82,6 +77,6 @@ Use this playbook as the primary release-readiness document for `libro-wcag`.
 
 A release is not publish-ready unless:
 
-- the changelog has a dated version section
+- the release tag is correct and immutable
 - notes reflect behavior that is already merged and validated
 - breaking or operator-impacting changes are explicitly called out

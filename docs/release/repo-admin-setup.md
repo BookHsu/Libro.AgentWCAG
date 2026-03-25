@@ -4,12 +4,10 @@ Use this note to keep release publishing and PR governance aligned for this repo
 
 ## Release Assets
 
-- `.github/workflows/release.yml` now supports three entry paths:
-  - tag push for `v*`
-  - manual `workflow_dispatch`
-  - GitHub Release `published`
+- `.github/workflows/release.yml` should be triggered only by tag push for `v*`.
+- `.github/workflows/publish-npm.yml` should be triggered only by the same tag push for `v*`.
 - npm publishing should be configured through npm trusted publishing for this repository, so release automation can publish `librowcag-cli` without storing an `NPM_TOKEN`.
-- The `published` trigger matters when an operator creates or publishes a release from the GitHub UI. Without that trigger, a manually published release can exist without the packaged zip assets.
+- npm trusted publishing should point to the exact workflow filename that runs `npm publish`. If you rename the workflow file, update npm package settings immediately.
 - Published release assets should include:
   - `libro-wcag-<version>-codex.zip`
   - `libro-wcag-<version>-claude.zip`
@@ -53,3 +51,4 @@ sh ./scripts/install-latest.sh --release-base https://github.com/<owner>/<repo>/
 - GitHub rulesets overview: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets
 - GitHub ruleset creation and bypass list: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/creating-rulesets-for-a-repository
 - GitHub branch protection overview: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches
+- npm trusted publishers: https://docs.npmjs.com/trusted-publishers/
