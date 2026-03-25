@@ -59,6 +59,8 @@ class RepoContractTests(unittest.TestCase):
         self.assertEqual(payload['name'], 'librowcag-cli')
         self.assertEqual(payload['version'], tomllib.loads((self.repo_root / 'pyproject.toml').read_text(encoding='utf-8'))['project']['version'])
         self.assertEqual(payload['bin']['libro'], 'bin/libro.js')
+        self.assertEqual(payload['publishConfig']['access'], 'public')
+        self.assertNotIn('provenance', payload['publishConfig'])
         self.assertIn('scripts/*.py', payload['files'])
         self.assertIn('scripts/*.ps1', payload['files'])
         self.assertIn('skills/libro-wcag/scripts/*.py', payload['files'])
