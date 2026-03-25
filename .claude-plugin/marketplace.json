@@ -1,0 +1,21 @@
+{
+  "name": "libro-wcag-marketplace",
+  "owner": {
+    "name": "Book Hsu",
+    "email": "book.hsu@users.noreply.github.com"
+  },
+  "metadata": {
+    "description": "Marketplace for Libro.AgentWCAG cross-agent WCAG accessibility skill.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "libro-wcag",
+      "source": "./",
+      "description": "Cross-agent WCAG accessibility audit and remediation skill.",
+      "version": "1.0.2",
+      "category": "accessibility",
+      "tags": ["wcag", "a11y", "audit"]
+    }
+  ]
+}

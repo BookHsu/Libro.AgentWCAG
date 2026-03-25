@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import tomllib
 import unittest
 from pathlib import Path
 
@@ -26,6 +28,8 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('$libro-wcag', content)
         self.assertIn('scripts/bootstrap.sh', content)
         self.assertIn('scripts/bootstrap.ps1', content)
+        self.assertIn('/plugin install libro-wcag@libro-wcag-marketplace', content)
+        self.assertIn('--workspace-root', content)
 
     def test_testing_plan_tracks_matrix_mapping_and_gaps(self) -> None:
         content = self._read(self.repo_root / 'TESTING-PLAN.md')
@@ -35,6 +39,95 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('Coverage Mode', content)
         self.assertIn('Scripted Manual', content)
         self.assertIn('Automated', content)
+
+    def test_agent_installation_expansion_todo_tracks_workspace_plugin_and_mcp_paths(self) -> None:
+        content = self._read(self.repo_root / 'docs' / 'automations' / 'agent-installation-expansion-todo.md')
+        self.assertIn('.gemini/skills/libro-wcag/SKILL.md', content)
+        self.assertIn('.claude-plugin/plugin.json', content)
+        self.assertIn('.claude-plugin/marketplace.json', content)
+        self.assertIn('mcp-server/server.py', content)
+        self.assertIn('.github/workflows/install-skill.yml', content)
+        self.assertIn('vscode-extension/package.json', content)
+
+    def test_gemini_workspace_skill_exists_and_tracks_core_contract(self) -> None:
+        core_skill = self._read(self.skill_root / 'SKILL.md')
+        workspace_skill = self._read(self.repo_root / '.gemini' / 'skills' / 'libro-wcag' / 'SKILL.md')
+        self.assertIn('name: libro-wcag', workspace_skill)
+        self.assertIn('Gemini-specific note', workspace_skill)
+        self.assertIn('execution_mode', workspace_skill)
+        self.assertIn('safe first-pass remediations', workspace_skill)
+        self.assertIn('Use `adapters/gemini/prompt-template.md`', workspace_skill)
+        self.assertIn('JSON top-level keys', workspace_skill)
+        self.assertIn('JSON top-level keys', core_skill)
+
+    def test_reusable_install_workflow_exists_and_calls_installer_and_doctor(self) -> None:
+        content = self._read(self.repo_root / '.github' / 'workflows' / 'install-skill.yml')
+        self.assertIn('workflow_call', content)
+        self.assertIn('actions/checkout@v4', content)
+        self.assertIn('actions/setup-python@v5', content)
+        self.assertIn('python scripts/install-agent.py', content)
+        self.assertIn('python scripts/doctor-agent.py', content)
+        self.assertIn('--verify-manifest-integrity', content)
+
+    def test_mcp_server_scaffold_exists_with_stdio_transport_and_wrapped_tools(self) -> None:
+        server = self._read(self.repo_root / 'mcp-server' / 'server.py')
+        requirements = self._read(self.repo_root / 'mcp-server' / 'requirements.txt')
+        audit_tool = self._read(self.repo_root / 'mcp-server' / 'tools' / 'audit_page.py')
+        suggest_tool = self._read(self.repo_root / 'mcp-server' / 'tools' / 'suggest_fixes.py')
+        normalize_tool = self._read(self.repo_root / 'mcp-server' / 'tools' / 'normalize_report.py')
+        self.assertIn('FastMCP("libro-wcag")', server)
+        self.assertIn('@mcp.tool()', server)
+        self.assertIn('libro_wcag_audit', server)
+        self.assertIn('libro_wcag_suggest', server)
+        self.assertIn('libro_wcag_normalize', server)
+        self.assertIn('mcp>=', requirements)
+        self.assertIn('run_accessibility_audit.py', audit_tool)
+        self.assertIn('get_strategy', suggest_tool)
+        self.assertIn('normalize_report', normalize_tool)
+
+    def test_examples_cover_add_dir_reusable_workflow_and_gh_release_download(self) -> None:
+        add_dir = self._read(self.repo_root / 'docs' / 'examples' / 'claude' / 'settings.add-dir.sample.json')
+        reusable = self._read(self.repo_root / 'docs' / 'examples' / 'ci' / 'install-skill-consumer-sample.yml')
+        gh_release = self._read(self.repo_root / 'docs' / 'examples' / 'ci' / 'gh-release-download-sample.md')
+        self.assertIn('.vendor/libro-wcag', add_dir)
+        self.assertIn('uses: BookHsu/Libro.AgentWCAG.clean/.github/workflows/install-skill.yml@v1', reusable)
+        self.assertIn('gh release download', gh_release)
+        self.assertIn('install-agent.py --agent claude', gh_release)
+
+    def test_mcp_samples_exist_for_claude_copilot_and_gemini(self) -> None:
+        claude = self._read(self.repo_root / 'docs' / 'examples' / 'claude' / 'mcp.sample.json')
+        copilot = self._read(self.repo_root / 'docs' / 'examples' / 'copilot' / 'mcp.sample.json')
+        gemini = self._read(self.repo_root / 'docs' / 'examples' / 'gemini' / 'settings.mcp.sample.json')
+        self.assertIn('mcp-server/server.py', claude)
+        self.assertIn('"servers"', copilot)
+        self.assertIn('"mcpServers"', gemini)
+
+    def test_claude_plugin_json_exists_and_has_required_fields(self) -> None:
+        payload = json.loads((self.repo_root / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))
+        self.assertEqual(payload['name'], 'libro-wcag')
+        self.assertEqual(payload['license'], 'MIT')
+        self.assertIn('version', payload)
+        self.assertIn('description', payload)
+        self.assertEqual(payload['repository'], 'https://github.com/BookHsu/Libro.AgentWCAG.clean')
+        self.assertIn('mcpServers', payload)
+        self.assertIn('libro-wcag', payload['mcpServers'])
+
+    def test_claude_marketplace_json_exists_and_references_plugin(self) -> None:
+        payload = json.loads((self.repo_root / '.claude-plugin' / 'marketplace.json').read_text(encoding='utf-8'))
+        self.assertEqual(payload['name'], 'libro-wcag-marketplace')
+        self.assertEqual(len(payload['plugins']), 1)
+        self.assertEqual(payload['plugins'][0]['name'], 'libro-wcag')
+        self.assertEqual(payload['plugins'][0]['source'], './')
+
+    def test_claude_plugin_version_matches_pyproject(self) -> None:
+        plugin = json.loads((self.repo_root / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))
+        pyproject = tomllib.loads((self.repo_root / 'pyproject.toml').read_text(encoding='utf-8'))
+        self.assertEqual(plugin['version'], pyproject['project']['version'])
+
+    def test_claude_marketplace_version_matches_plugin(self) -> None:
+        plugin = json.loads((self.repo_root / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))
+        marketplace = json.loads((self.repo_root / '.claude-plugin' / 'marketplace.json').read_text(encoding='utf-8'))
+        self.assertEqual(marketplace['plugins'][0]['version'], plugin['version'])
 
     def test_manual_testing_assets_exist_for_non_automated_matrix_types(self) -> None:
         playbook = self._read(self.repo_root / 'docs' / 'testing' / 'testing-playbook.md')
@@ -119,13 +212,29 @@ class RepoContractTests(unittest.TestCase):
         expected = {
             '.gitattributes',
             '.github/workflows/test.yml',
+            '.github/workflows/install-skill.yml',
             '.gitignore',
+            '.claude-plugin/plugin.json',
+            '.claude-plugin/marketplace.json',
+            '.gemini/skills/libro-wcag/SKILL.md',
+            'mcp-server/server.py',
+            'mcp-server/requirements.txt',
+            'mcp-server/tools/audit_page.py',
+            'mcp-server/tools/suggest_fixes.py',
+            'mcp-server/tools/normalize_report.py',
             'LICENSE',
             'README.md',
             'SKILL-TODO.md',
             'TESTING-PLAN.md',
             'docs/automations/test-plan-automation.md',
             'docs/automations/test-plan-review-policy.md',
+            'docs/automations/agent-installation-expansion-todo.md',
+            'docs/examples/claude/mcp.sample.json',
+            'docs/examples/claude/settings.add-dir.sample.json',
+            'docs/examples/ci/install-skill-consumer-sample.yml',
+            'docs/examples/ci/gh-release-download-sample.md',
+            'docs/examples/copilot/mcp.sample.json',
+            'docs/examples/gemini/settings.mcp.sample.json',
             'docs/testing/testing-playbook.md',
             'pyproject.toml',
             'scripts/doctor-agent.py',

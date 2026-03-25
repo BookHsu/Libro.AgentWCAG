@@ -66,6 +66,80 @@ irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scrip
 `bootstrap.sh` 支援 `--agent / --repo / --ref / --dest / --force`，其中 `--agent` 為必填。
 `bootstrap.ps1` 若未提供 `-Agent`，會互動提示選擇 agent；若要非互動安裝，請使用上面的 scriptblock 寫法傳入參數。
 
+### Claude Plugin 安裝
+
+如果你使用 Claude Code，也可以直接透過 plugin marketplace 安裝：
+
+```text
+/plugin marketplace add BookHsu/Libro.AgentWCAG.clean
+/plugin install libro-wcag@libro-wcag-marketplace
+```
+
+安裝後可直接使用 `/libro-wcag:libro-wcag` 呼叫，或讓 Claude 依上下文自動啟用。
+
+### Gemini Workspace Skill
+
+如果你直接在 Gemini workspace 中開啟這個 repo，Gemini 可以從 [SKILL.md](/c:/Source/Libro.AgentWCAG.clean/.gemini/skills/libro-wcag/SKILL.md) 自動發現 `libro-wcag`。
+
+如果你要把 skill 安裝到其他專案工作區，也可以使用：
+
+```powershell
+python .\scripts\install-agent.py --agent gemini --workspace-root .
+```
+
+### Claude add-dir / Git Submodule
+
+如果你要把 skill 以 vendor 方式帶進目標專案，可以使用：
+
+```bash
+git submodule add https://github.com/BookHsu/Libro.AgentWCAG.clean.git .vendor/libro-wcag
+claude --add-dir .vendor/libro-wcag
+```
+
+持久化範例可參考 [settings.add-dir.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/claude/settings.add-dir.sample.json)。
+
+### GitHub Actions Reusable Workflow
+
+其他 repo 可以直接重用 [install-skill.yml](/c:/Source/Libro.AgentWCAG.clean/.github/workflows/install-skill.yml)：
+
+```yaml
+jobs:
+  setup:
+    uses: BookHsu/Libro.AgentWCAG.clean/.github/workflows/install-skill.yml@v1
+    with:
+      agent: claude
+```
+
+完整範例可參考 [install-skill-consumer-sample.yml](/c:/Source/Libro.AgentWCAG.clean/docs/examples/ci/install-skill-consumer-sample.yml)。
+
+### gh release download
+
+如果你偏好用 GitHub CLI 抓 release asset，可參考 [gh-release-download-sample.md](/c:/Source/Libro.AgentWCAG.clean/docs/examples/ci/gh-release-download-sample.md)。
+
+### MCP Server
+
+`mcp-server/server.py` 提供 `stdio` transport 的 `libro-wcag` MCP server，可同時服務 Claude、Copilot、Gemini。
+
+安裝依賴：
+
+```powershell
+python -m pip install -r .\mcp-server\requirements.txt
+```
+
+sample config：
+
+- Claude: [mcp.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/claude/mcp.sample.json)
+- Copilot: [mcp.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/copilot/mcp.sample.json)
+- Gemini: [settings.mcp.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/gemini/settings.mcp.sample.json)
+
+如果你要直接在專案工作區產生對應設定，可使用：
+
+```powershell
+python .\scripts\install-agent.py --agent gemini --workspace-root . --emit-mcp-config gemini
+python .\scripts\install-agent.py --agent claude --workspace-root . --emit-mcp-config claude
+python .\scripts\install-agent.py --agent copilot --workspace-root . --emit-mcp-config copilot
+```
+
 ### 2. 驗證安裝
 
 ```powershell

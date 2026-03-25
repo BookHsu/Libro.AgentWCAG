@@ -7,6 +7,13 @@ python .\scripts\install-agent.py --agent claude
 python .\scripts\doctor-agent.py --agent claude
 ```
 
+For MCP-based Claude workspace integration, install dependencies and use the sample config in `docs/examples/claude/mcp.sample.json`. You can also emit a local config directly:
+
+```powershell
+python -m pip install -r .\mcp-server\requirements.txt
+python .\scripts\install-agent.py --agent claude --workspace-root . --emit-mcp-config claude
+```
+
 ## Use
 
 1. Load `adapters/claude/prompt-template.md` into your Claude project or system prompt.
