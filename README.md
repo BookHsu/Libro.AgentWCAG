@@ -79,6 +79,19 @@ Libro.AgentWCAG 的核心不是單一指令，而是一套可被不同 AI agent 
 | `suggest-only` | 是 | 是 | 否 |
 | `apply-fixes` | 是 | 是 | 是，僅限支援的本機檔案 |
 
+使用範例：
+
+```text
+Audit only
+請用 audit-only 模式檢查 https://example.com，WCAG 2.1 AA。
+
+Suggest only
+請用 suggest-only 模式檢查 src/page.html，並提供修正建議，但不要改檔。
+
+Apply fixes
+請用 apply-fixes 模式檢查 src/page.html，並在安全範圍內直接修正可處理的問題。
+```
+
 - 稽核頁面時，先用 `audit-only`
 - 想看修法但還不想改檔時，使用 `suggest-only`
 - 確認要落地修改時，再使用 `apply-fixes`
