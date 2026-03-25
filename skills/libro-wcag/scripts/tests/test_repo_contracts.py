@@ -106,7 +106,7 @@ class RepoContractTests(unittest.TestCase):
         reusable = self._read(self.repo_root / 'docs' / 'examples' / 'ci' / 'install-skill-consumer-sample.yml')
         gh_release = self._read(self.repo_root / 'docs' / 'examples' / 'ci' / 'gh-release-download-sample.md')
         self.assertIn('.vendor/libro-wcag', add_dir)
-        self.assertIn('uses: BookHsu/Libro.AgentWCAG.clean/.github/workflows/install-skill.yml@v1', reusable)
+        self.assertIn('uses: BookHsu/Libro.AgentWCAG/.github/workflows/install-skill.yml@v1', reusable)
         self.assertIn('gh release download', gh_release)
         self.assertIn('install-agent.py --agent claude', gh_release)
 
@@ -124,7 +124,7 @@ class RepoContractTests(unittest.TestCase):
         self.assertEqual(payload['license'], 'MIT')
         self.assertIn('version', payload)
         self.assertIn('description', payload)
-        self.assertEqual(payload['repository'], 'https://github.com/BookHsu/Libro.AgentWCAG.clean')
+        self.assertEqual(payload['repository'], 'https://github.com/BookHsu/Libro.AgentWCAG')
         self.assertIn('mcpServers', payload)
         self.assertIn('libro-wcag', payload['mcpServers'])
 

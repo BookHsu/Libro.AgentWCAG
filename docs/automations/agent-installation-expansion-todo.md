@@ -91,7 +91,7 @@
 
 ### 手動驗證 TODO
 
-- [ ] 驗證 `/plugin marketplace add BookHsu/Libro.AgentWCAG.clean`
+- [ ] 驗證 `/plugin marketplace add BookHsu/Libro.AgentWCAG`
 - [ ] 驗證 `/plugin install libro-wcag@libro-wcag-marketplace`
 - [ ] 驗證 plugin 版本與 `pyproject.toml` 同步策略
 - [ ] 確認 `plugin.json` 的 `"skills": "./skills/"` 路徑能正確對應到 `skills/libro-wcag/`
@@ -150,7 +150,7 @@
 ### 發佈 TODO
 
 - [ ] 規劃對外引用的穩定 tag，例如 `v1`
-- [ ] 驗證外部 test repo 可成功 `uses: BookHsu/Libro.AgentWCAG.clean/.github/workflows/install-skill.yml@v1`
+- [ ] 驗證外部 test repo 可成功 `uses: BookHsu/Libro.AgentWCAG/.github/workflows/install-skill.yml@v1`
 - [ ] 確認 reusable workflow 對 private fork 的存取限制（同 org 內的 private repo 才能呼叫）
 - [x] workflow inputs 加上 `force` (boolean, default false)
 
