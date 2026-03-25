@@ -43,7 +43,7 @@ winget install Python.Python.3.12           # Windows
 ### npm CLI
 
 ```powershell
-npm install -g libro-cli
+ npm install -g librowcag-cli
 libro install claude   # Claude Code
 libro install gemini   # Gemini CLI
 libro install copilot  # Copilot

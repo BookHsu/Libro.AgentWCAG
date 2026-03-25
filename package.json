@@ -1,5 +1,5 @@
 {
-  "name": "libro-cli",
+  "name": "librowcag-cli",
   "version": "1.0.2",
   "description": "Global CLI wrapper for Libro.AgentWCAG skill installation.",
   "license": "MIT",
