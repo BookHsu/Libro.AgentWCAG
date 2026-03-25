@@ -3,15 +3,15 @@
 ## Install
 
 ```powershell
-python .\scripts\install-agent.py --agent copilot
-python .\scripts\doctor-agent.py --agent copilot
+python .\scripts\libro.py install copilot
+python .\scripts\libro.py doctor copilot
 ```
 
 For MCP-based Copilot workspace integration, install dependencies and emit a local `.vscode/mcp.json`:
 
 ```powershell
 python -m pip install -r .\mcp-server\requirements.txt
-python .\scripts\install-agent.py --agent copilot --workspace-root . --emit-mcp-config copilot
+python .\scripts\libro.py install copilot --workspace-root . --emit-mcp-config copilot
 ```
 
 ## Use

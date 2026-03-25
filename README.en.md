@@ -30,24 +30,64 @@ The hard part of web accessibility work is usually not finding a tool. It is kee
 - `suggest-only`: find issues and propose fixes
 - `apply-fixes`: apply safe fixes to supported local files when explicitly authorized
 
-## Get Started In Three Minutes
+## Quick Start
 
-### 1. Install
-
-```powershell
-python .\scripts\install-agent.py --agent codex
-```
-
-To install for other agents:
+### Shortest Path
 
 ```powershell
-python .\scripts\install-agent.py --agent claude
-python .\scripts\install-agent.py --agent gemini
-python .\scripts\install-agent.py --agent copilot
-python .\scripts\install-agent.py --agent all
+git clone https://github.com/BookHsu/Libro.AgentWCAG.clean.git
+cd Libro.AgentWCAG.clean
+python .\scripts\libro.py install claude
+python .\scripts\libro.py doctor claude
 ```
 
-If you do not want to clone the repository first, you can also bootstrap directly from GitHub:
+The same commands work across the main agents:
+
+```powershell
+python .\scripts\libro.py install claude
+python .\scripts\libro.py install gemini
+python .\scripts\libro.py install copilot
+python .\scripts\libro.py install all
+```
+
+Verification and removal:
+
+```powershell
+python .\scripts\libro.py doctor claude --verify-manifest-integrity
+python .\scripts\libro.py remove claude
+```
+
+If you prefer wrappers:
+
+```powershell
+.\scripts\libro.ps1 install claude
+.\scripts\libro.ps1 doctor claude
+```
+
+```sh
+./scripts/libro.sh install claude
+./scripts/libro.sh doctor claude
+```
+
+### Recommended Path By Agent
+
+- `Claude`: start with `python .\scripts\libro.py install claude`; for repo-open discovery, Claude can also read [.claude/skills/libro-wcag/SKILL.md](/c:/Source/Libro.AgentWCAG.clean/.claude/skills/libro-wcag/SKILL.md)
+- `Gemini`: start with `python .\scripts\libro.py install gemini`; for repo-open discovery, Gemini can also read [.gemini/skills/libro-wcag/SKILL.md](/c:/Source/Libro.AgentWCAG.clean/.gemini/skills/libro-wcag/SKILL.md)
+- `Copilot`: start with `python .\scripts\libro.py install copilot`; for workspace MCP, add `--workspace-root` and `--emit-mcp-config`
+
+### Claude Repo-Open And Plugin
+
+- after cloning the repo, Claude can discover `libro-wcag` from [.claude/skills/libro-wcag/SKILL.md](/c:/Source/Libro.AgentWCAG.clean/.claude/skills/libro-wcag/SKILL.md)
+- for the plugin path:
+
+```text
+/plugin marketplace add BookHsu/Libro.AgentWCAG.clean
+/plugin install libro-wcag@libro-wcag-marketplace
+```
+
+### GitHub Bootstrap
+
+If you do not want to clone the repository first, bootstrap directly from GitHub:
 
 ```sh
 curl -sL https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scripts/bootstrap.sh | sh -s -- --agent claude
@@ -57,73 +97,19 @@ curl -sL https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/
 irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scripts/bootstrap.ps1 | iex
 ```
 
-If you want to pass parameters directly in PowerShell:
-
 ```powershell
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scripts/bootstrap.ps1))) -Agent claude
 ```
 
-`bootstrap.sh` supports `--agent / --repo / --ref / --dest / --force`, and `--agent` is required.
-If `bootstrap.ps1` does not receive `-Agent`, it prompts interactively; for non-interactive installs, use the scriptblock form above so parameters can be passed explicitly.
+### Workspace MCP
 
-### Claude Plugin Installation
-
-If you use Claude Code, you can also install directly via the plugin marketplace:
-
-```text
-/plugin marketplace add BookHsu/Libro.AgentWCAG.clean
-/plugin install libro-wcag@libro-wcag-marketplace
-```
-
-After installation, invoke with `/libro-wcag:libro-wcag` or let Claude activate it automatically based on context.
-
-### Gemini Workspace Skill
-
-If you open this repository directly in a Gemini workspace, Gemini can auto-discover `libro-wcag` from [.gemini/skills/libro-wcag/SKILL.md](/c:/Source/Libro.AgentWCAG.clean/.gemini/skills/libro-wcag/SKILL.md).
-
-To install the same workspace skill into another project root, run:
-
-```powershell
-python .\scripts\install-agent.py --agent gemini --workspace-root .
-```
-
-### Claude add-dir / Git Submodule
-
-If you prefer vendoring the skill into a target repository, use:
-
-```bash
-git submodule add https://github.com/BookHsu/Libro.AgentWCAG.clean.git .vendor/libro-wcag
-claude --add-dir .vendor/libro-wcag
-```
-
-For a persisted sample, see [settings.add-dir.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/claude/settings.add-dir.sample.json).
-
-### GitHub Actions Reusable Workflow
-
-Other repositories can reuse [install-skill.yml](/c:/Source/Libro.AgentWCAG.clean/.github/workflows/install-skill.yml) directly:
-
-```yaml
-jobs:
-  setup:
-    uses: BookHsu/Libro.AgentWCAG.clean/.github/workflows/install-skill.yml@v1
-    with:
-      agent: claude
-```
-
-See [install-skill-consumer-sample.yml](/c:/Source/Libro.AgentWCAG.clean/docs/examples/ci/install-skill-consumer-sample.yml) for a complete example.
-
-### gh release download
-
-If you prefer downloading release assets with GitHub CLI, see [gh-release-download-sample.md](/c:/Source/Libro.AgentWCAG.clean/docs/examples/ci/gh-release-download-sample.md).
-
-### MCP Server
-
-`mcp-server/server.py` provides a `stdio` `libro-wcag` MCP server that can serve Claude, Copilot, and Gemini from one integration point.
-
-Install dependencies:
+`mcp-server/server.py` provides one `libro-wcag` MCP server for Claude, Copilot, and Gemini.
 
 ```powershell
 python -m pip install -r .\mcp-server\requirements.txt
+python .\scripts\libro.py install claude --workspace-root . --emit-mcp-config claude
+python .\scripts\libro.py install gemini --workspace-root . --emit-mcp-config gemini
+python .\scripts\libro.py install copilot --workspace-root . --emit-mcp-config copilot
 ```
 
 Sample configs:
@@ -131,30 +117,6 @@ Sample configs:
 - Claude: [mcp.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/claude/mcp.sample.json)
 - Copilot: [mcp.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/copilot/mcp.sample.json)
 - Gemini: [settings.mcp.sample.json](/c:/Source/Libro.AgentWCAG.clean/docs/examples/gemini/settings.mcp.sample.json)
-
-To emit a workspace-local config directly, run:
-
-```powershell
-python .\scripts\install-agent.py --agent gemini --workspace-root . --emit-mcp-config gemini
-python .\scripts\install-agent.py --agent claude --workspace-root . --emit-mcp-config claude
-python .\scripts\install-agent.py --agent copilot --workspace-root . --emit-mcp-config copilot
-```
-
-### 2. Verify The Installation
-
-```powershell
-python .\scripts\doctor-agent.py --agent codex
-```
-
-### 3. Start Using It
-
-In Codex, invoke:
-
-```text
-$libro-wcag
-```
-
-If you use Claude, Gemini, or Copilot, load the corresponding `prompt-template.md` under each adapter as the platform entrypoint.
 
 ## How To Use The Skill
 
@@ -251,19 +213,19 @@ The install flow automatically verifies `latest-release.json`, the release manif
 Install:
 
 ```powershell
-python .\scripts\install-agent.py --agent codex
+python .\scripts\libro.py install claude
 ```
 
 Verify:
 
 ```powershell
-python .\scripts\doctor-agent.py --agent codex --verify-manifest-integrity
+python .\scripts\libro.py doctor claude --verify-manifest-integrity
 ```
 
 Uninstall:
 
 ```powershell
-python .\scripts\uninstall-agent.py --agent codex
+python .\scripts\libro.py remove claude
 ```
 
 Local validation:

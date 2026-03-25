@@ -12,7 +12,7 @@
 - [x] Phase 1 已完成：Gemini workspace skill、Claude plugin manifests、reusable workflow、submodule/add-dir 與 `gh release download` 文件樣板已落地
 - [x] Phase 2 已完成：`stdio` MCP server 與三個 tool wrapper 已落地
 - [x] Phase 3 已完成：Claude/Copilot/Gemini MCP sample configs、installer MCP config emission、README/adapter 文件同步已落地
-- [ ] 下一階段改為產品化安裝體驗：單一 CLI、簡化 README、Claude repo-open 即用
+- [x] 下一階段產品化安裝體驗已落地：單一 CLI、簡化 README、Claude repo-open 即用
 
 ## 原則
 
@@ -27,35 +27,35 @@
 
 ### 實體檔案 TODO
 
-- [ ] 新增 `scripts/libro.py`
-- [ ] 新增 `scripts/libro.ps1`
-- [ ] 新增 `scripts/libro.sh`
-- [ ] 更新 `README.md`，改成以 unified CLI 為主的 quick start
-- [ ] 更新 `README.en.md`，改成以 unified CLI 為主的 quick start
-- [ ] 更新 `skills/libro-wcag/adapters/claude/usage-example.md`
-- [ ] 更新 `skills/libro-wcag/adapters/gemini/usage-example.md`
-- [ ] 更新 `skills/libro-wcag/adapters/copilot/usage-example.md`
+- [x] 新增 `scripts/libro.py`
+- [x] 新增 `scripts/libro.ps1`
+- [x] 新增 `scripts/libro.sh`
+- [x] 更新 `README.md`，改成以 unified CLI 為主的 quick start
+- [x] 更新 `README.en.md`，改成以 unified CLI 為主的 quick start
+- [x] 更新 `skills/libro-wcag/adapters/claude/usage-example.md`
+- [x] 更新 `skills/libro-wcag/adapters/gemini/usage-example.md`
+- [x] 更新 `skills/libro-wcag/adapters/copilot/usage-example.md`
 - [ ] 視需要更新 `skills/libro-wcag/adapters/openai-codex/usage-example.md`
-- [ ] 新增 unified CLI contract tests 到 `skills/libro-wcag/scripts/tests/test_repo_scripts.py`
-- [ ] 新增 unified CLI / README 靜態檢查到 `skills/libro-wcag/scripts/tests/test_repo_contracts.py`
+- [x] 新增 unified CLI contract tests 到 `skills/libro-wcag/scripts/tests/test_repo_scripts.py`
+- [x] 新增 unified CLI / README 靜態檢查到 `skills/libro-wcag/scripts/tests/test_repo_contracts.py`
 
 ### CLI 功能範圍
 
-- [ ] `install <agent>`：安裝 skill
-- [ ] `doctor <agent>`：驗證安裝
-- [ ] `remove <agent>`：移除安裝
-- [ ] 支援 `claude`、`gemini`、`copilot`、`codex`、`all`
-- [ ] 支援 `--workspace-root`
-- [ ] 支援 `--emit-mcp-config`
-- [ ] 支援 `--dest`
-- [ ] 支援 `--force`
+- [x] `install <agent>`：安裝 skill
+- [x] `doctor <agent>`：驗證安裝
+- [x] `remove <agent>`：移除安裝
+- [x] 支援 `claude`、`gemini`、`copilot`、`codex`、`all`
+- [x] 支援 `--workspace-root`
+- [x] 支援 `--emit-mcp-config`
+- [x] 支援 `--dest`
+- [x] 支援 `--force`
 
 ### 文件目標
 
-- [ ] README 首屏只保留「安裝」「驗證」「Claude repo-open / plugin」「進階選項入口」
-- [ ] 將 bootstrap / reusable workflow / MCP / submodule 等收斂到 secondary sections
-- [ ] 對三大 agent 提供最短指令示例
-- [ ] 明確標出 `Claude`、`Gemini`、`Copilot` 的最推薦安裝路徑
+- [x] README 首屏只保留「安裝」「驗證」「Claude repo-open / plugin」「進階選項入口」
+- [x] 將 bootstrap / reusable workflow / MCP / submodule 等收斂到 secondary sections
+- [x] 對三大 agent 提供最短指令示例
+- [x] 明確標出 `Claude`、`Gemini`、`Copilot` 的最推薦安裝路徑
 
 ## Claude Repo-Open 體驗
 
@@ -63,11 +63,11 @@
 
 ### 實體檔案 TODO
 
-- [ ] 新增 `.claude/skills/libro-wcag/SKILL.md`
-- [ ] 規劃 `.claude/skills/libro-wcag/SKILL.md` 與 `skills/libro-wcag/SKILL.md` 的同步策略
-- [ ] 新增一致性檢查測試到 `skills/libro-wcag/scripts/tests/test_repo_contracts.py`
-- [ ] 更新 `README.md`
-- [ ] 更新 `README.en.md`
+- [x] 新增 `.claude/skills/libro-wcag/SKILL.md`
+- [x] 規劃 `.claude/skills/libro-wcag/SKILL.md` 與 `skills/libro-wcag/SKILL.md` 的同步策略
+- [x] 新增一致性檢查測試到 `skills/libro-wcag/scripts/tests/test_repo_contracts.py`
+- [x] 更新 `README.md`
+- [x] 更新 `README.en.md`
 
 ### 手動驗證 TODO
 
