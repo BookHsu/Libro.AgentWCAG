@@ -230,6 +230,86 @@ class RepoScriptTests(unittest.TestCase):
         self.assertIn('codex|claude|gemini|copilot|all', wrapper)
         self.assertIn('python "$SCRIPT_DIR/install-agent.py" --agent "$AGENT" "$@"', wrapper)
 
+    def test_libro_ps1_wrapper_invokes_unified_cli(self) -> None:
+        wrapper = (self.repo_root / 'scripts' / 'libro.ps1').read_text(encoding='utf-8')
+        self.assertIn("[ValidateSet('install','doctor','remove')]", wrapper)
+        self.assertIn("[ValidateSet('codex','claude','gemini','copilot','all')]", wrapper)
+        self.assertIn("Join-Path $PSScriptRoot 'libro.py'", wrapper)
+        self.assertIn('python $script @arguments', wrapper)
+
+    def test_libro_sh_wrapper_invokes_unified_cli(self) -> None:
+        wrapper = (self.repo_root / 'scripts' / 'libro.sh').read_text(encoding='utf-8')
+        self.assertIn('<install|doctor|remove>', wrapper)
+        self.assertIn('codex|claude|gemini|copilot|all', wrapper)
+        self.assertIn('python "$SCRIPT_DIR/libro.py" "$COMMAND" "$AGENT" "$@"', wrapper)
+
+    def test_libro_cli_wraps_install_doctor_and_remove(self) -> None:
+        cli = (self.repo_root / 'scripts' / 'libro.py').read_text(encoding='utf-8')
+        self.assertIn('subparsers.add_parser("install"', cli)
+        self.assertIn('subparsers.add_parser("doctor"', cli)
+        self.assertIn('subparsers.add_parser("remove"', cli)
+        self.assertIn('install-agent.py', cli)
+        self.assertIn('doctor-agent.py', cli)
+        self.assertIn('uninstall-agent.py', cli)
+        self.assertIn('workspace_root', cli)
+
+    def test_libro_cli_can_install_doctor_and_remove_workspace_skill(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            workspace = Path(tmp)
+            install = subprocess.run(
+                [
+                    sys.executable,
+                    'scripts/libro.py',
+                    'install',
+                    'claude',
+                    '--workspace-root',
+                    str(workspace),
+                    '--force',
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(install.returncode, 0, install.stdout + install.stderr)
+            skill_root = workspace / '.claude' / 'skills' / 'libro-wcag'
+            self.assertTrue((skill_root / 'install-manifest.json').exists())
+
+            doctor = subprocess.run(
+                [
+                    sys.executable,
+                    'scripts/libro.py',
+                    'doctor',
+                    'claude',
+                    '--workspace-root',
+                    str(workspace),
+                    '--verify-manifest-integrity',
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(doctor.returncode, 0, doctor.stdout + doctor.stderr)
+            self.assertIn('"ok": true', doctor.stdout.lower())
+
+            remove = subprocess.run(
+                [
+                    sys.executable,
+                    'scripts/libro.py',
+                    'remove',
+                    'claude',
+                    '--workspace-root',
+                    str(workspace),
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(remove.returncode, 0, remove.stdout + remove.stderr)
+            self.assertFalse(skill_root.exists())
+
     def test_bootstrap_ps1_downloads_repo_archive_and_runs_install_and_doctor(self) -> None:
         wrapper = (self.repo_root / 'scripts' / 'bootstrap.ps1').read_text(encoding='utf-8')
         self.assertIn("BookHsu/Libro.AgentWCAG.clean", wrapper)
