@@ -19,6 +19,13 @@ The hard part of web accessibility work is usually not finding a tool. It is kee
 
 ## Install
 
+Using Claude Marketplace (Claude Code)
+
+```text
+/plugin marketplace add BookHsu/Libro.AgentWCAG
+/plugin install libro-wcag@libro-wcag-marketplace
+```
+
 ```powershell
 git clone https://github.com/BookHsu/Libro.AgentWCAG.git
 cd Libro.AgentWCAG
