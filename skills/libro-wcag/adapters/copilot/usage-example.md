@@ -7,6 +7,13 @@ python .\scripts\install-agent.py --agent copilot
 python .\scripts\doctor-agent.py --agent copilot
 ```
 
+For MCP-based Copilot workspace integration, install dependencies and emit a local `.vscode/mcp.json`:
+
+```powershell
+python -m pip install -r .\mcp-server\requirements.txt
+python .\scripts\install-agent.py --agent copilot --workspace-root . --emit-mcp-config copilot
+```
+
 ## Use
 
 1. Load `adapters/copilot/prompt-template.md` into your Copilot instruction file.

@@ -1,0 +1,5 @@
+{
+  "addDirs": [
+    ".vendor/libro-wcag"
+  ]
+}
