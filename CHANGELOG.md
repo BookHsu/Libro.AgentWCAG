@@ -6,6 +6,24 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-03-25
+
+### Changed
+
+- Release workflow now keeps npm provenance generation in GitHub Actions only.
+- `package.json` no longer forces provenance during local manual publish.
+- Release docs and examples now point to the `1.1.2` release line.
+
+### Install / Verify
+
+- Install the npm CLI with `npm install -g librowcag-cli`.
+- Local manual publish should use `npm publish --access public`.
+- GitHub Actions release publish should use trusted publishing with provenance.
+
+### Known Limitations
+
+- npm trusted publishing still depends on the release tag pointing at a commit that already contains the final release workflow.
+
 ## [1.1.0] - 2026-03-25
 
 ### Added
