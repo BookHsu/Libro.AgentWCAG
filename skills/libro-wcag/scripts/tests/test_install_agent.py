@@ -381,6 +381,63 @@ class InstallAgentTests(unittest.TestCase):
                 self.assertEqual(uninstall.returncode, 0, uninstall.stdout + uninstall.stderr)
                 self.assertFalse(destination.exists())
 
+    def test_installer_works_from_packaged_npm_layout_without_git_or_pyproject(self) -> None:
+        workspace = self._workspace('npm-packaged-install')
+        package_root = workspace / 'node_modules' / 'librowcag-cli'
+        package_root.mkdir(parents=True, exist_ok=True)
+
+        files_to_copy = [
+            'package.json',
+            'scripts/install-agent.py',
+            'skills/libro-wcag/SKILL.md',
+            'skills/libro-wcag/scripts/shared_constants.py',
+        ]
+        directories_to_copy = [
+            'skills/libro-wcag/adapters',
+        ]
+        for relative in files_to_copy:
+            source = self.repo_root / relative
+            destination = package_root / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
+        for relative in directories_to_copy:
+            shutil.copytree(self.repo_root / relative, package_root / relative)
+
+        (package_root / 'package-provenance.json').write_text(
+            json.dumps(
+                {
+                    'product_name': 'Libro.AgentWCAG',
+                    'product_version': self.product_version,
+                    'source_revision': 'c' * 40,
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding='utf-8',
+        )
+
+        destination = workspace / 'claude-skill'
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'scripts/install-agent.py',
+                '--agent',
+                'claude',
+                '--dest',
+                str(destination),
+            ],
+            cwd=package_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        manifest = json.loads((destination / 'install-manifest.json').read_text(encoding='utf-8'))
+        self.assertEqual(manifest['product_version'], self.product_version)
+        self.assertEqual(manifest['source_revision'], 'c' * 40)
+        self.assertEqual(manifest['provenance']['version_source'], 'package.json')
+        self.assertEqual(manifest['provenance']['source_revision_source'], 'package-provenance.json')
+
 
 if __name__ == '__main__':
     unittest.main()

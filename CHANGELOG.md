@@ -6,6 +6,16 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-03-25
+
+### Fixed
+
+- The published `librowcag-cli` npm package now includes package provenance fallback so `libro install <agent>` works without `.git` or `pyproject.toml`.
+
+### Added
+
+- Regression coverage for npm-style packaged installs outside a git checkout.
+
 ## [1.1.2] - 2026-03-25
 
 ### Changed

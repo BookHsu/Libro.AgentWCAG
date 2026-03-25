@@ -6,16 +6,20 @@
   },
   "metadata": {
     "description": "Marketplace for Libro.AgentWCAG cross-agent WCAG accessibility skill.",
-    "version": "1.1.2"
+    "version": "1.2.1"
   },
   "plugins": [
     {
       "name": "libro-wcag",
       "source": "./",
       "description": "Cross-agent WCAG accessibility audit and remediation skill.",
-      "version": "1.1.2",
+      "version": "1.2.1",
       "category": "accessibility",
-      "tags": ["wcag", "a11y", "audit"]
+      "tags": [
+        "wcag",
+        "a11y",
+        "audit"
+      ]
     }
   ]
 }

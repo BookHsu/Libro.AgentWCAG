@@ -58,7 +58,7 @@ A GA release is allowed only when all blocker gates pass:
 ## Compatibility Promises
 
 - Existing CLI flags, exit codes, artifact filenames, and report schema version remain stable unless explicitly versioned and documented.
-- `pyproject.toml` remains the single source of `product_version`.
+- The pushed Git tag `vX.Y.Z` remains the single source of release version for published artifacts.
 - `install-manifest.json`, `artifact-manifest.json`, and report schema versioning must remain machine-readable and backward-compatible within the same release line.
 - Adapter entrypoint paths documented in installer manifests are part of the release contract.
 
