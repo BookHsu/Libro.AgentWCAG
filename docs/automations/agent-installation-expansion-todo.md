@@ -2,6 +2,13 @@
 
 此文件整理後續安裝能力擴充的實體檔案待辦，範圍聚焦在 Gemini workspace skill、Claude plugin、MCP server、CI reusable workflow 與相關文件樣板。
 
+## 目前狀態
+
+- [x] Phase 1 已完成：Gemini workspace skill、Claude plugin manifests、reusable workflow、submodule/add-dir 與 `gh release download` 文件樣板已落地
+- [x] Phase 2 已完成：`stdio` MCP server 與三個 tool wrapper 已落地
+- [x] Phase 3 已完成：Claude/Copilot/Gemini MCP sample configs、installer MCP config emission、README/adapter 文件同步已落地
+- [ ] 剩餘工作以手動驗證與發佈策略為主，不再是核心開發缺口
+
 ## 原則
 
 - `Libro.AgentWCAG` repo/product 名稱維持不變。
@@ -15,13 +22,13 @@
 
 ### 實體檔案 TODO
 
-- [ ] 新增 `.gemini/skills/libro-wcag/SKILL.md`
-- [ ] 規劃 `.gemini/skills/libro-wcag/SKILL.md` 與 `skills/libro-wcag/SKILL.md` 的同步策略
+- [x] 新增 `.gemini/skills/libro-wcag/SKILL.md`
+- [x] 規劃 `.gemini/skills/libro-wcag/SKILL.md` 與 `skills/libro-wcag/SKILL.md` 的同步策略
 - [ ] ~~若採 build 產物策略，新增產生腳本~~ — 不採用，改為複製內容 + 一致性測試
-- [ ] 新增一致性檢查測試到 `skills/libro-wcag/scripts/tests/test_repo_contracts.py`（驗證兩份 SKILL.md 核心 contract 段落一致）
-- [ ] 視策略更新 `scripts/install-agent.py`，讓 `--agent gemini` 可選擇安裝到 workspace 級 `.gemini/skills/`
-- [ ] 更新 `README.md`
-- [ ] 更新 `README.en.md`
+- [x] 新增一致性檢查測試到 `skills/libro-wcag/scripts/tests/test_repo_contracts.py`（驗證兩份 SKILL.md 核心 contract 段落一致）
+- [x] 視策略更新 `scripts/install-agent.py`，讓 `--agent gemini` 可選擇安裝到 workspace 級 `.gemini/skills/`
+- [x] 更新 `README.md`
+- [x] 更新 `README.en.md`
 - [ ] 視需要新增 `docs/examples/gemini/` 內的 workspace 設定範例
 
 ### 設計決策
@@ -38,13 +45,13 @@
 
 ### 實體檔案 TODO
 
-- [ ] 新增 `.claude-plugin/plugin.json`
-- [ ] 新增 `.claude-plugin/marketplace.json`
-- [ ] 檢查 `skills/libro-wcag/SKILL.md` frontmatter 是否符合 plugin skill 規範
-- [ ] 新增版本一致性測試到 `skills/libro-wcag/scripts/tests/test_repo_contracts.py`
-- [ ] 更新 `README.md`
-- [ ] 更新 `README.en.md`
-- [ ] 視需要更新 `skills/libro-wcag/adapters/claude/usage-example.md`
+- [x] 新增 `.claude-plugin/plugin.json`
+- [x] 新增 `.claude-plugin/marketplace.json`
+- [x] 檢查 `skills/libro-wcag/SKILL.md` frontmatter 是否符合 plugin skill 規範
+- [x] 新增版本一致性測試到 `skills/libro-wcag/scripts/tests/test_repo_contracts.py`
+- [x] 更新 `README.md`
+- [x] 更新 `README.en.md`
+- [x] 視需要更新 `skills/libro-wcag/adapters/claude/usage-example.md`
 - [ ] 視需要更新 `skills/libro-wcag/adapters/claude/prompt-template.md`
 
 ### 手動驗證 TODO
@@ -61,10 +68,10 @@
 
 ### 實體檔案 TODO
 
-- [ ] 在 `docs/automations/agent-installation-expansion-todo.md` 保留決策紀錄
-- [ ] 若正式採 MCP，新增 `docs/examples/gemini/settings.mcp.sample.json`
-- [ ] 更新 `README.md`
-- [ ] 更新 `README.en.md`
+- [x] 在 `docs/automations/agent-installation-expansion-todo.md` 保留決策紀錄
+- [x] 若正式採 MCP，新增 `docs/examples/gemini/settings.mcp.sample.json`
+- [x] 更新 `README.md`
+- [x] 更新 `README.en.md`
 
 ## D-4. VS Code Extension Marketplace
 
@@ -78,9 +85,9 @@
 - [ ] 新增 `vscode-extension/src/extension.ts`
 - [ ] 規劃是否需要 `vscode-extension/README.md`
 - [ ] 若採 monorepo 方案，更新根目錄 `pyproject.toml` 或補 Node workspace 設定
-- [ ] 更新 `README.md`
-- [ ] 更新 `README.en.md`
-- [ ] 視需要新增 `docs/examples/copilot/` 相關設定檔
+- [x] 更新 `README.md`
+- [x] 更新 `README.en.md`
+- [x] 視需要新增 `docs/examples/copilot/` 相關設定檔
 
 ### 設計決策
 
@@ -94,19 +101,19 @@
 
 ### 實體檔案 TODO
 
-- [ ] 新增 `mcp-server/server.py`
-- [ ] 新增 `mcp-server/requirements.txt`
-- [ ] 新增 `mcp-server/tools/audit_page.py`
-- [ ] 新增 `mcp-server/tools/suggest_fixes.py`
-- [ ] 新增 `mcp-server/tools/normalize_report.py`
-- [ ] 新增 `.mcp.json` sample，例如 `docs/examples/claude/mcp.sample.json`
-- [ ] 新增 `.vscode/mcp.json` sample，例如 `docs/examples/copilot/mcp.sample.json`
-- [ ] 新增 `.gemini/settings.json` sample，例如 `docs/examples/gemini/settings.mcp.sample.json`
-- [ ] 若 Claude plugin 可行，更新 `.claude-plugin/plugin.json` 的 `mcpServers` 欄位
-- [ ] 視需要更新 `scripts/install-agent.py`，加入 MCP 設定注入選項
-- [ ] 新增 MCP contract tests 到 `skills/libro-wcag/scripts/tests/`
-- [ ] 更新 `README.md`
-- [ ] 更新 `README.en.md`
+- [x] 新增 `mcp-server/server.py`
+- [x] 新增 `mcp-server/requirements.txt`
+- [x] 新增 `mcp-server/tools/audit_page.py`
+- [x] 新增 `mcp-server/tools/suggest_fixes.py`
+- [x] 新增 `mcp-server/tools/normalize_report.py`
+- [x] 新增 `.mcp.json` sample，例如 `docs/examples/claude/mcp.sample.json`
+- [x] 新增 `.vscode/mcp.json` sample，例如 `docs/examples/copilot/mcp.sample.json`
+- [x] 新增 `.gemini/settings.json` sample，例如 `docs/examples/gemini/settings.mcp.sample.json`
+- [x] 若 Claude plugin 可行，更新 `.claude-plugin/plugin.json` 的 `mcpServers` 欄位
+- [x] 視需要更新 `scripts/install-agent.py`，加入 MCP 設定注入選項
+- [x] 新增 MCP contract tests 到 `skills/libro-wcag/scripts/tests/`
+- [x] 更新 `README.md`
+- [x] 更新 `README.en.md`
 
 ### 設計決策 (MCP)
 
@@ -116,9 +123,9 @@
 
 ### 工具對應 TODO
 
-- [ ] `libro_wcag_audit` 對應 `skills/libro-wcag/scripts/run_accessibility_audit.py`
-- [ ] `libro_wcag_suggest` 對應 `skills/libro-wcag/scripts/wcag_workflow.py`
-- [ ] `libro_wcag_normalize` 對應 `skills/libro-wcag/scripts/normalize_report.py`
+- [x] `libro_wcag_audit` 對應 `skills/libro-wcag/scripts/run_accessibility_audit.py`
+- [x] `libro_wcag_suggest` 對應 `skills/libro-wcag/scripts/wcag_workflow.py`
+- [x] `libro_wcag_normalize` 對應 `skills/libro-wcag/scripts/normalize_report.py`
 
 ## F-1. Git Submodule + add-dir
 
@@ -126,9 +133,9 @@
 
 ### 實體檔案 TODO
 
-- [ ] 更新 `README.md`
-- [ ] 更新 `README.en.md`
-- [ ] 視需要新增 `docs/examples/claude/settings.add-dir.sample.json`
+- [x] 更新 `README.md`
+- [x] 更新 `README.en.md`
+- [x] 視需要新增 `docs/examples/claude/settings.add-dir.sample.json`
 - [ ] 視需要新增 `scripts/setup-submodule.sh`
 - [ ] 視需要新增 `scripts/setup-submodule.ps1`
 
@@ -144,18 +151,18 @@
 
 ### 實體檔案 TODO
 
-- [ ] 新增 `.github/workflows/install-skill.yml`
-- [ ] 為 reusable workflow 補 contract tests 到 `skills/libro-wcag/scripts/tests/`
-- [ ] 更新 `README.md`
-- [ ] 更新 `README.en.md`
-- [ ] 視需要新增 `docs/examples/ci/install-skill-consumer-sample.yml`
+- [x] 新增 `.github/workflows/install-skill.yml`
+- [x] 為 reusable workflow 補 contract tests 到 `skills/libro-wcag/scripts/tests/`
+- [x] 更新 `README.md`
+- [x] 更新 `README.en.md`
+- [x] 視需要新增 `docs/examples/ci/install-skill-consumer-sample.yml`
 
 ### 發佈 TODO
 
 - [ ] 規劃對外引用的穩定 tag，例如 `v1`
 - [ ] 驗證外部 test repo 可成功 `uses: BookHsu/Libro.AgentWCAG.clean/.github/workflows/install-skill.yml@v1`
 - [ ] 確認 reusable workflow 對 private fork 的存取限制（同 org 內的 private repo 才能呼叫）
-- [ ] workflow inputs 加上 `force` (boolean, default false)
+- [x] workflow inputs 加上 `force` (boolean, default false)
 
 ## F-3. GitHub Release + gh CLI Download
 
@@ -163,30 +170,30 @@
 
 ### 實體檔案 TODO
 
-- [ ] 更新 `README.md`
-- [ ] 更新 `README.en.md`
+- [x] 更新 `README.md`
+- [x] 更新 `README.en.md`
 - [ ] 視需要更新 `docs/release/adoption-smoke-guide.md`
-- [ ] 視需要新增 `docs/examples/ci/gh-release-download-sample.md`
+- [x] 視需要新增 `docs/examples/ci/gh-release-download-sample.md`
 
 ## 建議優先順序
 
 ### Phase 1
 
-- [ ] B. `.gemini/skills/libro-wcag/SKILL.md`
-- [ ] D-1. `.claude-plugin/plugin.json`
-- [ ] D-1. `.claude-plugin/marketplace.json`
-- [ ] F-1. Submodule + add-dir 文件
-- [ ] F-2. `.github/workflows/install-skill.yml`
-- [ ] F-3. `gh release download` 文件
+- [x] B. `.gemini/skills/libro-wcag/SKILL.md`
+- [x] D-1. `.claude-plugin/plugin.json`
+- [x] D-1. `.claude-plugin/marketplace.json`
+- [x] F-1. Submodule + add-dir 文件
+- [x] F-2. `.github/workflows/install-skill.yml`
+- [x] F-3. `gh release download` 文件
 
 ### Phase 2
 
-- [ ] D-5. `mcp-server/`
+- [x] D-5. `mcp-server/`
 
 ### Phase 3
 
-- [ ] D-3. Gemini MCP 接入範例
-- [ ] D-4. 提供 `.vscode/mcp.json` sample（依賴 D-5 完成，不開發 VS Code Extension）
+- [x] D-3. Gemini MCP 接入範例
+- [x] D-4. 提供 `.vscode/mcp.json` sample（依賴 D-5 完成，不開發 VS Code Extension）
 
 ## 文件同步原則
 
