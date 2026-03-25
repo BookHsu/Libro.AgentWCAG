@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify a libro-agent-wcag installation for a target AI agent."""
+"""Verify a libro-wcag installation for a target AI agent."""
 
 from __future__ import annotations
 
@@ -9,13 +9,13 @@ import json
 import sys
 from pathlib import Path
 
-SCRIPT_ROOT = Path(__file__).resolve().parents[1] / 'skills' / 'libro-agent-wcag' / 'scripts'
+SCRIPT_ROOT = Path(__file__).resolve().parents[1] / 'skills' / 'libro-wcag' / 'scripts'
 if str(SCRIPT_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPT_ROOT))
 
 from shared_constants import get_product_provenance
 
-SKILL_NAME = 'libro-agent-wcag'
+SKILL_NAME = 'libro-wcag'
 SUPPORTED_AGENTS = ('codex', 'claude', 'gemini', 'copilot')
 ALL_AGENTS = SUPPORTED_AGENTS + ('all',)
 REQUIRED_MANIFEST_FIELDS = ('skill_entrypoint', 'adapter_prompt', 'usage_example', 'failure_guide', 'e2e_example')
@@ -36,7 +36,7 @@ def default_destination(agent: str) -> Path:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description='Verify libro-agent-wcag for a target AI agent.')
+    parser = argparse.ArgumentParser(description='Verify libro-wcag for a target AI agent.')
     parser.add_argument('--agent', required=True, choices=ALL_AGENTS)
     parser.add_argument('--dest', help='Destination directory. When --agent all is used, this becomes the base directory.')
     parser.add_argument(

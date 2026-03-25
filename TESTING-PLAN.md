@@ -11,9 +11,9 @@ Coverage target in this repo:
 
 | Test Type | Applies | Automation Target | Repo Areas | Current Status | Coverage Mode | Coverage Asset |
 | --- | --- | --- | --- | --- | --- | --- |
-| Unit Test | Yes | Yes | `skills/libro-agent-wcag/scripts/wcag_workflow.py`, `skills/libro-agent-wcag/scripts/remediation_library.py` | Implemented | Automated | `test_workflow.py`, `test_remediation_library.py`, `test_matrix_completion.py` |
+| Unit Test | Yes | Yes | `skills/libro-wcag/scripts/wcag_workflow.py`, `skills/libro-wcag/scripts/remediation_library.py` | Implemented | Automated | `test_workflow.py`, `test_remediation_library.py`, `test_matrix_completion.py` |
 | Component Test | Yes | Yes | `run_accessibility_audit.py`, `normalize_report.py`, installer scripts | Implemented | Automated | `test_runner.py`, `test_cli_flows.py`, `test_install_agent.py`, `test_repo_scripts.py` |
-| Module Test | Yes | Yes | `skills/libro-agent-wcag/scripts/`, `adapters/`, references | Implemented | Automated + Static Contract | `test_adapters.py`, `test_repo_contracts.py`, workflow and remediation tests |
+| Module Test | Yes | Yes | `skills/libro-wcag/scripts/`, `adapters/`, references | Implemented | Automated + Static Contract | `test_adapters.py`, `test_repo_contracts.py`, workflow and remediation tests |
 | Integration Test | Yes | Yes | Workflow + installer + validator path | Implemented | Automated | `test_install_agent.py`, `test_repo_scripts.py`, `test_cli_flows.py`, `test_repo_invocation.py` |
 | System Test | Yes | Yes | Whole repo as an installable skill product | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/testing-playbook.md` |
 | End-to-End Test | Yes | Yes | Install -> invoke -> audit/report flow | Implemented | Automated + Scripted Manual | `test_cli_flows.py`, `test_matrix_completion.py`, `docs/testing/testing-playbook.md` |
@@ -76,9 +76,9 @@ Coverage target in this repo:
 
 ### Core workflow and reporting
 
-- `skills/libro-agent-wcag/scripts/wcag_workflow.py`
-- `skills/libro-agent-wcag/scripts/normalize_report.py`
-- `skills/libro-agent-wcag/scripts/run_accessibility_audit.py`
+- `skills/libro-wcag/scripts/wcag_workflow.py`
+- `skills/libro-wcag/scripts/normalize_report.py`
+- `skills/libro-wcag/scripts/run_accessibility_audit.py`
 - Coverage:
   - Unit Test
   - Component Test
@@ -91,7 +91,7 @@ Coverage target in this repo:
 
 ### Remediation strategy logic
 
-- `skills/libro-agent-wcag/scripts/remediation_library.py`
+- `skills/libro-wcag/scripts/remediation_library.py`
 - Coverage:
   - Unit Test
   - Module Test
@@ -121,9 +121,9 @@ Coverage target in this repo:
 
 ### Skill contract and adapters
 
-- `skills/libro-agent-wcag/SKILL.md`
-- `skills/libro-agent-wcag/agents/openai.yaml`
-- `skills/libro-agent-wcag/adapters/*/prompt-template.md`
+- `skills/libro-wcag/SKILL.md`
+- `skills/libro-wcag/agents/openai.yaml`
+- `skills/libro-wcag/adapters/*/prompt-template.md`
 - Coverage:
   - Module Test
   - Black-box Test
@@ -133,10 +133,10 @@ Coverage target in this repo:
 
 ### References and framework guides
 
-- `skills/libro-agent-wcag/references/core-spec.md`
-- `skills/libro-agent-wcag/references/adapter-mapping.md`
-- `skills/libro-agent-wcag/references/wcag-citations.md`
-- `skills/libro-agent-wcag/references/framework-patterns-*.md`
+- `skills/libro-wcag/references/core-spec.md`
+- `skills/libro-wcag/references/adapter-mapping.md`
+- `skills/libro-wcag/references/wcag-citations.md`
+- `skills/libro-wcag/references/framework-patterns-*.md`
 - Coverage:
   - Static Testing
   - Acceptance Test assets
@@ -171,14 +171,14 @@ Coverage target in this repo:
 Run the current automated suite:
 
 ```powershell
-python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"
-python scripts/validate_skill.py skills/libro-agent-wcag
+python -m unittest discover -s skills/libro-wcag/scripts/tests -p "test_*.py"
+python scripts/validate_skill.py skills/libro-wcag
 ```
 
 Release-specific validation focus:
 
 ```powershell
-python -m unittest skills.libro-agent-wcag.scripts.tests.test_release_packaging skills.libro-agent-wcag.scripts.tests.test_release_adoption skills.libro-agent-wcag.scripts.tests.test_release_workflow skills.libro-agent-wcag.scripts.tests.test_release_docs
+python -m unittest skills.libro-wcag.scripts.tests.test_release_packaging skills.libro-wcag.scripts.tests.test_release_adoption skills.libro-wcag.scripts.tests.test_release_workflow skills.libro-wcag.scripts.tests.test_release_docs
 python scripts/package-release.py --output-dir .\dist\release --overwrite
 python scripts/run-release-adoption-smoke.py --release-dir .\dist\release --agent codex --summary-path .\dist\release\smoke-summary.json
 ```

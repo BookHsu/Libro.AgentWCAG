@@ -1,6 +1,6 @@
 # Skill Completion TODO
 
-This checklist tracks the remaining work needed to make `libro-agent-wcag` more complete as a production-grade accessibility skill.
+This checklist tracks the remaining work needed to make `libro-wcag` more complete as a production-grade accessibility skill.
 
 ## Current Execution Order
 
@@ -131,7 +131,7 @@ This checklist tracks the remaining work needed to make `libro-agent-wcag` more 
 
 ## M16 Apply-Fixes Productization
 
-- [x] Audit `skills/libro-agent-wcag/scripts/auto_fix.py` and `run_accessibility_audit.py` behavior against README wording for `apply-fixes`
+- [x] Audit `skills/libro-wcag/scripts/auto_fix.py` and `run_accessibility_audit.py` behavior against README wording for `apply-fixes`
 - [x] Define the supported `apply-fixes` scope explicitly by rule family, file type, and safety level
 - [x] Close the highest-value gaps between safe rewrite support and documented `apply-fixes` capabilities
 - [x] Add regression coverage for repeated `apply-fixes` runs on the same target and verify idempotent artifacts remain stable

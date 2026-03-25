@@ -30,7 +30,7 @@
       "name": "audit",
       "command": [
         "python",
-        "skills/libro-agent-wcag/scripts/run_accessibility_audit.py",
+        "skills/libro-wcag/scripts/run_accessibility_audit.py",
         "--target",
         "<repo>/.tmp-realistic-smoke/run/mixed-findings.html",
         "--output-dir",

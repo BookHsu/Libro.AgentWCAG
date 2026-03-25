@@ -91,7 +91,7 @@ def main() -> int:
     stage_dir = Path(tempfile.mkdtemp(prefix="libro-agentwcag-install-"))
     try:
         if args.version:
-            manifest_name = f"libro-agent-wcag-{args.version}-release-manifest.json"
+            manifest_name = f"libro-wcag-{args.version}-release-manifest.json"
         else:
             latest = json.loads(_read_text(args.release_base, "latest-release.json"))
             manifest_name = str(latest["release_manifest"])

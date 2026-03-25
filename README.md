@@ -47,6 +47,25 @@ python .\scripts\install-agent.py --agent copilot
 python .\scripts\install-agent.py --agent all
 ```
 
+如果你不想先 clone repo，也可以直接用 GitHub bootstrap：
+
+```sh
+curl -sL https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scripts/bootstrap.sh | sh -s -- --agent claude
+```
+
+```powershell
+irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scripts/bootstrap.ps1 | iex
+```
+
+如果你想在 PowerShell 直接帶參數：
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/BookHsu/Libro.AgentWCAG.clean/master/scripts/bootstrap.ps1))) -Agent claude
+```
+
+`bootstrap.sh` 支援 `--agent / --repo / --ref / --dest / --force`，其中 `--agent` 為必填。
+`bootstrap.ps1` 若未提供 `-Agent`，會互動提示選擇 agent；若要非互動安裝，請使用上面的 scriptblock 寫法傳入參數。
+
 ### 2. 驗證安裝
 
 ```powershell
@@ -58,7 +77,7 @@ python .\scripts\doctor-agent.py --agent codex
 在 Codex 中，安裝完成後可直接呼叫：
 
 ```text
-$libro-agent-wcag
+$libro-wcag
 ```
 
 如果你是使用 Claude、Gemini 或 Copilot，請載入各自 adapter 下的 `prompt-template.md` 作為對應平台的指令入口。
@@ -72,7 +91,7 @@ Libro.AgentWCAG 的核心不是單一指令，而是一套可被不同 AI agent 
 安裝完成後，可直接呼叫：
 
 ```text
-$libro-agent-wcag
+$libro-wcag
 ```
 
 常見使用方式：
@@ -84,9 +103,9 @@ $libro-agent-wcag
 
 ### 在其他 agent 中使用
 
-- `Claude`：載入 `skills/libro-agent-wcag/adapters/claude/prompt-template.md`
-- `Gemini`：載入 `skills/libro-agent-wcag/adapters/gemini/prompt-template.md`
-- `Copilot`：載入 `skills/libro-agent-wcag/adapters/copilot/prompt-template.md`
+- `Claude`：載入 `skills/libro-wcag/adapters/claude/prompt-template.md`
+- `Gemini`：載入 `skills/libro-wcag/adapters/gemini/prompt-template.md`
+- `Copilot`：載入 `skills/libro-wcag/adapters/copilot/prompt-template.md`
 
 做法是把對應 adapter 的 `prompt-template.md` 放進你使用的平台指令入口，例如 project prompt、system prompt、custom instruction 或 agent wrapper，讓該平台依同一份 contract 執行。
 
@@ -114,6 +133,28 @@ pwsh -File .\scripts\install-latest.ps1 -ReleaseBase https://github.com/<owner>/
 
 安裝流程會自動驗證 `latest-release.json`、release manifest 與 `sha256`，並在完成後執行完整性檢查。
 
+## Release readiness
+
+- `product_version` 來源是 `pyproject.toml`
+- `source_revision` 可由 `LIBRO_AGENTWCAG_SOURCE_REVISION` 注入
+- release 封裝腳本是 `scripts/package-release.py`
+- 主要資產包含 `libro-wcag-<version>-all-in-one.zip` 與 `libro-wcag-<version>-sha256sums.txt`
+- release consumer shortest path 使用 `install-latest.ps1` 與 `run-release-adoption-smoke.py`
+- Release-consumer shortest path 與 Release-consumer quickstart 參考 `docs/release/adoption-smoke-guide.md`
+- 釋出與回滾流程參考 `docs/release/ga-release-workflow.md`、`docs/release/ga-definition.md`、`docs/release/rollback-playbook.md`
+- 詳細操作手冊參考 `docs/release/release-playbook.md`
+- `apply-fixes` 範圍、prompt 樣板、resilient run pattern、CI 範例與 real scanner lane 分別在：
+- `docs/release/apply-fixes-scope.md`
+- `docs/release/prompt-invocation-templates.md`
+- `docs/release/resilient-run-patterns.md`
+- `docs/examples/ci/github-actions-wcag-ci-sample.yml`
+- `docs/release/real-scanner-ci-lane.md`
+- `docs/release/baseline-governance.md`
+- `docs/release/advanced-ci-gates.md`
+- policy bundle 說明位於 `docs/policy-bundles/`
+- 檢查命令關鍵字：`doctor-agent.py --verify-manifest-integrity`
+- 安裝後可用 `python .\scripts\doctor-agent.py --agent codex --verify-manifest-integrity` 驗證完整性
+
 ## 適合哪些情境
 
 - 想把無障礙檢查納入 AI 協作流程的團隊
@@ -123,11 +164,11 @@ pwsh -File .\scripts\install-latest.ps1 -ReleaseBase https://github.com/<owner>/
 
 ## 專案結構
 
-- `skills/libro-agent-wcag`：可安裝的 skill 主體
-- `skills/libro-agent-wcag/adapters/openai-codex`：Codex adapter
-- `skills/libro-agent-wcag/adapters/claude`：Claude adapter
-- `skills/libro-agent-wcag/adapters/gemini`：Gemini adapter
-- `skills/libro-agent-wcag/adapters/copilot`：Copilot adapter
+- `skills/libro-wcag`：可安裝的 skill 主體
+- `skills/libro-wcag/adapters/openai-codex`：Codex adapter
+- `skills/libro-wcag/adapters/claude`：Claude adapter
+- `skills/libro-wcag/adapters/gemini`：Gemini adapter
+- `skills/libro-wcag/adapters/copilot`：Copilot adapter
 - `scripts/install-agent.py`：安裝工具
 - `scripts/doctor-agent.py`：健康檢查與完整性驗證
 - `scripts/uninstall-agent.py`：卸載工具
@@ -155,8 +196,8 @@ python .\scripts\uninstall-agent.py --agent codex
 本地驗證：
 
 ```powershell
-python -m unittest discover -s skills/libro-agent-wcag/scripts/tests -p "test_*.py"
-python scripts/validate_skill.py skills/libro-agent-wcag --validate-policy-bundles
+python -m unittest discover -s skills/libro-wcag/scripts/tests -p "test_*.py"
+python scripts/validate_skill.py skills/libro-wcag --validate-policy-bundles
 ```
 
 ## 文件入口

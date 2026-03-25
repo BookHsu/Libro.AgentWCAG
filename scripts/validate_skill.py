@@ -164,7 +164,7 @@ def _validate_single_policy_bundle(
 
 def _validate_bundle_explain_policy_compatibility(repo_root: Path, payload: dict[str, Any]) -> None:
     bundle_name = str(payload["name"])
-    script = repo_root / "skills" / "libro-agent-wcag" / "scripts" / "run_accessibility_audit.py"
+    script = repo_root / "skills" / "libro-wcag" / "scripts" / "run_accessibility_audit.py"
     workspace = repo_root / ".tmp-test" / "validate-policy-bundles" / bundle_name
     output_dir = workspace / "out"
     workspace.mkdir(parents=True, exist_ok=True)

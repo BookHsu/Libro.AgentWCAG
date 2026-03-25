@@ -29,7 +29,7 @@ python .\scripts\doctor-agent.py --agent all --dest .\.tmp\agents --verify-manif
 
 1. Reinstall the same agent bundle with `--force`.
 2. Re-run doctor with `--verify-manifest-integrity`.
-3. If still missing, compare local bundle contents against `skills/libro-agent-wcag/adapters/<adapter>/` in this repo.
+3. If still missing, compare local bundle contents against `skills/libro-wcag/adapters/<adapter>/` in this repo.
 
 ### B. Hash mismatch on adapter prompt or entrypoint files
 

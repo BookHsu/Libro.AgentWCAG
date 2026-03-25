@@ -7,7 +7,7 @@ Use this workflow to verify baseline evidence integrity before applying debt tra
 Run a baseline capture with evidence mode enabled:
 
 ```powershell
-python skills/libro-agent-wcag/scripts/run_accessibility_audit.py `
+python skills/libro-wcag/scripts/run_accessibility_audit.py `
   --target <target> `
   --output-dir out/baseline `
   --baseline-evidence-mode hash `
@@ -24,7 +24,7 @@ Expected outputs:
 When comparing against a baseline report, enable evidence verification:
 
 ```powershell
-python skills/libro-agent-wcag/scripts/run_accessibility_audit.py `
+python skills/libro-wcag/scripts/run_accessibility_audit.py `
   --target <target> `
   --output-dir out/compare `
   --baseline-report out/baseline/wcag-report.json `

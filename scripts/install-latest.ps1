@@ -63,7 +63,7 @@ try {
   }
 
   if ($Version) {
-    $manifestName = "libro-agent-wcag-$Version-release-manifest.json"
+    $manifestName = "libro-wcag-$Version-release-manifest.json"
   } else {
     $latest = Read-ReleaseText -Base $ReleaseBase -Name 'latest-release.json' | ConvertFrom-Json
     $manifestName = [string]$latest.release_manifest

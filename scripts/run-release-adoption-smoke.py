@@ -156,7 +156,7 @@ def _ensure_release_assets(release_dir: Path | None) -> Path:
 
 def _resolve_manifest(asset_dir: Path, version: str | None) -> tuple[Path, dict[str, object], Path]:
     if version:
-        manifest_path = asset_dir / f"libro-agent-wcag-{version}-release-manifest.json"
+        manifest_path = asset_dir / f"libro-wcag-{version}-release-manifest.json"
         latest_path = asset_dir / "latest-release.json"
     else:
         latest_path = asset_dir / "latest-release.json"
@@ -274,7 +274,7 @@ def main() -> int:
 
         audit_cmd = [
             sys.executable,
-            str(bundle_root / "skills" / "libro-agent-wcag" / "scripts" / "run_accessibility_audit.py"),
+            str(bundle_root / "skills" / "libro-wcag" / "scripts" / "run_accessibility_audit.py"),
             "--target",
             str(sample_path),
             "--output-dir",

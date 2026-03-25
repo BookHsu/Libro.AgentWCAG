@@ -71,11 +71,11 @@ jobs:
 
       - name: Capture preflight version provenance
         run: |
-          python skills/libro-agent-wcag/scripts/run_accessibility_audit.py --preflight-only > out/ci-preflight.json
+          python skills/libro-wcag/scripts/run_accessibility_audit.py --preflight-only > out/ci-preflight.json
 
       - name: Run WCAG audit (SARIF + baseline gate)
         run: |
-          python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
+          python skills/libro-wcag/scripts/run_accessibility_audit.py \
             --target docs/testing/realistic-sample/mixed-findings.html \
             --execution-mode suggest-only \
             --output-language en \

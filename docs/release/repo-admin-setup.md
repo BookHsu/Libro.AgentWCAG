@@ -10,13 +10,13 @@ Use this note to keep release publishing and PR governance aligned for this repo
   - GitHub Release `published`
 - The `published` trigger matters when an operator creates or publishes a release from the GitHub UI. Without that trigger, a manually published release can exist without the packaged zip assets.
 - Published release assets should include:
-  - `libro-agent-wcag-<version>-codex.zip`
-  - `libro-agent-wcag-<version>-claude.zip`
-  - `libro-agent-wcag-<version>-gemini.zip`
-  - `libro-agent-wcag-<version>-copilot.zip`
-  - `libro-agent-wcag-<version>-all-in-one.zip`
-  - `libro-agent-wcag-<version>-sha256sums.txt`
-  - `libro-agent-wcag-<version>-release-manifest.json`
+  - `libro-wcag-<version>-codex.zip`
+  - `libro-wcag-<version>-claude.zip`
+  - `libro-wcag-<version>-gemini.zip`
+  - `libro-wcag-<version>-copilot.zip`
+  - `libro-wcag-<version>-all-in-one.zip`
+  - `libro-wcag-<version>-sha256sums.txt`
+  - `libro-wcag-<version>-release-manifest.json`
   - `latest-release.json`
 
 ## Quick Install From Published Release
@@ -42,7 +42,7 @@ sh ./scripts/install-latest.sh --release-base https://github.com/<owner>/<repo>/
 - Preferred setup is a branch ruleset targeting the default branch with:
   - require pull request before merging
   - require status checks to pass
-  - required check `libro-agent-wcag-real-scanner`
+  - required check `libro-wcag-real-scanner`
   - bypass list containing the repository admin/owner role, or a dedicated maintainers team
 - If you want owners to keep an audit trail but still bypass merge blockers, use ruleset bypass permission `For pull requests only` instead of unrestricted bypass.
 - If the repository still uses legacy branch protection instead of rulesets, configure the equivalent bypass behavior in repository settings. GitHub notes that bypass actors in classic branch protection are only available for organization-owned repositories.

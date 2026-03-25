@@ -15,7 +15,7 @@ This guide documents resilient CLI patterns for `run_accessibility_audit.py` in 
 ## CI pattern: audit-only
 
 ```powershell
-python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
+python skills/libro-wcag/scripts/run_accessibility_audit.py \
   --target https://example.com \
   --execution-mode audit-only \
   --output-language en \
@@ -29,7 +29,7 @@ Use when you only need findings and report artifacts, without remediation action
 ## CI pattern: suggest-only
 
 ```powershell
-python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
+python skills/libro-wcag/scripts/run_accessibility_audit.py \
   --target https://example.com \
   --execution-mode suggest-only \
   --output-language en \
@@ -43,7 +43,7 @@ Use when transient scanner/runtime issues are common and you still want stable s
 ## CI pattern: apply-fixes (local target)
 
 ```powershell
-python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
+python skills/libro-wcag/scripts/run_accessibility_audit.py \
   --target docs/testing/realistic-sample/mixed-findings.html \
   --execution-mode apply-fixes \
   --output-language en \
@@ -59,7 +59,7 @@ Use for deterministic local-file remediation in supported file types.
 When scanner runtimes are not guaranteed in CI:
 
 ```powershell
-python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
+python skills/libro-wcag/scripts/run_accessibility_audit.py \
   --target docs/testing/realistic-sample/mixed-findings.html \
   --execution-mode apply-fixes \
   --output-language en \
@@ -111,7 +111,7 @@ Use policy flags to gate CI outcomes and tune rule scope without code changes:
 ### Example: SARIF + severity gate
 
 ```powershell
-python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
+python skills/libro-wcag/scripts/run_accessibility_audit.py \
   --target docs/testing/realistic-sample/mixed-findings.html \
   --execution-mode suggest-only \
   --output-dir out/ci-policy \
@@ -141,7 +141,7 @@ Use baseline diff mode to gate only newly introduced accessibility debt while al
 ### Example: fail only on new serious debt
 
 ```powershell
-python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
+python skills/libro-wcag/scripts/run_accessibility_audit.py \
   --target docs/testing/realistic-sample/mixed-findings.html \
   --execution-mode suggest-only \
   --output-dir out/baseline-gate \
@@ -155,7 +155,7 @@ The output report includes `run_meta.baseline_diff` with introduced/resolved/per
 ## GitHub Actions integration (artifacts + PR annotation)
 
 A reusable workflow example is available at `docs/examples/ci/github-actions-wcag-ci-sample.yml`.
-For the formal live real-scanner PR gate and evidence contract, see `docs/release/real-scanner-ci-lane.md` and `.github/workflows/libro-agent-wcag-real-scanner.yml`.
+For the formal live real-scanner PR gate and evidence contract, see `docs/release/real-scanner-ci-lane.md` and `.github/workflows/libro-wcag-real-scanner.yml`.
 
 Key integration points:
 
@@ -200,7 +200,7 @@ Use historical evidence to suppress noisy high-severity triage drift:
 Example release-lane command:
 
 ```bash
-python skills/libro-agent-wcag/scripts/run_accessibility_audit.py \
+python skills/libro-wcag/scripts/run_accessibility_audit.py \
   --target https://example.com \
   --output-dir out/risk-calibration \
   --fail-on serious \
