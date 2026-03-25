@@ -26,6 +26,14 @@ The hard part of web accessibility work is usually not finding a tool. It is kee
 /plugin install libro-wcag@libro-wcag-marketplace
 ```
 
+### npm CLI
+
+```powershell
+npm install -g libro-cli
+libro install claude
+libro doctor claude
+```
+
 ### Clone + CLI
 
 ```powershell

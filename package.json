@@ -1,0 +1,41 @@
+{
+  "name": "libro-cli",
+  "version": "1.0.2",
+  "description": "Global CLI wrapper for Libro.AgentWCAG skill installation.",
+  "license": "MIT",
+  "homepage": "https://github.com/BookHsu/Libro.AgentWCAG",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BookHsu/Libro.AgentWCAG.git"
+  },
+  "bin": {
+    "libro": "bin/libro.js"
+  },
+  "files": [
+    "bin/",
+    "mcp-server/requirements.txt",
+    "mcp-server/server.py",
+    "mcp-server/tools/*.py",
+    "scripts/*.py",
+    "scripts/*.ps1",
+    "scripts/*.sh",
+    "skills/libro-wcag/SKILL.md",
+    "skills/libro-wcag/adapters/",
+    "skills/libro-wcag/agents/",
+    "skills/libro-wcag/references/",
+    "skills/libro-wcag/schemas/",
+    "skills/libro-wcag/scripts/*.py"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "wcag",
+    "accessibility",
+    "a11y",
+    "claude",
+    "gemini",
+    "copilot",
+    "codex"
+  ]
+}

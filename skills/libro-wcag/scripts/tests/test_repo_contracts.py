@@ -25,9 +25,12 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('## 安裝方式', content)
         self.assertIn('## 使用方式', content)
         self.assertIn('### Claude Marketplace (Claude Code)', content)
+        self.assertIn('### npm CLI', content)
         self.assertIn('### Clone + CLI', content)
         self.assertIn('/plugin marketplace add BookHsu/Libro.AgentWCAG', content)
         self.assertIn('/plugin install libro-wcag@libro-wcag-marketplace', content)
+        self.assertIn('npm install -g libro-cli', content)
+        self.assertIn('libro install claude', content)
         self.assertIn('libro.py install claude', content)
         self.assertIn('libro.py doctor claude', content)
         self.assertIn('libro.py remove claude', content)
@@ -35,6 +38,21 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('| `audit-only` | 是 | 否 | 否 |', content)
         self.assertIn('| `suggest-only` | 是 | 是 | 否 |', content)
         self.assertIn('| `apply-fixes` | 是 | 是 | 是，僅限支援的本機檔案 |', content)
+
+    def test_package_json_exposes_global_libro_cli(self) -> None:
+        payload = json.loads((self.repo_root / 'package.json').read_text(encoding='utf-8'))
+        self.assertEqual(payload['name'], 'libro-cli')
+        self.assertEqual(payload['version'], tomllib.loads((self.repo_root / 'pyproject.toml').read_text(encoding='utf-8'))['project']['version'])
+        self.assertEqual(payload['bin']['libro'], 'bin/libro.js')
+        self.assertIn('scripts/*.py', payload['files'])
+        self.assertIn('scripts/*.ps1', payload['files'])
+        self.assertIn('skills/libro-wcag/scripts/*.py', payload['files'])
+
+    def test_npmignore_excludes_tests_and_python_cache_from_published_cli(self) -> None:
+        content = self._read(self.repo_root / '.npmignore')
+        self.assertIn('**/__pycache__/', content)
+        self.assertIn('**/*.pyc', content)
+        self.assertIn('skills/libro-wcag/scripts/tests/', content)
 
     def test_testing_plan_tracks_matrix_mapping_and_gaps(self) -> None:
         content = self._read(self.repo_root / 'TESTING-PLAN.md')
@@ -242,6 +260,7 @@ class RepoContractTests(unittest.TestCase):
             'mcp-server/tools/audit_page.py',
             'mcp-server/tools/suggest_fixes.py',
             'mcp-server/tools/normalize_report.py',
+            'bin/libro.js',
             'LICENSE',
             'README.md',
             'SKILL-TODO.md',
@@ -256,6 +275,7 @@ class RepoContractTests(unittest.TestCase):
             'docs/examples/copilot/mcp.sample.json',
             'docs/examples/gemini/settings.mcp.sample.json',
             'docs/testing/testing-playbook.md',
+            'package.json',
             'pyproject.toml',
             'scripts/libro.ps1',
             'scripts/libro.py',
