@@ -53,20 +53,6 @@ python .\scripts\libro.py doctor claude --verify-manifest-integrity
 python .\scripts\libro.py remove claude
 ```
 
-### 其他命令入口
-
-如果你偏好 wrapper：
-
-```powershell
-.\scripts\libro.ps1 install claude
-.\scripts\libro.ps1 doctor claude
-```
-
-```sh
-./scripts/libro.sh install claude
-./scripts/libro.sh doctor claude
-```
-
 ## 使用方式
 
 Libro.AgentWCAG 的核心不是單一指令，而是一套可被不同 AI agent 共用的 skill contract。實際使用時，你可以依照目前任務選擇「只稽核」、「提出建議」或「直接修正」。

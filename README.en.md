@@ -53,20 +53,6 @@ python .\scripts\libro.py doctor claude --verify-manifest-integrity
 python .\scripts\libro.py remove claude
 ```
 
-### Other Command Entrypoints
-
-If you prefer wrappers:
-
-```powershell
-.\scripts\libro.ps1 install claude
-.\scripts\libro.ps1 doctor claude
-```
-
-```sh
-./scripts/libro.sh install claude
-./scripts/libro.sh doctor claude
-```
-
 ## Use
 
 Libro.AgentWCAG is not just a single command. It is a shared skill contract that different AI agents can follow. In practice, you choose whether you want to audit only, get suggestions, or apply fixes.
