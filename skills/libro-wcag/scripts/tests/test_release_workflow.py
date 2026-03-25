@@ -27,6 +27,7 @@ class ReleaseWorkflowTests(unittest.TestCase):
         self.assertIn('package-release:', content)
         self.assertIn('clean-release-smoke:', content)
         self.assertIn('publish-release:', content)
+        self.assertIn('publish-npm:', content)
         self.assertIn('needs:\n      - validate', content)
         self.assertIn('needs:\n      - package-release', content)
         self.assertIn('      - clean-release-smoke', content)
@@ -42,6 +43,9 @@ class ReleaseWorkflowTests(unittest.TestCase):
         self.assertIn('softprops/action-gh-release@v2', content)
         self.assertIn('fail_on_unmatched_files: true', content)
         self.assertIn('${{ env.LIBRO_RELEASE_ARTIFACT_DIR }}/*', content)
+        self.assertIn('id-token: write', content)
+        self.assertIn('registry-url: https://registry.npmjs.org', content)
+        self.assertIn('npm publish', content)
 
     def test_release_workflow_does_not_modify_real_scanner_required_lane(self) -> None:
         content = self.workflow_path.read_text(encoding='utf-8')
