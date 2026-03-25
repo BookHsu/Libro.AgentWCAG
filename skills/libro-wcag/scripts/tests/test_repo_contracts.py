@@ -156,6 +156,14 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('"servers"', copilot)
         self.assertIn('"mcpServers"', gemini)
 
+    def test_publish_npm_workflow_exists_with_oidc_contract(self) -> None:
+        content = self._read(self.repo_root / '.github' / 'workflows' / 'publish-npm.yml')
+        self.assertIn('id-token: write', content)
+        self.assertIn('contents: read', content)
+        self.assertIn('node-version: "24"', content)
+        self.assertIn('npm publish --access public', content)
+        self.assertIn('apply-release-version.py', content)
+
     def test_claude_plugin_json_exists_and_has_required_fields(self) -> None:
         payload = json.loads((self.repo_root / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))
         self.assertEqual(payload['name'], 'libro-wcag')
@@ -267,6 +275,7 @@ class RepoContractTests(unittest.TestCase):
             '.gitattributes',
             '.github/workflows/test.yml',
             '.github/workflows/install-skill.yml',
+            '.github/workflows/publish-npm.yml',
             '.gitignore',
             '.claude/skills/libro-wcag/SKILL.md',
             '.claude-plugin/plugin.json',
@@ -300,6 +309,7 @@ class RepoContractTests(unittest.TestCase):
             'scripts/doctor-agent.py',
             'scripts/bootstrap.ps1',
             'scripts/bootstrap.sh',
+            'scripts/apply-release-version.py',
             'scripts/install-agent.ps1',
             'scripts/install-agent.py',
             'scripts/install-agent.sh',

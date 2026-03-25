@@ -5,17 +5,16 @@ Use this workflow when publishing a formal GitHub release for `Libro.AgentWCAG`.
 ## Trigger
 
 - Automatic publish trigger: push a tag matching `v*`
-- Automatic publish trigger: publish a GitHub Release for an existing `v*` tag
-- Manual trigger: `workflow_dispatch` on `.github/workflows/release.yml` with `release_tag`
+- `release.yml` publishes GitHub release assets for the tag
+- `publish-npm.yml` publishes `librowcag-cli` to npm for the same tag
 
 ## Version Bump Flow
 
-1. Update `pyproject.toml` to the target `X.Y.Z` version.
-2. Finalize the matching `CHANGELOG.md` section.
-3. Validate release assets and clean smoke locally when needed.
-4. Create and push tag `vX.Y.Z`.
-5. Let `release.yml` perform validate -> package -> smoke -> GitHub Release publish -> npm publish.
-6. If the release was created in the GitHub UI after the tag already existed, publishing the release also triggers the same asset pipeline.
+1. Validate release assets and clean smoke locally when needed.
+2. Create and push tag `vX.Y.Z`.
+3. Let `release.yml` derive `X.Y.Z` from the tag, run `scripts/apply-release-version.py`, then perform validate -> package -> smoke -> GitHub Release publish.
+4. Let `publish-npm.yml` derive the same `X.Y.Z` from the tag, run `scripts/apply-release-version.py`, and publish `librowcag-cli` to npm using OIDC trusted publishing.
+5. GitHub release notes are auto-generated at publish time and do not drive the version number.
 
 ## Pipeline Stages
 
@@ -23,6 +22,8 @@ Use this workflow when publishing a formal GitHub release for `Libro.AgentWCAG`.
    - runs `python -m unittest discover -s skills/libro-wcag/scripts/tests -p "test_*.py"`
    - runs `python scripts/validate_skill.py skills/libro-wcag --validate-policy-bundles`
 2. `package-release`
+   - resolves `release_version=${GITHUB_REF_NAME#v}`
+   - runs `python scripts/apply-release-version.py --version <release_version>`
    - exports `LIBRO_AGENTWCAG_SOURCE_REVISION=${GITHUB_SHA}`
    - exports `LIBRO_AGENTWCAG_BUILD_TIMESTAMP=<UTC ISO-8601>`
    - runs `python scripts/package-release.py --output-dir dist/release --overwrite`
@@ -34,10 +35,11 @@ Use this workflow when publishing a formal GitHub release for `Libro.AgentWCAG`.
 4. `publish-release`
    - runs only after `package-release` and `clean-release-smoke` succeed
    - publishes all staged release assets as the GitHub Release payload
-5. `publish-npm`
-   - runs only after `validate` and `clean-release-smoke` succeed
-   - publishes `librowcag-cli` to npm
+5. `publish-npm.yml`
+   - resolves `release_version=${GITHUB_REF_NAME#v}`
+   - runs `python scripts/apply-release-version.py --version <release_version>`
    - uses GitHub Actions OIDC / npm trusted publishing rather than a stored `NPM_TOKEN`
+   - publishes `librowcag-cli` to npm with `npm publish --access public`
 
 ## Post-Publish Verification
 
@@ -58,21 +60,22 @@ Publish is blocked unless:
 - package-release passes
 - clean-release-smoke passes
 - release tag/version metadata resolves cleanly
+- npm trusted publishing remains bound to the workflow filename configured on npmjs.com
 
 No undocumented manual override is allowed to skip these gates.
 
 ## Release Metadata And Notes
 
 - Release title format: `Libro.AgentWCAG <version>`
-- Release body source: the matching version section in `CHANGELOG.md`
+- Release body source: GitHub auto-generated release notes
 - Required release note sections:
   - highlights
   - breaking changes, when applicable
   - known limitations
   - install / verify commands
   - checksum verification guidance
-- Use `docs/release/release-note-template.md` for standard releases.
-- Use `docs/release/hotfix-release-note-template.md` for hotfix releases.
+- Use `docs/release/release-note-template.md` for standard release guidance.
+- Use `docs/release/hotfix-release-note-template.md` for hotfix guidance.
 - Hotfix releases follow the same structure and must explicitly identify the superseded version.
 
 ## Artifact Retention
@@ -99,7 +102,7 @@ The published asset set must include:
 
 Before pushing a release tag:
 
-- confirm `CHANGELOG.md` has the tested release notes
 - confirm GA blockers are closed or explicitly deferred as non-blockers
 - confirm rollback operator and approver are known
 - confirm required branch protection still includes `libro-wcag-real-scanner`
+- confirm npm trusted publisher still points at the workflow filename currently responsible for `npm publish`
