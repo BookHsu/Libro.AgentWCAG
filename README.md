@@ -53,15 +53,11 @@ Libro.AgentWCAG 的核心不是單一指令，而是一套可被不同 AI agent 
 
 三種工作模式：
 
-- `audit-only`：只找出問題
-- `suggest-only`：找出問題並提出修正建議，但不改檔
-- `apply-fixes`：在明確授權下，對支援的本機檔案套用安全修正
-
-Codex 安裝完成後可直接呼叫：
-
-```text
-$libro-wcag
-```
+| 模式 | 會找問題 | 會給修正建議 | 會改檔 |
+|---|---|---|---|
+| `audit-only` | 是 | 否 | 否 |
+| `suggest-only` | 是 | 是 | 否 |
+| `apply-fixes` | 是 | 是 | 是，僅限支援的本機檔案 |
 
 - 稽核頁面時，先用 `audit-only`
 - 想看修法但還不想改檔時，使用 `suggest-only`

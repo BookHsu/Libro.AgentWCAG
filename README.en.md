@@ -65,15 +65,11 @@ Libro.AgentWCAG is not just a single command. It is a shared skill contract that
 
 Three working modes:
 
-- `audit-only`: find issues only
-- `suggest-only`: find issues and propose fixes without editing files
-- `apply-fixes`: apply safe fixes to supported local files when explicitly authorized
-
-After installation, Codex can invoke:
-
-```text
-$libro-wcag
-```
+| Mode | Finds issues | Gives fix suggestions | Edits files |
+|---|---|---|---|
+| `audit-only` | Yes | No | No |
+| `suggest-only` | Yes | Yes | No |
+| `apply-fixes` | Yes | Yes | Yes, only for supported local files |
 
 - Start with `audit-only` when you want a clean accessibility review
 - Use `suggest-only` when you want remediation ideas before changing files
