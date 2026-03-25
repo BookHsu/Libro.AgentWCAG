@@ -51,6 +51,8 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('請用 audit-only 模式檢查 https://example.com，WCAG 2.1 AA。', content)
         self.assertIn('請用 suggest-only 模式檢查 src/page.html，並提供修正建議，但不要改檔。', content)
         self.assertIn('請用 apply-fixes 模式檢查 src/page.html，並在安全範圍內直接修正可處理的問題。', content)
+        self.assertIn('## License', content)
+        self.assertIn('MIT. See [LICENSE](LICENSE).', content)
 
     def test_package_json_exposes_global_libro_cli(self) -> None:
         payload = json.loads((self.repo_root / 'package.json').read_text(encoding='utf-8'))
