@@ -7,13 +7,13 @@ python .\scripts\libro.py install gemini
 python .\scripts\libro.py doctor gemini
 ```
 
-If you work inside a repo-local Gemini workspace, you can also commit `.gemini/skills/libro-wcag/SKILL.md` and let Gemini discover the skill without a user-home install. To materialize the same layout into another workspace root, run:
+If you need a workspace-local installation, run:
 
 ```powershell
 python .\scripts\libro.py install gemini --workspace-root .
 ```
 
-For MCP-based Gemini integration, install dependencies and emit a workspace-local config:
+If you need workspace MCP, install dependencies and emit a workspace-local config:
 
 ```powershell
 python -m pip install -r .\mcp-server\requirements.txt
