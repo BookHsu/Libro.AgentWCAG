@@ -42,18 +42,23 @@ jobs:
       - name: Apply tag-derived release version
         run: python scripts/apply-release-version.py --version "${{ steps.release-meta.outputs.release_version }}"
 
-      - name: Export provenance inputs
-        shell: bash
+      - name: Install Python dependencies
         run: |
-          set -euo pipefail
-          echo "LIBRO_AGENTWCAG_SOURCE_REVISION=${GITHUB_SHA}" >> "$GITHUB_ENV"
-          echo "LIBRO_AGENTWCAG_BUILD_TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml
 
       - name: Run automated tests
         run: python -m unittest discover -s skills/libro-wcag/scripts/tests -p "test_*.py"
 
       - name: Validate repo skill contract
         run: python scripts/validate_skill.py skills/libro-wcag --validate-policy-bundles
+
+      - name: Export provenance inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "LIBRO_AGENTWCAG_SOURCE_REVISION=${GITHUB_SHA}" >> "$GITHUB_ENV"
+          echo "LIBRO_AGENTWCAG_BUILD_TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
 
       - name: Pack npm tarball
         run: npm pack
