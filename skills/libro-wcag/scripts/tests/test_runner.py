@@ -429,7 +429,14 @@ class RunnerTests(unittest.TestCase):
         mock_run.side_effect = subprocess.TimeoutExpired(cmd=["npx", "tool"], timeout=7)
         ok, result = scanner_runtime._run_command(["npx", "tool"], timeout_seconds=7)
         self.assertFalse(ok)
-        self.assertEqual(result, "command timed out after 7 seconds")
+        self.assertEqual(result, "command timed out after 7 seconds: npx tool")
+
+    @patch("scanner_runtime.subprocess.run")
+    def test_run_command_returns_oserror_message(self, mock_run) -> None:
+        mock_run.side_effect = OSError("Access is denied")
+        ok, result = scanner_runtime._run_command(["npx", "tool"], timeout_seconds=30)
+        self.assertFalse(ok)
+        self.assertEqual(result, "failed to execute command npx: Access is denied")
 
     @patch("scanner_runtime.shutil.which")
     @patch("scanner_runtime.os.name", "nt")
@@ -464,6 +471,22 @@ class RunnerTests(unittest.TestCase):
                 payload, err = scanner_runtime._try_run_axe("https://example.com", output_dir, timeout_seconds=15)
             self.assertIsNone(err)
             self.assertEqual(payload, {"violations": [{"id": "image-alt"}]})
+        finally:
+            if axe_json.exists():
+                axe_json.unlink()
+            if output_dir.exists():
+                output_dir.rmdir()
+
+    def test_try_run_axe_returns_error_for_malformed_json(self) -> None:
+        output_dir = Path(__file__).parent / "fixtures" / "_tmp-axe-malformed-json"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        axe_json = output_dir / "axe.raw.json"
+        axe_json.write_text('{"violations": }', encoding="utf-8")
+        try:
+            with patch("scanner_runtime._run_command", return_value=(True, "")):
+                payload, err = scanner_runtime._try_run_axe("https://example.com", output_dir, timeout_seconds=15)
+            self.assertIsNone(payload)
+            self.assertRegex(err or "", r"axe output json is malformed: .*axe\.raw\.json")
         finally:
             if axe_json.exists():
                 axe_json.unlink()
@@ -529,6 +552,35 @@ class RunnerTests(unittest.TestCase):
             temp_root = output_dir / "lighthouse-tmp"
             if temp_root.exists():
                 import shutil
+                shutil.rmtree(temp_root, ignore_errors=True)
+            if output_dir.exists():
+                output_dir.rmdir()
+
+    def test_try_run_lighthouse_returns_error_for_malformed_json(self) -> None:
+        output_dir = Path(__file__).parent / "fixtures" / "_tmp-lighthouse-malformed-json"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        lighthouse_json = output_dir / "lighthouse.raw.json"
+        lighthouse_json.write_text('{"audits": }', encoding="utf-8")
+        try:
+            process = Mock()
+            process.poll.return_value = None
+            with (
+                patch("scanner_runtime._find_browser_executable", return_value="chrome.exe"),
+                patch("scanner_runtime._find_free_port", return_value=9222),
+                patch("scanner_runtime._wait_for_debug_port", return_value=True),
+                patch("scanner_runtime.subprocess.Popen", return_value=process),
+                patch("scanner_runtime._run_command", return_value=(True, "")),
+            ):
+                payload, err = scanner_runtime._try_run_lighthouse("https://example.com", output_dir, timeout_seconds=15)
+            self.assertIsNone(payload)
+            self.assertRegex(err or "", r"lighthouse output json is malformed: .*lighthouse\.raw\.json")
+        finally:
+            if lighthouse_json.exists():
+                lighthouse_json.unlink()
+            temp_root = output_dir / "lighthouse-tmp"
+            if temp_root.exists():
+                import shutil
+
                 shutil.rmtree(temp_root, ignore_errors=True)
             if output_dir.exists():
                 output_dir.rmdir()

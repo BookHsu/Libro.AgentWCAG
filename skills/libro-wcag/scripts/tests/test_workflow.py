@@ -18,6 +18,7 @@ from wcag_workflow import (
     LIGHTHOUSE_RULE_TO_SC,
     _escape_pipe,
     build_citation_url,
+    load_json_file,
     normalize_report,
     resolve_contract,
     to_markdown_table,
@@ -482,6 +483,13 @@ class WorkflowTests(unittest.TestCase):
     def test_invalid_execution_mode_raises(self) -> None:
         with self.assertRaises(ValueError):
             resolve_contract({"target": "https://example.com", "execution_mode": "rewrite-all"})
+
+    def test_load_json_file_raises_descriptive_error_for_malformed_json(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            payload = Path(tmp) / "broken.json"
+            payload.write_text('{"broken": }', encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, r"Invalid JSON in .*broken\.json: .*line 1, column"):
+                load_json_file(str(payload))
 
     def test_escape_pipe_handles_none(self) -> None:
         self.assertEqual(_escape_pipe(None), "None")

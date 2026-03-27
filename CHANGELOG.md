@@ -6,6 +6,16 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ## [Unreleased]
 
+### Fixed
+
+- Scanner runtime now reports malformed axe/lighthouse JSON artifacts with file path and line/column context instead of crashing.
+- Workflow JSON loading now raises descriptive `ValueError` messages for malformed local report inputs.
+- `run-realistic-validation-smoke.py` now validates `wcag-report.json` existence and JSON shape before building the smoke summary.
+
+### Added
+
+- Regression coverage for malformed scanner JSON artifacts, malformed workflow inputs, and missing smoke-report artifacts.
+
 ## [1.2.1] - 2026-03-25
 
 ### Fixed
