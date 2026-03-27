@@ -24,6 +24,7 @@ PRODUCT_SLUG = "libro-wcag"
 FIXED_ZIP_TIMESTAMP = (2024, 1, 1, 0, 0, 0)
 BASE_RELEASE_FILES = (
     Path("README.md"),
+    Path("CHANGELOG.md"),
     Path("LICENSE"),
     Path("pyproject.toml"),
     Path("scripts/install-agent.py"),

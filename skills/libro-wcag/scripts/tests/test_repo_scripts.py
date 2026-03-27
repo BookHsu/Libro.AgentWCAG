@@ -13,6 +13,8 @@ import unittest
 import zipfile
 from pathlib import Path
 
+import yaml
+
 
 class RepoScriptTests(unittest.TestCase):
     @classmethod
@@ -101,6 +103,73 @@ class RepoScriptTests(unittest.TestCase):
         )
         self.assertNotEqual(completed.returncode, 0)
         self.assertIn('Missing SKILL.md', completed.stderr + completed.stdout)
+
+    def test_validate_skill_cli_rejects_missing_adapter_docs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            skill_dir = Path(tmp) / 'skills' / 'libro-wcag'
+            shutil.copytree(self.repo_root / 'skills' / 'libro-wcag', skill_dir)
+            (skill_dir / 'adapters' / 'copilot' / 'usage-example.md').unlink()
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(self.repo_root / 'scripts' / 'validate_skill.py'),
+                    str(skill_dir),
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn('missing required adapter files', completed.stderr + completed.stdout)
+            self.assertIn('usage-example.md', completed.stderr + completed.stdout)
+
+    def test_validate_skill_cli_rejects_missing_scripts_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            skill_dir = Path(tmp) / 'skills' / 'libro-wcag'
+            shutil.copytree(self.repo_root / 'skills' / 'libro-wcag', skill_dir)
+            shutil.rmtree(skill_dir / 'scripts')
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(self.repo_root / 'scripts' / 'validate_skill.py'),
+                    str(skill_dir),
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn('Missing scripts directory', completed.stderr + completed.stdout)
+
+    def test_validate_skill_cli_rejects_missing_required_frontmatter(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            skill_dir = Path(tmp) / 'skills' / 'libro-wcag'
+            shutil.copytree(self.repo_root / 'skills' / 'libro-wcag', skill_dir)
+            skill_md = skill_dir / 'SKILL.md'
+            payload = skill_md.read_text(encoding='utf-8')
+            frontmatter = yaml.safe_load(payload.split('---\n', 2)[1])
+            frontmatter.pop('description', None)
+            body = payload.split('---\n', 2)[2]
+            skill_md.write_text(
+                '---\n' + yaml.safe_dump(frontmatter, sort_keys=False) + '---\n' + body,
+                encoding='utf-8',
+            )
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(self.repo_root / 'scripts' / 'validate_skill.py'),
+                    str(skill_dir),
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn('frontmatter missing required keys', completed.stderr + completed.stdout)
+            self.assertIn('description', completed.stderr + completed.stdout)
 
     def test_apply_release_version_script_targets_repo_version_files(self) -> None:
         script = (self.repo_root / 'scripts' / 'apply-release-version.py').read_text(encoding='utf-8')

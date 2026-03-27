@@ -11,10 +11,13 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - Scanner runtime now reports malformed axe/lighthouse JSON artifacts with file path and line/column context instead of crashing.
 - Workflow JSON loading now raises descriptive `ValueError` messages for malformed local report inputs.
 - `run-realistic-validation-smoke.py` now validates `wcag-report.json` existence and JSON shape before building the smoke summary.
+- `scripts/validate_skill.py` now rejects missing adapter directories/docs, missing `scripts/`, and incomplete `SKILL.md` frontmatter.
+- Release bundles now include `CHANGELOG.md` for downstream release-note traceability.
 
 ### Added
 
 - Regression coverage for malformed scanner JSON artifacts, malformed workflow inputs, and missing smoke-report artifacts.
+- Regression coverage for skill validation contract checks and release-bundle changelog contents.
 
 ## [1.2.1] - 2026-03-25
 
