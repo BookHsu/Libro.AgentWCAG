@@ -233,10 +233,21 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('failure-guide.md', content)
         self.assertIn('e2e-example.md', content)
 
-    def test_openai_agent_yaml_points_to_libro_agentwcag_prompt(self) -> None:
-        payload = yaml.safe_load((self.skill_root / 'agents' / 'openai.yaml').read_text(encoding='utf-8'))
-        self.assertEqual(payload['interface']['display_name'], 'Libro.AgentWCAG')
-        self.assertIn('$libro-wcag', payload['interface']['default_prompt'])
+    def test_agent_manifests_point_to_libro_agentwcag_prompt(self) -> None:
+        expected_prompts = {
+            'openai.yaml': '$libro-wcag',
+            'claude.yaml': 'adapters/claude/prompt-template.md',
+            'gemini.yaml': 'adapters/gemini/prompt-template.md',
+            'copilot.yaml': 'adapters/copilot/prompt-template.md',
+        }
+        for manifest_name, adapter_hint in expected_prompts.items():
+            with self.subTest(manifest_name=manifest_name):
+                payload = yaml.safe_load(
+                    (self.skill_root / 'agents' / manifest_name).read_text(encoding='utf-8')
+                )
+                self.assertEqual(payload['interface']['display_name'], 'Libro.AgentWCAG')
+                self.assertIn('$libro-wcag', payload['interface']['default_prompt'])
+                self.assertIn(adapter_hint, payload['interface']['default_prompt'])
 
     def test_core_spec_and_adapter_mapping_define_contract_boundaries(self) -> None:
         core_spec = self._read(self.skill_root / 'references' / 'core-spec.md')
@@ -280,6 +291,8 @@ class RepoContractTests(unittest.TestCase):
             '.claude/skills/libro-wcag/SKILL.md',
             '.claude-plugin/plugin.json',
             '.claude-plugin/marketplace.json',
+            '.codex/skills/libro-wcag/SKILL.md',
+            '.copilot/skills/libro-wcag/SKILL.md',
             '.gemini/skills/libro-wcag/SKILL.md',
             'mcp-server/server.py',
             'mcp-server/requirements.txt',
@@ -316,6 +329,9 @@ class RepoContractTests(unittest.TestCase):
             'scripts/uninstall-agent.py',
             'scripts/validate_skill.py',
             'skills/libro-wcag/SKILL.md',
+            'skills/libro-wcag/agents/claude.yaml',
+            'skills/libro-wcag/agents/copilot.yaml',
+            'skills/libro-wcag/agents/gemini.yaml',
             'skills/libro-wcag/agents/openai.yaml',
             'skills/libro-wcag/adapters/claude/e2e-example.md',
             'skills/libro-wcag/adapters/claude/failure-guide.md',
