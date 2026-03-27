@@ -40,6 +40,14 @@ OPTIONAL_RELEASE_ASSETS = (
     ("bootstrap-installer", Path("scripts/install-latest.sh"), "{slug}-{version}-install-latest.sh"),
     ("smoke-runner", Path("scripts/run-release-adoption-smoke.py"), "{slug}-{version}-run-release-adoption-smoke.py"),
 )
+REQUIRED_ADAPTER_DOCS = ("prompt-template.md", "usage-example.md", "failure-guide.md", "e2e-example.md")
+AGENT_MANIFESTS = {
+    "codex": "openai.yaml",
+    "claude": "claude.yaml",
+    "gemini": "gemini.yaml",
+    "copilot": "copilot.yaml",
+}
+TEMP_FILE_SUFFIXES = {".tmp", ".bak"}
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Package Libro.AgentWCAG release assets.")
@@ -72,6 +80,57 @@ def _adapter_directory_name(agent: str) -> str:
     return "openai-codex" if agent == "codex" else agent
 
 
+def _iter_validated_agents(agent: str | None) -> tuple[str, ...]:
+    return SUPPORTED_AGENTS if agent is None else (agent,)
+
+
+def _is_temporary_release_file(path: Path) -> bool:
+    return path.suffix.lower() in TEMP_FILE_SUFFIXES or path.name.endswith("~")
+
+
+def _validate_release_inputs(agent: str | None) -> None:
+    missing: list[str] = []
+
+    for relative in BASE_RELEASE_FILES:
+        candidate = REPO_ROOT / relative
+        if not candidate.is_file():
+            missing.append(relative.as_posix())
+
+    for relative in (
+        Path("skills/libro-wcag/SKILL.md"),
+        Path("skills/libro-wcag/scripts"),
+        Path("skills/libro-wcag/schemas"),
+        Path("skills/libro-wcag/references"),
+        Path("skills/libro-wcag/agents"),
+        Path("skills/libro-wcag/adapters"),
+    ):
+        candidate = REPO_ROOT / relative
+        if not candidate.exists():
+            missing.append(relative.as_posix())
+
+    for validated_agent in _iter_validated_agents(agent):
+        manifest_name = AGENT_MANIFESTS[validated_agent]
+        manifest_path = SKILL_ROOT / "agents" / manifest_name
+        if not manifest_path.is_file():
+            missing.append(manifest_path.relative_to(REPO_ROOT).as_posix())
+
+        adapter_root = SKILL_ROOT / "adapters" / _adapter_directory_name(validated_agent)
+        if not adapter_root.is_dir():
+            missing.append(adapter_root.relative_to(REPO_ROOT).as_posix())
+            continue
+
+        for doc_name in REQUIRED_ADAPTER_DOCS:
+            doc_path = adapter_root / doc_name
+            if not doc_path.is_file():
+                missing.append(doc_path.relative_to(REPO_ROOT).as_posix())
+
+    if missing:
+        raise FileNotFoundError(
+            "Release packaging input validation failed; missing required files:\n- "
+            + "\n- ".join(sorted(set(missing)))
+        )
+
+
 def _iter_release_skill_files(agent: str | None) -> list[Path]:
     files: list[Path] = []
     for path in sorted(SKILL_ROOT.rglob("*")):
@@ -80,6 +139,8 @@ def _iter_release_skill_files(agent: str | None) -> list[Path]:
         relative = path.relative_to(REPO_ROOT)
         parts = relative.parts
         if "__pycache__" in parts:
+            continue
+        if _is_temporary_release_file(path):
             continue
         if parts[:4] == ("skills", "libro-wcag", "scripts", "tests"):
             continue
@@ -111,6 +172,7 @@ def _write_zip_entry(archive: zipfile.ZipFile, source_path: Path, archive_path: 
 
 def build_bundle(bundle_path: Path, version: str, label: str, agent: str | None) -> dict[str, object]:
     bundle_root = f"{PRODUCT_SLUG}-{version}-{label}"
+    _validate_release_inputs(agent)
     input_files = _bundle_input_files(agent)
     with zipfile.ZipFile(bundle_path, "w") as archive:
         for source_path in input_files:
