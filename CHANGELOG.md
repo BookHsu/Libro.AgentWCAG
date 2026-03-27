@@ -8,6 +8,7 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ### Fixed
 
+- WCAG report schema now explicitly validates core finding/fix contract fields such as fixability, verification status, confidence, SC mappings, remediation priority, framework hints, and structured summary sections.
 - Scanner runtime now reports malformed axe/lighthouse JSON artifacts with file path and line/column context instead of crashing.
 - Workflow JSON loading now raises descriptive `ValueError` messages for malformed local report inputs.
 - `run-realistic-validation-smoke.py` now validates `wcag-report.json` existence and JSON shape before building the smoke summary.
@@ -19,6 +20,7 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ### Added
 
+- Static contract coverage for the WCAG report schema so required finding/fix fields and status vocabularies stay aligned with the documented contract.
 - Regression coverage for malformed scanner JSON artifacts, malformed workflow inputs, and missing smoke-report artifacts.
 - Regression coverage for skill validation contract checks and release-bundle changelog contents.
 - Regression coverage for scanner launch error classification and debug-port timeout handling.

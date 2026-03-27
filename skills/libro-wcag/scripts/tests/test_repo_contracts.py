@@ -280,6 +280,69 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('2.4.11 Focus Not Obscured (Minimum)', content)
         self.assertIn('merge them into one finding and preserve both sources', content)
 
+    def test_report_schema_defines_core_finding_fix_and_summary_contract_fields(self) -> None:
+        payload = json.loads(
+            (self.skill_root / 'schemas' / 'wcag-report-1.0.0.schema.json').read_text(encoding='utf-8')
+        )
+        run_meta = payload['$defs']['runMeta']
+        finding = payload['$defs']['finding']
+        fix = payload['$defs']['fix']
+        summary = payload['$defs']['summary']
+
+        self.assertEqual(
+            run_meta['properties']['diff_artifacts']['items']['required'],
+            ['path', 'type'],
+        )
+
+        self.assertIn('fixability', finding['required'])
+        self.assertIn('verification_status', finding['required'])
+        self.assertIn('manual_review_required', finding['required'])
+        self.assertIn('confidence', finding['required'])
+        self.assertIn('sc', finding['required'])
+        self.assertEqual(finding['properties']['fixability']['$ref'], '#/$defs/fixability')
+        self.assertEqual(
+            finding['properties']['verification_status']['$ref'],
+            '#/$defs/verificationStatus',
+        )
+
+        self.assertIn('remediation_priority', fix['required'])
+        self.assertIn('confidence', fix['required'])
+        self.assertIn('fixability', fix['required'])
+        self.assertIn('verification_status', fix['required'])
+        self.assertIn('manual_review_required', fix['required'])
+        self.assertIn('framework_hints', fix['required'])
+        self.assertEqual(
+            fix['properties']['remediation_priority']['$ref'],
+            '#/$defs/remediationPriority',
+        )
+        self.assertEqual(fix['properties']['framework_hints']['type'], 'object')
+
+        self.assertIn('diff_summary', summary['required'])
+        self.assertIn('remediation_lifecycle', summary['required'])
+        self.assertIn('change_summary', summary['required'])
+        self.assertIn('auto_fixed_count', summary['required'])
+        self.assertIn('manual_required_count', summary['required'])
+        self.assertIn('debt_trend', summary['properties'])
+        self.assertEqual(
+            summary['properties']['debt_trend']['properties']['latest_counts']['$ref'],
+            '#/$defs/debtTrendCounts',
+        )
+
+    def test_report_schema_uses_enums_for_status_and_priority_vocabularies(self) -> None:
+        payload = json.loads(
+            (self.skill_root / 'schemas' / 'wcag-report-1.0.0.schema.json').read_text(encoding='utf-8')
+        )
+        self.assertEqual(payload['$defs']['fixability']['enum'], ['auto-fix', 'assisted', 'manual'])
+        self.assertEqual(
+            payload['$defs']['verificationStatus']['enum'],
+            ['not-run', 'diff-generated', 'verified', 'manual-review'],
+        )
+        self.assertEqual(payload['$defs']['remediationPriority']['enum'], ['high', 'medium', 'low'])
+        self.assertEqual(
+            payload['$defs']['severity']['enum'],
+            ['critical', 'serious', 'moderate', 'minor', 'info'],
+        )
+
     def test_framework_pattern_guides_cover_key_rule_families(self) -> None:
         react = self._read(self.skill_root / 'references' / 'framework-patterns-react.md')
         vue = self._read(self.skill_root / 'references' / 'framework-patterns-vue.md')
