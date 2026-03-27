@@ -4,10 +4,9 @@
 from __future__ import annotations
 
 import re
-from typing import Pattern
 
 
-def replace_first(pattern: str | Pattern[str], replacement: str, text: str, flags: int = 0) -> tuple[str, bool]:
+def replace_first(pattern: str | re.Pattern[str], replacement: str, text: str, flags: int = 0) -> tuple[str, bool]:
     compiled = re.compile(pattern, flags) if isinstance(pattern, str) else pattern
     updated, count = compiled.subn(replacement, text, count=1)
     return updated, count > 0

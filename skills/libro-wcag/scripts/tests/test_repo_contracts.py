@@ -64,6 +64,7 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('scripts/*.py', payload['files'])
         self.assertIn('scripts/*.ps1', payload['files'])
         self.assertIn('skills/libro-wcag/scripts/*.py', payload['files'])
+        self.assertIn('skills/libro-wcag/scripts/py.typed', payload['files'])
 
     def test_npmignore_excludes_tests_and_python_cache_from_published_cli(self) -> None:
         content = self._read(self.repo_root / '.npmignore')
@@ -205,6 +206,14 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('name = "Libro.AgentWCAG"', content)
         self.assertIn('requires-python = ">=3.12"', content)
         self.assertIn('skills/libro-wcag/scripts/tests', content)
+
+    def test_skill_script_package_has_explicit_init_and_typed_markers(self) -> None:
+        scripts_init = self.skill_root / 'scripts' / '__init__.py'
+        tests_init = self.skill_root / 'scripts' / 'tests' / '__init__.py'
+        py_typed = self.skill_root / 'scripts' / 'py.typed'
+        self.assertTrue(scripts_init.exists())
+        self.assertTrue(tests_init.exists())
+        self.assertTrue(py_typed.exists())
 
     def test_license_is_mit_and_credits_book_hsu(self) -> None:
         content = self._read(self.repo_root / 'LICENSE')

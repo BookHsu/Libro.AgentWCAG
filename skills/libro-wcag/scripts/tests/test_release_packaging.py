@@ -82,6 +82,7 @@ class ReleasePackagingTests(unittest.TestCase):
             names = set(archive.namelist())
             self.assertIn(f"libro-wcag-{self.product_version}-codex/CHANGELOG.md", names)
             self.assertIn(f"libro-wcag-{self.product_version}-codex/scripts/install-agent.py", names)
+            self.assertIn(f"libro-wcag-{self.product_version}-codex/skills/libro-wcag/scripts/py.typed", names)
             self.assertIn(
                 f"libro-wcag-{self.product_version}-codex/skills/libro-wcag/adapters/openai-codex/prompt-template.md",
                 names,
