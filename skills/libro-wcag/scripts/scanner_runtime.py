@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import errno
 import functools
 import http.server
 import json
@@ -89,7 +90,17 @@ def _run_command(
         return False, f"command timed out after {timeout_value} seconds: {rendered_command}"
     except FileNotFoundError as err:
         return False, f"command not found: {err.filename or command[0]}"
-    except (OSError, PermissionError) as err:
+    except PermissionError as err:
+        return False, f"permission denied while executing command {command[0]}: {err}"
+    except OSError as err:
+        if err.errno in {
+            errno.EAGAIN,
+            errno.ETXTBSY,
+            errno.EMFILE,
+            errno.ENFILE,
+            errno.ENOMEM,
+        }:
+            return False, f"temporary failure while executing command {command[0]}: {err}"
         return False, f"failed to execute command {command[0]}: {err}"
     stdout = completed.stdout or ""
     stderr = completed.stderr or ""
@@ -246,14 +257,16 @@ def _find_free_port() -> int:
 
 
 def _wait_for_debug_port(port: int, timeout_seconds: int) -> bool:
-    deadline = time.time() + max(1, timeout_seconds)
-    while time.time() < deadline:
+    deadline = time.monotonic() + max(0.05, float(timeout_seconds))
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return False
         try:
-            with socket.create_connection(("127.0.0.1", port), timeout=0.5):
+            with socket.create_connection(("127.0.0.1", port), timeout=min(0.5, remaining)):
                 return True
         except OSError:
-            time.sleep(0.1)
-    return False
+            time.sleep(min(0.1, max(remaining, 0.01)))
 
 
 def _resolve_local_target_path(target: str) -> Path | None:

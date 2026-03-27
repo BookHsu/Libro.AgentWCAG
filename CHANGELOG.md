@@ -13,11 +13,14 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - `run-realistic-validation-smoke.py` now validates `wcag-report.json` existence and JSON shape before building the smoke summary.
 - `scripts/validate_skill.py` now rejects missing adapter directories/docs, missing `scripts/`, and incomplete `SKILL.md` frontmatter.
 - Release bundles now include `CHANGELOG.md` for downstream release-note traceability.
+- Scanner command execution now distinguishes permission-denied failures from transient process-launch `OSError` conditions, improving retry classification.
+- Lighthouse debug-port readiness now uses the remaining global timeout instead of a fixed 0.5 second socket window.
 
 ### Added
 
 - Regression coverage for malformed scanner JSON artifacts, malformed workflow inputs, and missing smoke-report artifacts.
 - Regression coverage for skill validation contract checks and release-bundle changelog contents.
+- Regression coverage for scanner launch error classification and debug-port timeout handling.
 
 ## [1.2.1] - 2026-03-25
 

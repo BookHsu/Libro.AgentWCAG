@@ -438,6 +438,34 @@ class RunnerTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertEqual(result, "failed to execute command npx: Access is denied")
 
+    @patch("scanner_runtime.subprocess.run")
+    def test_run_command_returns_permission_denied_message(self, mock_run) -> None:
+        mock_run.side_effect = PermissionError("Permission denied")
+        ok, result = scanner_runtime._run_command(["npx", "tool"], timeout_seconds=30)
+        self.assertFalse(ok)
+        self.assertEqual(result, "permission denied while executing command npx: Permission denied")
+
+    @patch("scanner_runtime.subprocess.run")
+    def test_run_command_returns_temporary_oserror_message(self, mock_run) -> None:
+        mock_run.side_effect = OSError(scanner_runtime.errno.EAGAIN, "Resource temporarily unavailable")
+        ok, result = scanner_runtime._run_command(["npx", "tool"], timeout_seconds=30)
+        self.assertFalse(ok)
+        self.assertIn("temporary failure while executing command npx", result)
+
+    @patch("scanner_runtime.time.sleep")
+    @patch("scanner_runtime.socket.create_connection")
+    @patch("scanner_runtime.time.monotonic")
+    def test_wait_for_debug_port_uses_remaining_timeout(self, mock_monotonic, mock_create_connection, mock_sleep) -> None:
+        mock_monotonic.side_effect = [100.0, 100.0, 100.25]
+        mock_create_connection.side_effect = OSError("not ready")
+
+        ready = scanner_runtime._wait_for_debug_port(9222, timeout_seconds=0.2)
+
+        self.assertFalse(ready)
+        self.assertEqual(mock_create_connection.call_count, 1)
+        self.assertAlmostEqual(mock_create_connection.call_args.kwargs["timeout"], 0.2)
+        mock_sleep.assert_called_once_with(0.1)
+
     @patch("scanner_runtime.shutil.which")
     @patch("scanner_runtime.os.name", "nt")
     def test_resolve_npx_executable_prefers_cmd_on_windows(self, mock_which) -> None:
