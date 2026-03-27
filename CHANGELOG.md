@@ -15,12 +15,14 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - Release bundles now include `CHANGELOG.md` for downstream release-note traceability.
 - Scanner command execution now distinguishes permission-denied failures from transient process-launch `OSError` conditions, improving retry classification.
 - Lighthouse debug-port readiness now uses the remaining global timeout instead of a fixed 0.5 second socket window.
+- `rewrite_helpers.py` now uses `re.Pattern` type hints instead of deprecated `typing.Pattern` on Python 3.12+.
 
 ### Added
 
 - Regression coverage for malformed scanner JSON artifacts, malformed workflow inputs, and missing smoke-report artifacts.
 - Regression coverage for skill validation contract checks and release-bundle changelog contents.
 - Regression coverage for scanner launch error classification and debug-port timeout handling.
+- Explicit `__init__.py` and `py.typed` markers for `skills/libro-wcag/scripts`, plus contract/release checks that keep the typed package metadata in shipped bundles.
 
 ## [1.2.1] - 2026-03-25
 
