@@ -17,6 +17,7 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - Scanner command execution now distinguishes permission-denied failures from transient process-launch `OSError` conditions, improving retry classification.
 - Lighthouse debug-port readiness now uses the remaining global timeout instead of a fixed 0.5 second socket window.
 - `rewrite_helpers.py` now uses `re.Pattern` type hints instead of deprecated `typing.Pattern` on Python 3.12+.
+- Repository docs now include a maintained `docs/README.md` section guide plus explicit `CONTRIBUTING.md` and `SECURITY.md` policies for contributors and maintainers.
 
 ### Added
 
