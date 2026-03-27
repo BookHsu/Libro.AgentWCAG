@@ -82,10 +82,15 @@ def _run_command(
             timeout=timeout_seconds,
             env=env,
         )
-    except subprocess.TimeoutExpired:
-        return False, f"command timed out after {timeout_seconds} seconds"
+    except subprocess.TimeoutExpired as err:
+        timed_out_command = err.cmd if isinstance(err.cmd, list) else command
+        rendered_command = " ".join(str(part) for part in timed_out_command)
+        timeout_value = err.timeout if err.timeout is not None else timeout_seconds
+        return False, f"command timed out after {timeout_value} seconds: {rendered_command}"
     except FileNotFoundError as err:
         return False, f"command not found: {err.filename or command[0]}"
+    except (OSError, PermissionError) as err:
+        return False, f"failed to execute command {command[0]}: {err}"
     stdout = completed.stdout or ""
     stderr = completed.stderr or ""
     if completed.returncode == 0:
@@ -191,8 +196,11 @@ def _try_run_axe(
         return None, result
     if not axe_json.exists():
         return None, "axe did not generate output json"
-    with axe_json.open("r", encoding="utf-8") as handle:
-        payload = _normalize_axe_payload(json.load(handle))
+    try:
+        with axe_json.open("r", encoding="utf-8") as handle:
+            payload = _normalize_axe_payload(json.load(handle))
+    except json.JSONDecodeError as err:
+        return None, f"axe output json is malformed: {axe_json} ({err.msg} at line {err.lineno}, column {err.colno})"
     if payload is None:
         return None, "axe output json format is unsupported"
     return payload, None
@@ -395,8 +403,14 @@ def _try_run_lighthouse(
         shutil.rmtree(lighthouse_temp_root, ignore_errors=True)
     if not lighthouse_json.exists():
         return None, "lighthouse did not generate output json"
-    with lighthouse_json.open("r", encoding="utf-8") as handle:
-        return json.load(handle), None
+    try:
+        with lighthouse_json.open("r", encoding="utf-8") as handle:
+            return json.load(handle), None
+    except json.JSONDecodeError as err:
+        return None, (
+            f"lighthouse output json is malformed: {lighthouse_json} "
+            f"({err.msg} at line {err.lineno}, column {err.colno})"
+        )
 
 
 def _resolve_target_for_scanners(target: str) -> str:

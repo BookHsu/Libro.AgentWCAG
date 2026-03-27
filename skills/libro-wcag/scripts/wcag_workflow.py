@@ -348,8 +348,13 @@ def load_json_file(path: str | None) -> dict[str, Any] | None:
     payload = Path(path)
     if not payload.exists():
         return None
-    with payload.open("r", encoding="utf-8") as handle:
-        return json.load(handle)
+    try:
+        with payload.open("r", encoding="utf-8") as handle:
+            return json.load(handle)
+    except json.JSONDecodeError as err:
+        raise ValueError(
+            f"Invalid JSON in {payload}: {err.msg} at line {err.lineno}, column {err.colno}"
+        ) from err
 
 def _coerce_positive_int(value: Any) -> int | None:
     if isinstance(value, bool):

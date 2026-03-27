@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import importlib.util
 import os
 import shutil
 import subprocess
@@ -226,6 +227,58 @@ class RepoScriptTests(unittest.TestCase):
         self.assertIn('--mock-axe-json', script)
         self.assertIn('--mock-lighthouse-json', script)
         self.assertIn('wcag-fixes.sample.diff', script)
+
+    def _load_realistic_validation_smoke_module(self):
+        module_path = self.repo_root / 'scripts' / 'run-realistic-validation-smoke.py'
+        spec = importlib.util.spec_from_file_location('run_realistic_validation_smoke', module_path)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_realistic_validation_smoke_helper_reports_malformed_json(self) -> None:
+        smoke = self._load_realistic_validation_smoke_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            report_path = Path(tmp) / 'wcag-report.json'
+            report_path.write_text('{"summary": }', encoding='utf-8')
+            with self.assertRaisesRegex(ValueError, r'Audit report is not valid JSON: .*wcag-report\.json'):
+                smoke._load_json_artifact(report_path, 'Audit report')
+
+    def test_realistic_validation_smoke_main_reports_missing_report_file(self) -> None:
+        smoke = self._load_realistic_validation_smoke_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            temp_root = Path(tmp)
+            artifact_dir = temp_root / 'artifacts'
+            output_dir = temp_root / 'audit-output'
+            output_dir.mkdir(parents=True, exist_ok=True)
+
+            def fake_run(command: list[str], cwd: Path) -> tuple[int, str]:
+                return 0, ''
+
+            original_argv = sys.argv
+            sys.argv = [
+                'run-realistic-validation-smoke.py',
+                '--sample',
+                str(self.repo_root / 'skills' / 'libro-wcag' / 'scripts' / 'tests' / 'fixtures' / 'missing-alt.html'),
+                '--axe-mock',
+                str(self.repo_root / 'docs' / 'testing' / 'realistic-sample' / 'scanner-fixtures' / 'axe.mock.json'),
+                '--lighthouse-mock',
+                str(self.repo_root / 'docs' / 'testing' / 'realistic-sample' / 'scanner-fixtures' / 'lighthouse.mock.json'),
+                '--artifact-dir',
+                str(artifact_dir),
+            ]
+            try:
+                smoke.REPO_ROOT = temp_root
+                smoke.DEFAULT_SAMPLE = Path(sys.argv[2])
+                smoke.DEFAULT_AXE_MOCK = Path(sys.argv[4])
+                smoke.DEFAULT_LIGHTHOUSE_MOCK = Path(sys.argv[6])
+                smoke.DEFAULT_ARTIFACT_DIR = artifact_dir
+                smoke._run = fake_run
+                with self.assertRaisesRegex(FileNotFoundError, r'Audit report is missing: .*wcag-report\.json'):
+                    smoke.main()
+            finally:
+                sys.argv = original_argv
     def test_install_agent_ps1_wrapper_invokes_python_installer(self) -> None:
         wrapper = (self.repo_root / 'scripts' / 'install-agent.ps1').read_text(encoding='utf-8')
         self.assertIn('install-agent.py', wrapper)
