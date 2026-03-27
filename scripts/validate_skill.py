@@ -17,12 +17,20 @@ import yaml
 
 SKILL_NAME_PATTERN = re.compile(r"^[a-z0-9-]{1,64}$")
 RULE_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+SKILL_FRONTMATTER_REQUIRED_KEYS = ("name", "description")
 AGENT_MANIFESTS = ("openai", "claude", "gemini", "copilot")
 AGENT_INTERFACE_REQUIRED_KEYS = {
     "display_name",
     "short_description",
     "default_prompt",
 }
+ADAPTER_DIRECTORY_NAMES = ("openai-codex", "claude", "gemini", "copilot")
+ADAPTER_REQUIRED_FILES = (
+    "prompt-template.md",
+    "usage-example.md",
+    "failure-guide.md",
+    "e2e-example.md",
+)
 POLICY_BUNDLE_REQUIRED_KEYS = [
     "name",
     "description",
@@ -64,13 +72,39 @@ def validate_skill(skill_dir: Path) -> None:
         raise ValueError("Missing SKILL.md")
 
     frontmatter = _load_frontmatter(skill_md)
-    name = str(frontmatter.get("name", ""))
-    description = str(frontmatter.get("description", ""))
+    if not isinstance(frontmatter, dict):
+        raise ValueError("SKILL.md frontmatter must be a mapping")
 
-    if not name or not SKILL_NAME_PATTERN.match(name):
+    missing_frontmatter = [
+        key for key in SKILL_FRONTMATTER_REQUIRED_KEYS if not str(frontmatter.get(key, "")).strip()
+    ]
+    if missing_frontmatter:
+        raise ValueError(f"SKILL.md frontmatter missing required keys: {missing_frontmatter}")
+
+    name = str(frontmatter["name"]).strip()
+    description = str(frontmatter["description"]).strip()
+
+    if not SKILL_NAME_PATTERN.match(name):
         raise ValueError("Frontmatter name must match ^[a-z0-9-]{1,64}$")
     if not description:
         raise ValueError("Frontmatter description is required")
+
+    scripts_dir = skill_dir / "scripts"
+    if not scripts_dir.exists() or not scripts_dir.is_dir():
+        raise ValueError(f"Missing scripts directory: {scripts_dir}")
+
+    adapters_dir = skill_dir / "adapters"
+    if not adapters_dir.exists() or not adapters_dir.is_dir():
+        raise ValueError(f"Missing adapters directory: {adapters_dir}")
+    for adapter in ADAPTER_DIRECTORY_NAMES:
+        adapter_dir = adapters_dir / adapter
+        if not adapter_dir.exists() or not adapter_dir.is_dir():
+            raise ValueError(f"Missing adapter directory: {adapter_dir}")
+        missing_docs = [
+            filename for filename in ADAPTER_REQUIRED_FILES if not (adapter_dir / filename).exists()
+        ]
+        if missing_docs:
+            raise ValueError(f"{adapter_dir}: missing required adapter files {missing_docs}")
 
     agents_dir = skill_dir / "agents"
     for agent in AGENT_MANIFESTS:

@@ -80,6 +80,7 @@ class ReleasePackagingTests(unittest.TestCase):
 
         with zipfile.ZipFile(output_dir / f"libro-wcag-{self.product_version}-codex.zip") as archive:
             names = set(archive.namelist())
+            self.assertIn(f"libro-wcag-{self.product_version}-codex/CHANGELOG.md", names)
             self.assertIn(f"libro-wcag-{self.product_version}-codex/scripts/install-agent.py", names)
             self.assertIn(
                 f"libro-wcag-{self.product_version}-codex/skills/libro-wcag/adapters/openai-codex/prompt-template.md",
