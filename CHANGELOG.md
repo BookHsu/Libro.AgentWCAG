@@ -14,6 +14,7 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - `run-realistic-validation-smoke.py` now validates `wcag-report.json` existence and JSON shape before building the smoke summary.
 - `scripts/validate_skill.py` now rejects missing adapter directories/docs, missing `scripts/`, and incomplete `SKILL.md` frontmatter.
 - Release bundles now include `CHANGELOG.md` for downstream release-note traceability.
+- `scripts/package-release.py` now fails fast when required release inputs are missing and excludes temporary skill files such as `.tmp`, `.bak`, and editor backup files from shipped bundles.
 - Scanner command execution now distinguishes permission-denied failures from transient process-launch `OSError` conditions, improving retry classification.
 - Lighthouse debug-port readiness now uses the remaining global timeout instead of a fixed 0.5 second socket window.
 - `rewrite_helpers.py` now uses `re.Pattern` type hints instead of deprecated `typing.Pattern` on Python 3.12+.
@@ -24,6 +25,7 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - Static contract coverage for the WCAG report schema so required finding/fix fields and status vocabularies stay aligned with the documented contract.
 - Regression coverage for malformed scanner JSON artifacts, malformed workflow inputs, and missing smoke-report artifacts.
 - Regression coverage for skill validation contract checks and release-bundle changelog contents.
+- Regression coverage for release-packaging input validation and temporary-file exclusion.
 - Regression coverage for scanner launch error classification and debug-port timeout handling.
 - Explicit `__init__.py` and `py.typed` markers for `skills/libro-wcag/scripts`, plus contract/release checks that keep the typed package metadata in shipped bundles.
 
