@@ -17,6 +17,12 @@ import yaml
 
 SKILL_NAME_PATTERN = re.compile(r"^[a-z0-9-]{1,64}$")
 RULE_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+AGENT_MANIFESTS = ("openai", "claude", "gemini", "copilot")
+AGENT_INTERFACE_REQUIRED_KEYS = {
+    "display_name",
+    "short_description",
+    "default_prompt",
+}
 POLICY_BUNDLE_REQUIRED_KEYS = [
     "name",
     "description",
@@ -66,9 +72,24 @@ def validate_skill(skill_dir: Path) -> None:
     if not description:
         raise ValueError("Frontmatter description is required")
 
-    openai_yaml = skill_dir / "agents" / "openai.yaml"
-    if openai_yaml.exists():
-        yaml.safe_load(openai_yaml.read_text(encoding="utf-8"))
+    agents_dir = skill_dir / "agents"
+    for agent in AGENT_MANIFESTS:
+        manifest_path = agents_dir / f"{agent}.yaml"
+        if not manifest_path.exists():
+            continue
+        payload = yaml.safe_load(manifest_path.read_text(encoding="utf-8")) or {}
+        interface = payload.get("interface")
+        if not isinstance(interface, dict):
+            raise ValueError(f"{manifest_path}: interface must be a mapping")
+        missing_keys = sorted(AGENT_INTERFACE_REQUIRED_KEYS - set(interface))
+        if missing_keys:
+            raise ValueError(f"{manifest_path}: missing interface keys {missing_keys}")
+        display_name = str(interface["display_name"]).strip()
+        default_prompt = str(interface["default_prompt"]).strip()
+        if display_name != "Libro.AgentWCAG":
+            raise ValueError(f"{manifest_path}: interface.display_name must be Libro.AgentWCAG")
+        if "$libro-wcag" not in default_prompt:
+            raise ValueError(f"{manifest_path}: interface.default_prompt must reference $libro-wcag")
 
 
 def _parse_updated_at(value: str, file_path: Path) -> None:
