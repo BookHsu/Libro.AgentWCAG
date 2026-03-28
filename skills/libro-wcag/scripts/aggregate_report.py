@@ -131,25 +131,21 @@ def _build_severity(
 
 def _build_fixability(
     all_findings: list[dict[str, Any]],
-) -> dict[str, Any]:
+) -> dict[str, dict[str, int | float]]:
     """A3: Fixability Analysis.
 
-    Returns a dict with uniform per-level breakdown dicts and a separate
-    ``fix_coverage`` key (float 0-1) for the auto-fix ratio.
+    Returns a dict of uniform ``{level: {count, percentage}}`` entries only.
+    Fix-coverage (auto-fix ratio) is derivable from ``auto-fix.percentage``
+    and is also stored in ``remediation_lifecycle.fix_coverage``.
     """
     total = len(all_findings)
     counts = Counter(f.get("fixability", "manual") for f in all_findings)
-    breakdown: dict[str, dict[str, int | float]] = {
+    return {
         level: {
             "count": counts.get(level, 0),
             "percentage": _percentage(counts.get(level, 0), total),
         }
         for level in FIXABILITY_LEVELS
-    }
-    auto_fix_count = counts.get("auto-fix", 0)
-    return {
-        **breakdown,
-        "fix_coverage": _percentage(auto_fix_count, total) / 100,
     }
 
 

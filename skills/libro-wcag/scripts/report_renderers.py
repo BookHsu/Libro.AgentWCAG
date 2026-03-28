@@ -112,6 +112,27 @@ def _resolve_language(language: str | None) -> str:
     return "zh-TW"
 
 
+def _extract_report_sections(report: dict[str, Any]) -> dict[str, Any]:
+    """Extract common sections from an aggregate report dict.
+
+    Centralises the .get() fallback pattern so each renderer does not
+    repeat it.  The returned dict has guaranteed keys with safe defaults.
+    """
+    return {
+        "scope": report.get("scope", {}),
+        "severity": report.get("severity", {}),
+        "fixability": report.get("fixability", {}),
+        "targets": report.get("targets", []),
+        "standard": report.get("standard", {}),
+        "wcag_principles": report.get("wcag_principles", {}),
+        "top_rules": report.get("top_rules", []),
+        "remediation": report.get("remediation_lifecycle", {}),
+        "auto_fix": report.get("auto_fix_opportunity", {}),
+        "baseline_diff": report.get("baseline_diff"),
+        "generated_at": report.get("generated_at", "N/A"),
+    }
+
+
 # ---------------------------------------------------------------------------
 # B2: Terminal renderer
 # ---------------------------------------------------------------------------
@@ -152,11 +173,12 @@ def render_terminal(report: dict[str, Any], language: str | None = None) -> str:
     verdict_lbl = VERDICT_LABELS[lang]
     lines: list[str] = []
 
-    scope = report.get("scope", {})
-    severity = report.get("severity", {})
-    fixability = report.get("fixability", {})
-    targets = report.get("targets", [])
-    standard = report.get("standard", {})
+    sec = _extract_report_sections(report)
+    scope = sec["scope"]
+    severity = sec["severity"]
+    fixability = sec["fixability"]
+    targets = sec["targets"]
+    standard = sec["standard"]
 
     # Title
     title = f"  {lbl['title']}  "
@@ -197,17 +219,16 @@ def render_terminal(report: dict[str, Any], language: str | None = None) -> str:
     lines.append(_colored(f"## {lbl['fixability_analysis']}", "bold"))
     for level in _FIXABILITY_ORDER:
         data = fixability.get(level, {})
-        count = data.get("count", 0) if isinstance(data, dict) else 0
-        pct = data.get("percentage", 0.0) if isinstance(data, dict) else 0.0
+        count = data.get("count", 0)
+        pct = data.get("percentage", 0.0)
         bar = _bar(count, total_findings)
         lines.append(f"  {level:10s} {bar} {count:4d} ({pct:5.1f}%)")
-    fix_cov = fixability.get("fix_coverage", 0)
-    if isinstance(fix_cov, (int, float)):
-        lines.append(f"  {lbl['fix_coverage']}: {fix_cov:.0%}")
+    auto_fix_pct = fixability.get("auto-fix", {}).get("percentage", 0.0)
+    lines.append(f"  {lbl['fix_coverage']}: {auto_fix_pct / 100:.0%}")
     lines.append("")
 
     # A5: WCAG Principle Coverage
-    wcag_principles = report.get("wcag_principles", {})
+    wcag_principles = sec["wcag_principles"]
     if wcag_principles:
         lines.append(_colored(f"## {lbl['wcag_principles']}", "bold"))
         for principle, data in wcag_principles.items():
@@ -218,7 +239,7 @@ def render_terminal(report: dict[str, Any], language: str | None = None) -> str:
         lines.append("")
 
     # A6: Top Issues
-    top_rules = report.get("top_rules", [])
+    top_rules = sec["top_rules"]
     if top_rules:
         lines.append(_colored(f"## {lbl['top_issues']}", "bold"))
         lines.append(f"  {lbl['rule_id']:25s} {lbl['count']:>6s}  {lbl['sc']}")
@@ -259,19 +280,20 @@ def render_markdown(report: dict[str, Any], language: str | None = None) -> str:
     verdict_lbl = VERDICT_LABELS[lang]
     lines: list[str] = []
 
-    scope = report.get("scope", {})
-    severity = report.get("severity", {})
-    fixability = report.get("fixability", {})
-    targets = report.get("targets", [])
-    standard = report.get("standard", {})
-    remediation = report.get("remediation_lifecycle", {})
-    auto_fix = report.get("auto_fix_opportunity", {})
+    sec = _extract_report_sections(report)
+    scope = sec["scope"]
+    severity = sec["severity"]
+    fixability = sec["fixability"]
+    targets = sec["targets"]
+    standard = sec["standard"]
+    remediation = sec["remediation"]
+    auto_fix = sec["auto_fix"]
 
     # Title
     lines.append(f"# {lbl['title']}")
     lines.append("")
     lines.append(f"> {lbl['wcag_standard']}: WCAG {standard.get('wcag_version', '2.1')} {standard.get('conformance_level', 'AA')}")
-    lines.append(f"> {lbl['generated_at']}: {report.get('generated_at', 'N/A')}")
+    lines.append(f"> {lbl['generated_at']}: {sec['generated_at']}")
     lines.append("")
 
     # A1: Scope
@@ -310,18 +332,16 @@ def render_markdown(report: dict[str, Any], language: str | None = None) -> str:
     lines.append(f"|---|---:|---:|")
     for level in _FIXABILITY_ORDER:
         data = fixability.get(level, {})
-        if isinstance(data, dict):
-            lines.append(
-                f"| {level} | {data.get('count', 0)} | {data.get('percentage', 0.0):.1f}% |"
-            )
-    fix_cov = fixability.get("fix_coverage", 0)
-    if isinstance(fix_cov, (int, float)):
-        lines.append("")
-        lines.append(f"{lbl['fix_coverage']}: **{fix_cov:.0%}**")
+        lines.append(
+            f"| {level} | {data.get('count', 0)} | {data.get('percentage', 0.0):.1f}% |"
+        )
+    auto_fix_pct = fixability.get("auto-fix", {}).get("percentage", 0.0)
+    lines.append("")
+    lines.append(f"{lbl['fix_coverage']}: **{auto_fix_pct / 100:.0%}**")
     lines.append("")
 
     # A5: WCAG Principle Coverage
-    wcag_principles = report.get("wcag_principles", {})
+    wcag_principles = sec["wcag_principles"]
     if wcag_principles:
         lines.append(f"## {lbl['wcag_principles']}")
         lines.append("")
@@ -333,7 +353,7 @@ def render_markdown(report: dict[str, Any], language: str | None = None) -> str:
         lines.append("")
 
     # A6: Top Issues
-    top_rules = report.get("top_rules", [])
+    top_rules = sec["top_rules"]
     if top_rules:
         lines.append(f"## {lbl['top_issues']}")
         lines.append("")
@@ -397,7 +417,7 @@ def render_markdown(report: dict[str, Any], language: str | None = None) -> str:
         lines.append("")
 
     # A9: Baseline diff
-    baseline_diff = report.get("baseline_diff")
+    baseline_diff = sec["baseline_diff"]
     if baseline_diff:
         lines.append("## Baseline Diff")
         lines.append("")
@@ -515,6 +535,24 @@ _FIXABILITY_COLORS_HEX = {
     "manual": "#e53e3e",
 }
 
+_STATUS_COLORS_HEX = {
+    "clean": "#38a169",
+    "issues": "#d69e2e",
+    "critical": "#e53e3e",
+}
+
+_STATUS_HTML_ENTITIES = {
+    "clean": "&#x2713;",
+    "issues": "&#x26a0;",
+    "critical": "&#x2717;",
+}
+
+_VERDICT_COLORS_HEX = {
+    "pass": "#38a169",
+    "fail": "#e53e3e",
+    "needs-review": "#d69e2e",
+}
+
 
 def _svg_bar_chart(data: dict[str, int], colors: dict[str, str], width: int = 400, bar_height: int = 28) -> str:
     """Generate an inline SVG horizontal bar chart."""
@@ -548,39 +586,37 @@ def render_html(report: dict[str, Any], language: str | None = None) -> str:
     lbl = LABELS[lang]
     verdict_lbl = VERDICT_LABELS[lang]
 
-    scope = report.get("scope", {})
-    severity = report.get("severity", {})
-    fixability = report.get("fixability", {})
-    targets = report.get("targets", [])
-    standard = report.get("standard", {})
-    wcag_principles = report.get("wcag_principles", {})
-    top_rules = report.get("top_rules", [])
-    remediation = report.get("remediation_lifecycle", {})
-    auto_fix = report.get("auto_fix_opportunity", {})
-    baseline_diff = report.get("baseline_diff")
+    sec = _extract_report_sections(report)
+    scope = sec["scope"]
+    severity = sec["severity"]
+    fixability = sec["fixability"]
+    targets = sec["targets"]
+    standard = sec["standard"]
+    wcag_principles = sec["wcag_principles"]
+    top_rules = sec["top_rules"]
+    remediation = sec["remediation"]
+    auto_fix = sec["auto_fix"]
+    baseline_diff = sec["baseline_diff"]
 
     rate = scope.get("compliance_rate", 0)
     verdict = scope.get("verdict", "needs-review")
     verdict_text = verdict_lbl.get(verdict, verdict)
-    verdict_color = {"pass": "#38a169", "fail": "#e53e3e", "needs-review": "#d69e2e"}.get(verdict, "#718096")
+    verdict_color = _VERDICT_COLORS_HEX.get(verdict, "#718096")
 
     # Severity bar chart data
     sev_data = {level: severity.get(level, {}).get("count", 0) for level in _SEVERITY_ORDER}
     sev_chart = _svg_bar_chart(sev_data, _SEVERITY_COLORS_HEX)
 
     # Fixability bar chart data
-    fix_data = {}
-    for level in _FIXABILITY_ORDER:
-        val = fixability.get(level, {})
-        fix_data[level] = val.get("count", 0) if isinstance(val, dict) else 0
+    fix_data = {level: fixability.get(level, {}).get("count", 0) for level in _FIXABILITY_ORDER}
     fix_chart = _svg_bar_chart(fix_data, _FIXABILITY_COLORS_HEX)
 
     # Build target rows
     target_rows: list[str] = []
     for t in targets:
         status = t.get("status", "issues")
-        status_icon = {"clean": "&#x2713;", "issues": "&#x26a0;", "critical": "&#x2717;"}.get(status, "?")
-        status_color = {"clean": "#38a169", "issues": "#d69e2e", "critical": "#e53e3e"}.get(status, "#718096")
+        status_icon = _STATUS_HTML_ENTITIES.get(status, "?")
+        status_color = _STATUS_COLORS_HEX.get(status, "#718096")
         target_rows.append(
             f'<tr>'
             f'<td style="color:{status_color}">{status_icon}</td>'
@@ -645,7 +681,7 @@ def render_html(report: dict[str, Any], language: str | None = None) -> str:
 </head>
 <body>
   <h1>{lbl['title']}</h1>
-  <p class="meta">WCAG {standard.get('wcag_version', '2.1')} {standard.get('conformance_level', 'AA')} &middot; {report.get('generated_at', '')}</p>
+  <p class="meta">WCAG {standard.get('wcag_version', '2.1')} {standard.get('conformance_level', 'AA')} &middot; {sec['generated_at']}</p>
 
   <section>
     <h2>{lbl['scope']}</h2>
