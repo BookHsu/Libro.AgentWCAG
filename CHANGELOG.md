@@ -8,6 +8,10 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ### Fixed
 
+- Reusable `install-skill.yml` now checks out `${{ github.repository }}` instead of a hard-coded upstream repo, so forked repositories can call the workflow directly.
+- Reusable `install-skill.yml` now exposes an `installation_valid` output even when `doctor-agent.py` fails, letting workflow callers branch on verification results before the job exits.
+- `publish-npm.yml` now runs `npm pack --dry-run` before the real pack/publish steps to catch packaging allowlist mistakes earlier.
+- The real-scanner CI lane guide now includes the branch-protection and artifact-retention wording expected by the contract tests.
 - WCAG report schema now explicitly validates core finding/fix contract fields such as fixability, verification status, confidence, SC mappings, remediation priority, framework hints, and structured summary sections.
 - W3C Understanding citations now cover all 87 WCAG 2.x success criteria slugs and generate the correct `WCAG20` / `WCAG21` / `WCAG22` URL path for the selected standard version.
 - Scanner runtime now reports malformed axe/lighthouse JSON artifacts with file path and line/column context instead of crashing.

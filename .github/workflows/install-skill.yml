@@ -22,15 +22,21 @@ on:
         required: false
         type: boolean
         default: false
+    outputs:
+      installation_valid:
+        description: "Whether doctor-agent verification succeeded"
+        value: ${{ jobs.install.outputs.installation_valid }}
 
 jobs:
   install:
     runs-on: ubuntu-latest
+    outputs:
+      installation_valid: ${{ steps.verify.outputs.installation_valid }}
     steps:
       - name: Checkout Libro.AgentWCAG
         uses: actions/checkout@v4
         with:
-          repository: BookHsu/Libro.AgentWCAG.clean
+          repository: ${{ github.repository }}
           ref: ${{ inputs.version }}
 
       - name: Setup Python
@@ -52,11 +58,25 @@ jobs:
           python scripts/install-agent.py "${args[@]}"
 
       - name: Verify installation
+        id: verify
         shell: bash
+        continue-on-error: true
         run: |
           set -euo pipefail
           args=(--agent "${{ inputs.agent }}" --verify-manifest-integrity)
           if [[ -n "${{ inputs.dest }}" ]]; then
             args+=(--dest "${{ inputs.dest }}")
           fi
-          python scripts/doctor-agent.py "${args[@]}"
+          if python scripts/doctor-agent.py "${args[@]}"; then
+            echo "installation_valid=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "installation_valid=false" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+      - name: Fail when installation verification did not pass
+        if: steps.verify.outputs.installation_valid != 'true'
+        shell: bash
+        run: |
+          echo "Installation verification failed." >&2
+          exit 1
