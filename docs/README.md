@@ -41,6 +41,12 @@ Normative release, CI, environment, policy, and operator guidance.
 - `release/real-scanner-ci-lane.md`: real-scanner lane expectations and artifacts
 - `release/prompt-invocation-templates.md`: reusable invocation patterns for agents and operators
 - `release/supported-environments.md`: supported operating systems and runtime assumptions
+- `release/ga-definition.md`: GA scope and support boundaries
+- `release/resilient-run-patterns.md`: retry and error recovery for CLI runs
+- `release/repo-admin-setup.md`: GitHub Actions and npm publishing config
+- `release/rollback-playbook.md`: rollback rules and recovery procedures
+- `release/release-note-template.md`: template for standard releases
+- `release/hotfix-release-note-template.md`: template for hotfix releases
 
 ### `testing/`
 
@@ -60,8 +66,7 @@ Example assets that illustrate integration patterns but are not the primary sour
 
 ### `archive/`
 
-Superseded guides and historical records retained for traceability instead of deletion.
+Historical records retained for traceability.
 
-- `archive/release/`: retired release-process notes kept for provenance
 - `archive/testing/`: historical test plans and manual checklists
 - `archive/decisions/`: superseded design decisions and packaging notes
