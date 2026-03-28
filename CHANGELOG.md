@@ -11,9 +11,12 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - `references/cli-reference.md` provides a complete CLI option reference covering policy bundles, baselines, SARIF output, failure gates, and scanner control.
 - All four adapter prompt templates now cross-reference `cli-reference.md` for advanced CLI options.
 - `remediation_library.py` now includes `auto_fix_reason` on every rule where `auto_fix_supported` is `False`, explaining why automatic remediation is not feasible (e.g. color-contrast: "Color choices require design intent").
+- `test_schema_validation.py` validates generated reports against the JSON Schema using `jsonschema`, catching schema/code mismatches at test time.
+- `jsonschema>=4.20` is now an optional test dependency in `pyproject.toml`.
 
 ### Changed
 
+- `release.yml` `clean-release-smoke` now uses a matrix strategy to smoke-test all four agents (codex, claude, gemini, copilot) in parallel instead of only codex.
 - `run_accessibility_audit.py` now runs axe and Lighthouse scanners in parallel using `concurrent.futures.ThreadPoolExecutor` when both are active, reducing total audit wall-clock time.
 - `run_accessibility_audit.py` now gracefully handles `task_mode=create` with non-existent targets by skipping scanners and producing guidance-only manual-review findings instead of crashing.
 - `validate_skill.py` now warns when policy bundle `include_rules` or `ignore_rules` contain rule IDs not found in the scanner/remediation registry.
@@ -33,6 +36,7 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ### Fixed
 
+- Report JSON Schema now allows `null` for `source_line` and `source_column` in findings, matching the actual output when line/column information is unavailable.
 - `libro-wcag-real-scanner.yml` now uses `--report-format sarif` CLI flag instead of importing the private `_report_to_sarif` function, removing the unstable internal API dependency.
 - `auto_fix.py` now routes button/link/ARIA widget accessible-name remediation through a shared helper and records attribute-based guesses in diff descriptions as `(guessed from: <attr>)` for reviewer traceability.
 - `wcag_workflow.py` now derives `AXE_RULE_TO_SC` and `LIGHTHOUSE_RULE_TO_SC` from a single `SCANNER_RULE_TO_SC` table so shared WCAG mappings stay aligned while preserving scanner-specific overrides.
