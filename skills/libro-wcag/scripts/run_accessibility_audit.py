@@ -277,7 +277,12 @@ def _report_to_sarif(
 ) -> dict[str, Any]:
     rules: dict[str, dict[str, Any]] = {}
     results: list[dict[str, Any]] = []
-    location_uri = local_target.as_posix() if local_target else contract_target
+    if local_target:
+        posix = local_target.resolve().as_posix()
+        # RFC 3986: Windows paths like C:/foo → file:///C:/foo
+        location_uri = 'file:///' + posix.lstrip('/') if not posix.startswith('/') else 'file://' + posix
+    else:
+        location_uri = contract_target
 
     for finding in report.get('findings', []):
         rule_id = str(finding.get('rule_id', 'unknown'))
