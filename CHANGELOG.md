@@ -23,6 +23,7 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - `README.md` and `README.en.md` now document MCP read-only limitation and `requirements.lock` availability for production deployments.
 - `supported-environments.md` now includes MCP server as a supported environment with hash-pinned dependency lock file reference.
 - Removed 11 superseded `docs/archive/release/` files; updated `docs/README.md` index with 7 previously unlisted release docs.
+- Verified all 3 bilingual document pairs (README, apply-fixes-scope, real-scanner-ci-lane) follow the zh-TW `.md` + English `.en.md` convention with aligned structure.
 
 ### Fixed
 
