@@ -508,6 +508,43 @@ class AutoFixTests(unittest.TestCase):
             self.assertIn('alt=""', updated_text)
             self.assertTrue(any('framework-aware alt remediation for vue' in item['description'] for item in updated_report['summary']['diff_summary']))
 
+    def test_vue_sfc_complex_fixes_template_without_corrupting_script(self) -> None:
+        """F2: Verify button-name, link-name, image-alt fixes apply inside <template>
+        without corrupting <script> content that contains HTML-like strings."""
+        fixture = Path(__file__).parent / 'fixtures' / 'vue-sfc-complex.vue'
+        with tempfile.TemporaryDirectory() as tmp:
+            working = Path(tmp) / fixture.name
+            working.write_text(fixture.read_text(encoding='utf-8'), encoding='utf-8')
+            contract = resolve_contract({'target': str(working), 'execution_mode': 'apply-fixes'})
+            axe_data = {
+                'violations': [
+                    {'id': 'image-alt', 'impact': 'serious', 'description': 'Images need alt', 'nodes': [{'target': ['img.hero']}]},
+                    {'id': 'button-name', 'impact': 'serious', 'description': 'Button needs name', 'nodes': [{'target': ['button.icon-only']}]},
+                    {'id': 'link-name', 'impact': 'serious', 'description': 'Link needs name', 'nodes': [{'target': ['a.logo-link']}]},
+                ]
+            }
+            report = normalize_report(contract, axe_data, {'audits': {}}, None, None)
+            updated_report, diff_text = apply_report_fixes(working, report)
+            updated_text = working.read_text(encoding='utf-8')
+            # Verify <script> section is untouched
+            self.assertIn("const buttonTemplate = '<button class=\"dynamic\">Click me</button>'", updated_text)
+            self.assertIn("const imgTag = '<img src=\"/other.png\" />'", updated_text)
+            self.assertIn("const linkMarkup = '<a href=\"/target\">Go</a>'", updated_text)
+            self.assertIn('import { ref }', updated_text)
+            # Verify fixes were applied in <template>
+            self.assertIn('alt=""', updated_text)
+            # Verify all three fixes were applied
+            descriptions = [item['description'] for item in updated_report['summary']['diff_summary']]
+            self.assertTrue(any('framework-aware alt remediation for vue' in d for d in descriptions))
+            self.assertTrue(any('aria-label' in d and 'button' in d.lower() for d in descriptions))
+            self.assertTrue(any('aria-label' in d and 'link' in d.lower() for d in descriptions))
+            self.assertGreaterEqual(updated_report['summary']['remediation_lifecycle']['implemented'], 3)
+            # Verify <template> and <script> tags are both preserved
+            self.assertIn('<template>', updated_text)
+            self.assertIn('</template>', updated_text)
+            self.assertIn('<script setup>', updated_text)
+            self.assertIn('</script>', updated_text)
+
     def test_apply_report_fixes_supports_nextjs_layout_lang_and_image_alt(self) -> None:
         fixture = Path(__file__).parent / 'fixtures' / 'nextjs-layout.tsx'
         with tempfile.TemporaryDirectory() as tmp:

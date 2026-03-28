@@ -1,0 +1,219 @@
+{
+  "run_meta": {
+    "generated_at": "<generated>",
+    "workflow_version": "1.0.0",
+    "execution_mode": "suggest-only",
+    "output_language": "en",
+    "files_modified": false,
+    "modification_owner": "agent-or-adapter",
+    "diff_artifacts": [],
+    "verification_evidence": [],
+    "tools": {
+      "axe": "ok",
+      "lighthouse": "ok"
+    },
+    "notes": []
+  },
+  "target": {
+    "value": "fixtures/aria-table-auto-fix.html",
+    "task_mode": "modify"
+  },
+  "standard": {
+    "wcag_version": "2.1",
+    "conformance_level": "AA"
+  },
+  "findings": [
+    {
+      "id": "ISSUE-001",
+      "source": "axe",
+      "sources": [
+        "axe"
+      ],
+      "rule_id": "aria-valid-attr-value",
+      "severity": "serious",
+      "confidence": "medium",
+      "sc": [
+        "4.1.2"
+      ],
+      "current": "ARIA attribute values must be valid",
+      "changed_target": "div[role=\"switch\"]",
+      "source_line": null,
+      "source_column": null,
+      "status": "open",
+      "fixability": "auto-fix",
+      "verification_status": "not-run",
+      "manual_review_required": false,
+      "risk_level": "high",
+      "rule_family": "aria",
+      "downgrade_reason": null,
+      "before_after_targets": [],
+      "citations": [
+        {
+          "sc": "4.1.2",
+          "url": "https://www.w3.org/WAI/WCAG21/Understanding/name-role-value"
+        }
+      ]
+    },
+    {
+      "id": "ISSUE-002",
+      "source": "axe",
+      "sources": [
+        "axe"
+      ],
+      "rule_id": "td-has-header",
+      "severity": "serious",
+      "confidence": "medium",
+      "sc": [
+        "1.3.1"
+      ],
+      "current": "Table cells must have associated headers",
+      "changed_target": "table.sales-table td",
+      "source_line": null,
+      "source_column": null,
+      "status": "open",
+      "fixability": "auto-fix",
+      "verification_status": "not-run",
+      "manual_review_required": false,
+      "risk_level": "high",
+      "rule_family": "structure",
+      "downgrade_reason": null,
+      "before_after_targets": [],
+      "citations": [
+        {
+          "sc": "1.3.1",
+          "url": "https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships"
+        }
+      ]
+    }
+  ],
+  "fixes": [
+    {
+      "id": "FIX-001",
+      "finding_id": "ISSUE-001",
+      "description": "Normalize invalid ARIA attribute values to valid safe defaults.",
+      "changed_target": "div[role=\"switch\"]",
+      "status": "planned",
+      "remediation_priority": "medium",
+      "confidence": "medium",
+      "auto_fix_supported": true,
+      "fixability": "auto-fix",
+      "verification_status": "not-run",
+      "manual_review_required": false,
+      "risk_level": "high",
+      "rule_family": "aria",
+      "downgrade_reason": null,
+      "before_after_targets": [],
+      "fix_blockers": [],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "axe"
+          ],
+          "status": "captured"
+        }
+      ],
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    },
+    {
+      "id": "FIX-002",
+      "finding_id": "ISSUE-002",
+      "description": "Link table data cells to matching header cells using headers/id attributes.",
+      "changed_target": "table.sales-table td",
+      "status": "planned",
+      "remediation_priority": "high",
+      "confidence": "medium",
+      "auto_fix_supported": true,
+      "fixability": "auto-fix",
+      "verification_status": "not-run",
+      "manual_review_required": false,
+      "risk_level": "high",
+      "rule_family": "structure",
+      "downgrade_reason": null,
+      "before_after_targets": [],
+      "fix_blockers": [],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "axe"
+          ],
+          "status": "captured"
+        }
+      ],
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    }
+  ],
+  "citations": [
+    {
+      "finding_id": "ISSUE-001",
+      "sc": "4.1.2",
+      "url": "https://www.w3.org/WAI/WCAG21/Understanding/name-role-value"
+    },
+    {
+      "finding_id": "ISSUE-002",
+      "sc": "1.3.1",
+      "url": "https://www.w3.org/WAI/WCAG21/Understanding/info-and-relationships"
+    }
+  ],
+  "summary": {
+    "total_findings": 2,
+    "fixed_findings": 0,
+    "auto_fixed_count": 0,
+    "needs_manual_review": 0,
+    "manual_required_count": 0,
+    "change_summary": [
+      {
+        "finding_id": "ISSUE-001",
+        "rule_id": "aria-valid-attr-value",
+        "changed_target": "div[role=\"switch\"]",
+        "recommended_action": "Normalize invalid ARIA attribute values to valid safe defaults.",
+        "remediation_priority": "medium"
+      },
+      {
+        "finding_id": "ISSUE-002",
+        "rule_id": "td-has-header",
+        "changed_target": "table.sales-table td",
+        "recommended_action": "Link table data cells to matching header cells using headers/id attributes.",
+        "remediation_priority": "high"
+      }
+    ],
+    "diff_summary": [],
+    "before_after_targets": [],
+    "remediation_lifecycle": {
+      "planned": 2,
+      "implemented": 0,
+      "verified": 0,
+      "manual_review_required": 0
+    },
+    "fix_blockers": []
+  }
+}
