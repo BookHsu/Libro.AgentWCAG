@@ -13,6 +13,11 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - `remediation_library.py` now includes `auto_fix_reason` on every rule where `auto_fix_supported` is `False`, explaining why automatic remediation is not feasible (e.g. color-contrast: "Color choices require design intent").
 - `test_schema_validation.py` validates generated reports against the JSON Schema using `jsonschema`, catching schema/code mismatches at test time.
 - `jsonschema>=4.20` is now an optional test dependency in `pyproject.toml`.
+- `mcp-server/requirements.lock` provides hash-pinned dependency versions for production deployments.
+
+### Fixed
+
+- `_report_to_sarif()` now generates RFC 3986 compliant `file:///` URIs for local targets on Windows, instead of bare `C:/path` style strings that some SARIF consumers cannot parse.
 
 ### Changed
 
@@ -20,19 +25,16 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - `run_accessibility_audit.py` now runs axe and Lighthouse scanners in parallel using `concurrent.futures.ThreadPoolExecutor` when both are active, reducing total audit wall-clock time.
 - `run_accessibility_audit.py` now gracefully handles `task_mode=create` with non-existent targets by skipping scanners and producing guidance-only manual-review findings instead of crashing.
 - `validate_skill.py` now warns when policy bundle `include_rules` or `ignore_rules` contain rule IDs not found in the scanner/remediation registry.
-
-### Security
-
-- MCP server `audit_page.py` now validates local file targets with `Path.resolve()` + `relative_to(REPO_ROOT)` to prevent path traversal attacks. URL targets are passed through unchanged.
-
-### Changed
-
 - `scripts/install-agent.py` now backs up existing installations before `--force` replacement and automatically rolls back on failure, preventing incomplete installation states.
 - `scripts/install-agent.py` now reads the installed version from the existing manifest and warns on stderr when a `--force` install would downgrade.
 - `core-spec.md` now includes a Schema Versioning Policy (§5) documenting the semver rules, compatibility contract, and upgrade checklist for the report schema.
 - `core-spec.md` now includes a Language Separation section (§6) documenting that adapter prompt directives stay in English while only report output respects the `output_language` field.
 - `SKILL.md` Adapter Rules now explicitly states that prompt directives must not be translated based on `output_language`.
 - `SKILL.md` and `core-spec.md` now document `output_language` as `en | zh-TW` with explicit fallback-to-`en` behavior for unsupported BCP-47 values, matching the actual runtime capability.
+
+### Security
+
+- MCP server `audit_page.py` now validates local file targets with `Path.resolve()` + `relative_to(REPO_ROOT)` to prevent path traversal attacks. URL targets are passed through unchanged.
 
 ### Fixed
 
