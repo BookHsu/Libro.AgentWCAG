@@ -8,6 +8,8 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ### Added
 
+- `references/cli-reference.md` provides a complete CLI option reference covering policy bundles, baselines, SARIF output, failure gates, and scanner control.
+- All four adapter prompt templates now cross-reference `cli-reference.md` for advanced CLI options.
 - `remediation_library.py` now includes `auto_fix_reason` on every rule where `auto_fix_supported` is `False`, explaining why automatic remediation is not feasible (e.g. color-contrast: "Color choices require design intent").
 
 ### Changed
@@ -19,6 +21,7 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ### Fixed
 
+- `libro-wcag-real-scanner.yml` now uses `--report-format sarif` CLI flag instead of importing the private `_report_to_sarif` function, removing the unstable internal API dependency.
 - `auto_fix.py` now routes button/link/ARIA widget accessible-name remediation through a shared helper and records attribute-based guesses in diff descriptions as `(guessed from: <attr>)` for reviewer traceability.
 - `wcag_workflow.py` now derives `AXE_RULE_TO_SC` and `LIGHTHOUSE_RULE_TO_SC` from a single `SCANNER_RULE_TO_SC` table so shared WCAG mappings stay aligned while preserving scanner-specific overrides.
 - `scripts/uninstall-agent.py` now converts filesystem removal failures into clear CLI error messages instead of surfacing raw tracebacks for permission or path-type problems.

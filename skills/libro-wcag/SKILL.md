@@ -89,6 +89,7 @@ Use `scripts/normalize_report.py` to normalize mixed tool outputs into the contr
 
 ## References
 
+- Load `references/cli-reference.md` for the complete CLI option reference (policy bundles, baselines, SARIF, gates).
 - Load `references/core-spec.md` for strict field definitions and process details.
 - Load `references/wcag-citations.md` for official W3C citation mapping.
 - Load `references/adapter-mapping.md` for cross-agent translation rules.

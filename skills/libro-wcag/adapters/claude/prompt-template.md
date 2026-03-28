@@ -32,4 +32,5 @@ Execution requirements:
   2. JSON report with canonical keys.
 - Include execution_mode in JSON and Markdown summary text.
 - Preserve the same finding IDs across both outputs.
+- For advanced CLI options (policy bundles, baselines, SARIF output, failure gates), see references/cli-reference.md.
 ```

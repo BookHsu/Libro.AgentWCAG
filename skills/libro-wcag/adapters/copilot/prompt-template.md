@@ -34,4 +34,5 @@ Required behavior:
 9. Use version-matched W3C Understanding links for cited success criteria.
 10. Include execution_mode in JSON and Markdown summary text.
 11. Return Markdown and JSON together, and keep issue IDs stable across both outputs.
+12. For advanced CLI options (policy bundles, baselines, SARIF output, failure gates), see references/cli-reference.md.
 ```
