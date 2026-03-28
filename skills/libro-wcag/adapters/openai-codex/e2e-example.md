@@ -30,13 +30,20 @@ Use $libro-wcag with:
 {
   "run_meta": {
     "task_mode": "modify",
-    "execution_mode": "apply-fixes"
+    "execution_mode": "apply-fixes",
+    "product": {
+      "product_name": "Libro.AgentWCAG",
+      "product_version": "1.2.1",
+      "source_revision": "git:example",
+      "report_schema_version": "1.0.0"
+    }
   },
   "summary": {
     "auto_fixed_count": 3,
     "manual_required_count": 1,
     "remediation_lifecycle": {
       "implemented": 3,
+      "verified": 3,
       "planned": 1,
       "manual_review_required": 1
     }
