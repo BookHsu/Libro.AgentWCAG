@@ -35,6 +35,8 @@ winget install Python.Python.3.12           # Windows
 
 ### Claude Marketplace (Claude Code)
 
+Coming soon - pending marketplace availability.
+
 ```text
 /plugin marketplace add BookHsu/Libro.AgentWCAG
 /plugin install libro-wcag@libro-wcag-marketplace

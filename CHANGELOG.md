@@ -8,6 +8,9 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ### Fixed
 
+- `scripts/uninstall-agent.py` now converts filesystem removal failures into clear CLI error messages instead of surfacing raw tracebacks for permission or path-type problems.
+- Markdown report summaries now include a visible `⚠️` scanner-coverage warning line whenever axe or Lighthouse fails, so partial reports are easier to notice.
+- `README.md` and `README.en.md` now mark the Claude Marketplace install commands as coming soon pending marketplace availability.
 - Reusable `install-skill.yml` now checks out `${{ github.repository }}` instead of a hard-coded upstream repo, so forked repositories can call the workflow directly.
 - Reusable `install-skill.yml` now exposes an `installation_valid` output even when `doctor-agent.py` fails, letting workflow callers branch on verification results before the job exits.
 - `publish-npm.yml` now runs `npm pack --dry-run` before the real pack/publish steps to catch packaging allowlist mistakes earlier.
@@ -31,6 +34,7 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ### Added
 
+- Regression coverage for Markdown scanner-failure warnings and uninstall error handling.
 - Static contract coverage for the WCAG report schema so required finding/fix fields and status vocabularies stay aligned with the documented contract.
 - Regression coverage for version-specific citation URLs and previously missing common SC citation mappings such as `1.2.1`, `1.3.4`, `1.3.5`, `1.4.1`, and `1.4.2`.
 - Regression coverage for malformed scanner JSON artifacts, malformed workflow inputs, and missing smoke-report artifacts.

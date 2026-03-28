@@ -12,6 +12,7 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest import mock
 
 import yaml
 
@@ -306,6 +307,15 @@ class RepoScriptTests(unittest.TestCase):
         spec.loader.exec_module(module)
         return module
 
+    def _load_uninstall_agent_module(self):
+        module_path = self.repo_root / 'scripts' / 'uninstall-agent.py'
+        spec = importlib.util.spec_from_file_location('uninstall_agent', module_path)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
     def test_realistic_validation_smoke_helper_reports_malformed_json(self) -> None:
         smoke = self._load_realistic_validation_smoke_module()
         with tempfile.TemporaryDirectory() as tmp:
@@ -348,6 +358,44 @@ class RepoScriptTests(unittest.TestCase):
                     smoke.main()
             finally:
                 sys.argv = original_argv
+
+    def test_uninstall_agent_reports_friendly_error_for_non_directory_destination(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            destination = Path(tmp) / 'installed-skill.txt'
+            destination.write_text('not a directory', encoding='utf-8')
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    'scripts/uninstall-agent.py',
+                    '--agent',
+                    'codex',
+                    '--dest',
+                    str(destination),
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn('Failed to remove installation at', completed.stderr)
+            self.assertIn(str(destination), completed.stderr)
+
+    def test_uninstall_agent_wraps_permission_errors(self) -> None:
+        uninstall_agent = self._load_uninstall_agent_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            destination = Path(tmp) / 'codex-skill'
+            destination.mkdir()
+            with mock.patch.object(
+                uninstall_agent.shutil,
+                'rmtree',
+                side_effect=PermissionError('Access is denied'),
+            ):
+                with self.assertRaisesRegex(
+                    RuntimeError,
+                    r'Failed to remove installation at .*permission denied',
+                ):
+                    uninstall_agent.uninstall(destination)
     def test_install_agent_ps1_wrapper_invokes_python_installer(self) -> None:
         wrapper = (self.repo_root / 'scripts' / 'install-agent.ps1').read_text(encoding='utf-8')
         self.assertIn('install-agent.py', wrapper)
