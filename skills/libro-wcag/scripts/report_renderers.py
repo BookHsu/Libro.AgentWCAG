@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Renderers for aggregate WCAG reports.
 
-Implements TODO items B2 and B3 from 20260328_report_todo.md:
+Implements TODO items B2, B3, and B5 from 20260328_report_todo.md:
   B2: Terminal output with colour, bar charts, severity icons
   B3: Markdown output with tables, emoji markers, <details> folds
+  B5: CSV output with one finding per row
 """
 
 from __future__ import annotations
@@ -400,5 +401,71 @@ def render_markdown(report: dict[str, Any], language: str | None = None) -> str:
         lines.append(f"- {lbl['estimated_residual']}: **{auto_fix.get('estimated_residual', 0)}**")
         lines.append(f"- {lbl['command']}: `{auto_fix.get('command', '')}`")
         lines.append("")
+
+    # A9: Baseline diff
+    baseline_diff = report.get("baseline_diff")
+    if baseline_diff:
+        lines.append("## Baseline Diff")
+        lines.append("")
+        lines.append("| | |")
+        lines.append("|---|---:|")
+        lines.append(f"| New findings | {baseline_diff.get('new_count', 0)} |")
+        lines.append(f"| Resolved | {baseline_diff.get('resolved_count', 0)} |")
+        lines.append(f"| Persistent | {baseline_diff.get('persistent_count', 0)} |")
+        lines.append("")
+
+    return "\n".join(lines) + "\n"
+
+
+# ---------------------------------------------------------------------------
+# B5: CSV renderer
+# ---------------------------------------------------------------------------
+
+_CSV_COLUMNS = [
+    "target",
+    "rule_id",
+    "severity",
+    "fixability",
+    "sc",
+    "status",
+    "source",
+    "current",
+    "changed_target",
+]
+
+
+def _csv_escape(value: str) -> str:
+    """Escape a value for CSV (RFC 4180)."""
+    if any(c in value for c in (",", '"', "\n", "\r")):
+        return '"' + value.replace('"', '""') + '"'
+    return value
+
+
+def render_csv(
+    reports: list[dict],
+    aggregate: dict[str, Any] | None = None,
+) -> str:
+    """Render per-finding CSV from the original reports (not the aggregate).
+
+    Each row represents one finding with its target context.
+    If only the aggregate is passed (no original reports), extracts what it can.
+    """
+    lines: list[str] = [",".join(_CSV_COLUMNS)]
+
+    for report in reports:
+        target = report.get("target", {}).get("value", "")
+        for finding in report.get("findings", []):
+            row = [
+                _csv_escape(target),
+                _csv_escape(finding.get("rule_id", "")),
+                finding.get("severity", ""),
+                finding.get("fixability", ""),
+                _csv_escape(";".join(finding.get("sc", []))),
+                finding.get("status", ""),
+                finding.get("source", ""),
+                _csv_escape(finding.get("current", "")),
+                _csv_escape(finding.get("changed_target", "")),
+            ]
+            lines.append(",".join(row))
 
     return "\n".join(lines) + "\n"
