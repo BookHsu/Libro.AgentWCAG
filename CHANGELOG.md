@@ -12,8 +12,14 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - All four adapter prompt templates now cross-reference `cli-reference.md` for advanced CLI options.
 - `remediation_library.py` now includes `auto_fix_reason` on every rule where `auto_fix_supported` is `False`, explaining why automatic remediation is not feasible (e.g. color-contrast: "Color choices require design intent").
 
+### Security
+
+- MCP server `audit_page.py` now validates local file targets with `Path.resolve()` + `relative_to(REPO_ROOT)` to prevent path traversal attacks. URL targets are passed through unchanged.
+
 ### Changed
 
+- `scripts/install-agent.py` now backs up existing installations before `--force` replacement and automatically rolls back on failure, preventing incomplete installation states.
+- `scripts/install-agent.py` now reads the installed version from the existing manifest and warns on stderr when a `--force` install would downgrade.
 - `core-spec.md` now includes a Schema Versioning Policy (§5) documenting the semver rules, compatibility contract, and upgrade checklist for the report schema.
 - `core-spec.md` now includes a Language Separation section (§6) documenting that adapter prompt directives stay in English while only report output respects the `output_language` field.
 - `SKILL.md` Adapter Rules now explicitly states that prompt directives must not be translated based on `output_language`.
