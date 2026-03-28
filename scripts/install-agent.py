@@ -161,21 +161,83 @@ def write_manifest(destination: Path, agent: str) -> None:
     )
 
 
+def _read_installed_version(destination: Path) -> str | None:
+    """Read the product_version from an existing install manifest, if present."""
+    manifest_path = destination / "install-manifest.json"
+    if not manifest_path.exists():
+        return None
+    try:
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
+        return data.get("product_version")
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def _backup_existing(destination: Path) -> Path | None:
+    """Create a timestamped backup of the existing installation.
+
+    Returns the backup path, or None if no backup was needed.
+    """
+    if not destination.exists():
+        return None
+    import time
+
+    timestamp = time.strftime("%Y%m%d%H%M%S")
+    backup_path = destination.with_name(f"{destination.name}.bak-{timestamp}")
+    shutil.copytree(destination, backup_path)
+    return backup_path
+
+
+def _rollback(destination: Path, backup_path: Path | None) -> None:
+    """Restore from backup after a failed installation."""
+    if destination.exists():
+        try:
+            shutil.rmtree(destination)
+        except OSError:
+            pass
+    if backup_path and backup_path.exists():
+        shutil.copytree(backup_path, destination)
+
+
 def install(agent: str, destination: Path, force: bool) -> Path:
     source = source_directory()
     if not source.exists():
         raise FileNotFoundError(f"Missing source skill directory: {source}")
 
+    backup_path: Path | None = None
     if destination.exists():
         if not force:
             raise FileExistsError(
                 f"Destination already exists: {destination}. Use --force to replace it."
             )
-        shutil.rmtree(destination)
+        old_version = _read_installed_version(destination)
+        new_version = get_product_provenance().get("product_version", "unknown")
+        if old_version and old_version > new_version:
+            print(
+                f"Warning: downgrading from {old_version} to {new_version} at {destination}",
+                file=sys.stderr,
+            )
+        backup_path = _backup_existing(destination)
+        try:
+            shutil.rmtree(destination)
+        except (PermissionError, OSError) as exc:
+            raise OSError(
+                f"Cannot remove existing installation at {destination}: {exc}"
+            ) from exc
 
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(source, destination)
-    write_manifest(destination, agent)
+    try:
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(source, destination)
+        write_manifest(destination, agent)
+    except (PermissionError, OSError) as exc:
+        _rollback(destination, backup_path)
+        raise OSError(
+            f"Installation failed, rolled back to previous state: {exc}"
+        ) from exc
+    finally:
+        if backup_path and backup_path.exists():
+            shutil.rmtree(backup_path, ignore_errors=True)
+
     return destination
 
 
