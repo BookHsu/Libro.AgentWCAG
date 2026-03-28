@@ -100,6 +100,8 @@ Use apply-fixes mode to review src/page.html and apply safe fixes to supported l
 
 This keeps review and modification separate, which makes the workflow easier to control.
 
+> **MCP note**: The MCP server provides read-only audit (`audit-only`) and suggestions (`suggest-only`) only; `apply-fixes` is not exposed via MCP. Use the CLI directly for auto-fix. Production deployments can use `mcp-server/requirements.lock` for hash-pinned dependencies.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

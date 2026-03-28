@@ -19,6 +19,9 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - `WcagUrlSlugTests` validates all `WCAG_UNDERSTANDING_PATHS` slugs are well-formed, unique, and produce correct URLs for WCAG 2.0/2.1/2.2, with optional HTTP HEAD reachability check gated behind `LIBRO_RUN_URL_VALIDATION=1`.
 - `vue-sfc-complex.vue` fixture and integration test verify that Vue SFC auto-fix applies button-name, link-name, and image-alt fixes inside `<template>` without corrupting `<script>` content.
 - `generate_snapshots.py` tool and 15 new `.report.json` + `.report.md` snapshot baselines provide regression detection for all HTML fixture files.
+- Document governance audit (AA1) classifies all formal documents with keep/merge/remove decisions; 20 documents confirmed as authoritative, 11 archive documents identified for removal.
+- `README.md` and `README.en.md` now document MCP read-only limitation and `requirements.lock` availability for production deployments.
+- `supported-environments.md` now includes MCP server as a supported environment with hash-pinned dependency lock file reference.
 
 ### Fixed
 

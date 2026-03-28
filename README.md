@@ -100,6 +100,8 @@ Apply fixes
 
 這樣可以先把問題看清楚，再進入修改流程，避免過早自動改動。
 
+> **MCP 注意事項**：MCP server 僅提供唯讀稽核（`audit-only`）與建議（`suggest-only`），不支援 `apply-fixes` 模式。如需自動修正，請使用 CLI 直接執行。生產部署可使用 `mcp-server/requirements.lock` 取得 hash-pinned 相依版本。
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
