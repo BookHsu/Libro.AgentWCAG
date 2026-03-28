@@ -198,7 +198,9 @@ class TestBuildAggregateReport(unittest.TestCase):
         self.assertEqual(fix["auto-fix"]["count"], 2)
         self.assertEqual(fix["assisted"]["count"], 1)
         self.assertEqual(fix["manual"]["count"], 1)
-        self.assertAlmostEqual(fix["fix_coverage"], 0.5)
+        # fix_coverage no longer in fixability — uniform type per SOLID ISP
+        self.assertNotIn("fix_coverage", fix)
+        self.assertAlmostEqual(fix["auto-fix"]["percentage"], 50.0)
 
     def test_per_target_sorted_by_findings(self) -> None:
         r1 = _make_report(target="few.html", findings=[_make_finding()])

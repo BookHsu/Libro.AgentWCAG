@@ -397,21 +397,22 @@ def handle_audit(args: argparse.Namespace) -> int:
     return completed.returncode
 
 
+_COMMAND_HANDLERS = {
+    "install": handle_install,
+    "doctor": handle_doctor,
+    "remove": handle_remove,
+    "audit": handle_audit,
+    "scan": handle_scan,
+    "report": handle_report,
+}
+
+
 def main() -> int:
     args = parse_args()
-    if args.command == "install":
-        return handle_install(args)
-    if args.command == "doctor":
-        return handle_doctor(args)
-    if args.command == "remove":
-        return handle_remove(args)
-    if args.command == "audit":
-        return handle_audit(args)
-    if args.command == "scan":
-        return handle_scan(args)
-    if args.command == "report":
-        return handle_report(args)
-    raise ValueError(f"Unsupported command: {args.command}")
+    handler = _COMMAND_HANDLERS.get(args.command)
+    if handler is None:
+        raise ValueError(f"Unsupported command: {args.command}")
+    return handler(args)
 
 
 if __name__ == "__main__":
