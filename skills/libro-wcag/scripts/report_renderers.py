@@ -355,12 +355,6 @@ def render_markdown(report: dict[str, Any], language: str | None = None) -> str:
         for t in targets:
             status = t.get("status", "issues")
             icon = TARGET_STATUS_ICONS.get(status, "?")
-            sev_parts = []
-            for sl in _SEVERITY_ORDER:
-                c = t.get("severity", {}).get(sl, 0)
-                if c > 0:
-                    sev_parts.append(f"{SEVERITY_ICONS.get(sl, '')} {c}")
-            sev_detail = " ".join(sev_parts) if sev_parts else "-"
             lines.append(
                 f"| {icon} | `{t.get('target', '?')}` | {t.get('total_findings', 0)} | {t.get('auto_fixable', 0)} | {status} |"
             )
