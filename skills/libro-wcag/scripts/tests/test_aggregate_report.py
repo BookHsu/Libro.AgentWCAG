@@ -19,7 +19,7 @@ from aggregate_report import (
     load_reports,
     write_aggregate_json,
 )
-from report_renderers import render_markdown, render_terminal
+from report_renderers import render_csv, render_markdown, render_terminal
 
 
 def _make_finding(
@@ -388,6 +388,86 @@ class TestRendererP1Sections(unittest.TestCase):
         self.assertIn("WCAG Principle Coverage", output)
         self.assertIn("Top Issues", output)
         self.assertIn("image-alt", output)
+
+
+class TestBaselineDiff(unittest.TestCase):
+    """A9: Trend / Baseline Diff."""
+
+    def test_baseline_diff_detects_changes(self) -> None:
+        baseline = [_make_report(
+            target="page.html",
+            findings=[
+                _make_finding(rule_id="image-alt"),
+                _make_finding(rule_id="button-name"),
+            ],
+        )]
+        current = [_make_report(
+            target="page.html",
+            findings=[
+                _make_finding(rule_id="image-alt"),    # persistent
+                _make_finding(rule_id="link-name"),     # new
+            ],
+        )]
+        agg = build_aggregate_report(current, baseline_reports=baseline)
+        diff = agg["baseline_diff"]
+        self.assertIsNotNone(diff)
+        self.assertEqual(diff["new_count"], 1)       # link-name
+        self.assertEqual(diff["resolved_count"], 1)  # button-name
+        self.assertEqual(diff["persistent_count"], 1) # image-alt
+
+    def test_no_baseline_returns_none(self) -> None:
+        agg = build_aggregate_report([_make_report()])
+        self.assertIsNone(agg["baseline_diff"])
+
+
+class TestCsvRenderer(unittest.TestCase):
+    """B5: CSV Output."""
+
+    def test_csv_header_and_rows(self) -> None:
+        r1 = _make_report(
+            target="index.html",
+            findings=[
+                _make_finding(rule_id="image-alt", severity="critical"),
+                _make_finding(rule_id="button-name", severity="serious"),
+            ],
+        )
+        r2 = _make_report(target="about.html", findings=[_make_finding()])
+        output = render_csv([r1, r2])
+        lines = output.strip().split("\n")
+        self.assertEqual(lines[0], "target,rule_id,severity,fixability,sc,status,source,current,changed_target")
+        self.assertEqual(len(lines), 4)  # header + 3 findings
+        self.assertIn("index.html", lines[1])
+        self.assertIn("about.html", lines[3])
+
+    def test_csv_escapes_commas(self) -> None:
+        finding = _make_finding()
+        finding["current"] = '<img src="a,b">'
+        report = _make_report(findings=[finding])
+        output = render_csv([report])
+        # Value with comma should be quoted
+        self.assertIn('"', output)
+
+    def test_csv_empty_reports(self) -> None:
+        output = render_csv([])
+        lines = output.strip().split("\n")
+        self.assertEqual(len(lines), 1)  # header only
+
+
+class TestMarkdownBaselineDiff(unittest.TestCase):
+    """Verify baseline diff appears in Markdown output."""
+
+    def test_markdown_includes_baseline_when_present(self) -> None:
+        baseline = [_make_report(findings=[_make_finding(rule_id="old-rule")])]
+        current = [_make_report(findings=[_make_finding(rule_id="new-rule")])]
+        agg = build_aggregate_report(current, baseline_reports=baseline)
+        output = render_markdown(agg, language="en")
+        self.assertIn("Baseline Diff", output)
+        self.assertIn("New findings", output)
+
+    def test_markdown_omits_baseline_when_absent(self) -> None:
+        agg = build_aggregate_report([_make_report()])
+        output = render_markdown(agg, language="en")
+        self.assertNotIn("Baseline Diff", output)
 
 
 class TestLoadReports(unittest.TestCase):

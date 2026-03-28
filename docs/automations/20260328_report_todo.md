@@ -53,11 +53,13 @@
   > 📋 **優先級：P1。**
   > ✅ 實作於 `aggregate_report.py:_build_auto_fix_opportunity()` — 含 framework_groups
 
-- [ ] **A8** **修復生命週期（Remediation Lifecycle）**：planned → implemented → verified 各階段數量；已修復但未驗證的項目；需要人工審核的項目；修復進度百分比。
+- [x] **A8** **修復生命週期（Remediation Lifecycle）**：planned → implemented → verified 各階段數量；已修復但未驗證的項目；需要人工審核的項目；修復進度百分比。
   > 📋 **優先級：P2。** 追蹤修復進度。
+  > ✅ 實作於 `aggregate_report.py:_build_remediation_lifecycle()` — 含 fix_coverage
 
-- [ ] **A9** **趨勢與基線比較（Trend / Baseline Diff）**：新增的缺失（本次出現、上次沒有）；已解決的缺失；持續存在的債務；債務 waiver 狀態（已過期？即將過期？）；折線圖。
+- [x] **A9** **趨勢與基線比較（Trend / Baseline Diff）**：新增的缺失（本次出現、上次沒有）；已解決的缺失；持續存在的債務；債務 waiver 狀態（已過期？即將過期？）；折線圖。
   > 📋 **優先級：P2。** 需要歷史資料，第二階段做。
+  > ✅ 實作於 `aggregate_report.py:_build_baseline_diff()` + `libro report --baseline`
 
 - [ ] **A10** **掃描器健康狀態（Scanner Health）**：axe / lighthouse 版本與狀態；是否有 scanner failure / fallback findings；掃描耗時。
   > 📋 **優先級：P3。** 除錯用。
@@ -81,8 +83,9 @@
 - [ ] **B4** **HTML 輸出**：單一自包含 HTML 檔（inline CSS + inline SVG 圓餅圖/橫條圖，零外部依賴），可瀏覽器開啟、email 附件、存檔交付。`--format html --output wcag-dashboard.html`。
   > 📋 **優先級：P1。** 對外交付最有說服力。
 
-- [ ] **B5** **CSV 輸出**：每個 finding 一行，含 target / rule_id / severity / fixability / sc / status / changed_target，Excel 可直接篩選排序。`--format csv`。
+- [x] **B5** **CSV 輸出**：每個 finding 一行，含 target / rule_id / severity / fixability / sc / status / changed_target，Excel 可直接篩選排序。`--format csv`。
   > 📋 **優先級：P2。**
+  > ✅ 實作於 `report_renderers.py:render_csv()` + `libro report --format csv`
 
 - [ ] **B6** **Badge 輸出**：Shields.io endpoint JSON 格式，可嵌入 README 顯示合規標章（色彩依合規率變化）。`--format badge --output badge.json`。
   > 📋 **優先級：P3。** 錦上添花。

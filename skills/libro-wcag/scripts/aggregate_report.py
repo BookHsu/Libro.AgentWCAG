@@ -292,6 +292,47 @@ def _build_auto_fix_opportunity(
     return result
 
 
+def _build_baseline_diff(
+    reports: list[dict[str, Any]],
+    baseline_reports: list[dict[str, Any]] | None,
+) -> dict[str, Any] | None:
+    """A9: Trend / Baseline Diff — compare current vs prior run."""
+    if not baseline_reports:
+        return None
+
+    current_sigs = set()
+    for report in reports:
+        for f in report.get("findings", []):
+            sig = (
+                report.get("target", {}).get("value", ""),
+                f.get("rule_id", ""),
+                ",".join(f.get("sc", [])),
+            )
+            current_sigs.add(sig)
+
+    baseline_sigs = set()
+    for report in baseline_reports:
+        for f in report.get("findings", []):
+            sig = (
+                report.get("target", {}).get("value", ""),
+                f.get("rule_id", ""),
+                ",".join(f.get("sc", [])),
+            )
+            baseline_sigs.add(sig)
+
+    new_findings = current_sigs - baseline_sigs
+    resolved = baseline_sigs - current_sigs
+    persistent = current_sigs & baseline_sigs
+
+    return {
+        "new_count": len(new_findings),
+        "resolved_count": len(resolved),
+        "persistent_count": len(persistent),
+        "current_total": len(current_sigs),
+        "baseline_total": len(baseline_sigs),
+    }
+
+
 def _resolve_standard(
     reports: list[dict[str, Any]],
 ) -> tuple[str, str]:
@@ -308,6 +349,7 @@ def build_aggregate_report(
     *,
     wcag_version: str | None = None,
     conformance_level: str | None = None,
+    baseline_reports: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Build the complete aggregate report from multiple single-target reports.
 
@@ -326,6 +368,7 @@ def build_aggregate_report(
     top_rules = _build_top_rules(all_findings)
     remediation = _build_remediation_lifecycle(reports, all_findings)
     auto_fix = _build_auto_fix_opportunity(all_findings, reports)
+    baseline_diff = _build_baseline_diff(reports, baseline_reports)
 
     return {
         "report_type": "aggregate",
@@ -341,7 +384,7 @@ def build_aggregate_report(
         "top_rules": top_rules,
         "targets": targets,
         "remediation_lifecycle": remediation,
-        "baseline_diff": None,
+        "baseline_diff": baseline_diff,
         "auto_fix_opportunity": auto_fix,
     }
 

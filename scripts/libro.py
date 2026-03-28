@@ -119,7 +119,7 @@ def parse_args() -> argparse.Namespace:
     )
     report_parser.add_argument(
         "--format",
-        choices=("json", "terminal", "markdown"),
+        choices=("json", "terminal", "markdown", "csv"),
         default="terminal",
         help="Output format (default: terminal).",
     )
@@ -131,6 +131,10 @@ def parse_args() -> argparse.Namespace:
         "--language",
         default="zh-TW",
         help="Output language: en or zh-TW (default: zh-TW).",
+    )
+    report_parser.add_argument(
+        "--baseline",
+        help="Path to a prior aggregate report JSON or directory for baseline comparison.",
     )
 
     args, remaining = parser.parse_known_args()
@@ -296,36 +300,46 @@ def handle_report(args: argparse.Namespace) -> int:
     import glob as glob_mod
     sys.path.insert(0, str(REPO_ROOT / "skills" / "libro-wcag" / "scripts"))
     from aggregate_report import build_aggregate_report, load_reports, write_aggregate_json
-    from report_renderers import render_markdown, render_terminal
+    from report_renderers import render_csv, render_markdown, render_terminal
 
-    # Resolve input paths: expand directories to find wcag-report.json files
-    report_paths: list[Path] = []
-    for raw_input in args.inputs:
-        p = Path(raw_input)
-        if p.is_file():
-            report_paths.append(p)
-        elif p.is_dir():
-            found = sorted(p.rglob("wcag-report.json"))
-            if not found:
-                print(f"Warning: no wcag-report.json found under {p}", file=sys.stderr)
-            report_paths.extend(found)
-        else:
-            expanded = glob_mod.glob(raw_input, recursive=True)
-            for g in expanded:
-                gp = Path(g)
-                if gp.is_file():
-                    report_paths.append(gp)
+    def _resolve_report_paths(inputs: list[str]) -> list[Path]:
+        paths: list[Path] = []
+        for raw_input in inputs:
+            p = Path(raw_input)
+            if p.is_file():
+                paths.append(p)
+            elif p.is_dir():
+                found = sorted(p.rglob("wcag-report.json"))
+                if not found:
+                    print(f"Warning: no wcag-report.json found under {p}", file=sys.stderr)
+                paths.extend(found)
+            else:
+                expanded = glob_mod.glob(raw_input, recursive=True)
+                for g in expanded:
+                    gp = Path(g)
+                    if gp.is_file():
+                        paths.append(gp)
+        return paths
 
+    report_paths = _resolve_report_paths(args.inputs)
     if not report_paths:
         print("Error: no report files found.", file=sys.stderr)
         return 1
 
     reports = load_reports(report_paths)
-    aggregate = build_aggregate_report(reports)
+
+    # Load baseline if provided
+    baseline_reports = None
+    if args.baseline:
+        baseline_paths = _resolve_report_paths([args.baseline])
+        if baseline_paths:
+            baseline_reports = load_reports(baseline_paths)
+
+    aggregate = build_aggregate_report(reports, baseline_reports=baseline_reports)
 
     fmt = args.format
+    output_text: str | None = None
     if fmt == "json":
-        output_text = None
         if args.output:
             write_aggregate_json(aggregate, Path(args.output))
             print(f"Aggregate report written to {args.output}")
@@ -334,10 +348,12 @@ def handle_report(args: argparse.Namespace) -> int:
             print(json_mod.dumps(aggregate, ensure_ascii=False, indent=2))
     elif fmt == "markdown":
         output_text = render_markdown(aggregate, language=args.language)
+    elif fmt == "csv":
+        output_text = render_csv(reports, aggregate=aggregate)
     else:
         output_text = render_terminal(aggregate, language=args.language)
 
-    if fmt != "json" and output_text:
+    if output_text:
         if args.output:
             Path(args.output).parent.mkdir(parents=True, exist_ok=True)
             Path(args.output).write_text(output_text, encoding="utf-8")
