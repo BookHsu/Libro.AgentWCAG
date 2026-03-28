@@ -2,7 +2,7 @@
 
 本指南定義目前正式作為 PR gate 的即時 real-scanner GitHub Actions 通道，用於依賴真實掃描器的驗證流程。
 
-## 工作流程合約
+## 工作流程合約 / Workflow contract
 
 - 工作流程路徑：[`.github/workflows/libro-wcag-real-scanner.yml`](../../.github/workflows/libro-wcag-real-scanner.yml)
 - 工作流程名稱：`libro-wcag-real-scanner`
@@ -10,7 +10,7 @@
 - 觸發事件：
   - `pull_request`
   - `workflow_dispatch`
-- 分支保護所需的 check 名稱：`libro-wcag-real-scanner`
+- 分支保護所需的 check 名稱 / Required check name for branch protection：`libro-wcag-real-scanner`
 
 這條通道只允許使用即時 real-scanner 執行，不會退回到 mock scanner payloads。
 
@@ -26,7 +26,7 @@
 
 ## Fail-Fast 策略
 
-只要出現下列任一情況，工作流程必須立即失敗：
+只要出現下列任一情況，工作流程必須立即失敗（fails immediately）：
 
 - Python 或 Node.js 設定失敗
 - 固定掃描器工具鏈安裝失敗
@@ -43,7 +43,7 @@
 
 通道證據應儲存在 `out/real-scanner` 之下。
 
-所有工件一律保留 `14` 天。
+所有工件一律保留 `14` 天（retain artifacts for `14` days）。
 
 預期的 triage 工件如下：
 
