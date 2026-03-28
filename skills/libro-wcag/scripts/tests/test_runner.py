@@ -893,13 +893,60 @@ class RunnerPolicyTests(unittest.TestCase):
         }
         sarif = runner._report_to_sarif(report, 'https://example.com', None, product_metadata)
         result = sarif['runs'][0]['results'][0]
-        driver = sarif['runs'][0]['tool']['driver']
+        run = sarif['runs'][0]
+        driver = run['tool']['driver']
         self.assertEqual(result['ruleId'], 'image-alt')
         self.assertIn('selector: img.hero', result['message']['text'])
         self.assertEqual(result['locations'][0]['physicalLocation']['region']['startLine'], 17)
         self.assertEqual(result['locations'][0]['physicalLocation']['region']['startColumn'], 5)
         self.assertEqual(driver['version'], '0.1.0')
         self.assertEqual(driver['properties']['source_revision'], 'a' * 40)
+        # M1: ruleIndex
+        self.assertEqual(result['ruleIndex'], 0)
+        # M1: helpUri and help on rule
+        rule = driver['rules'][0]
+        self.assertIn('helpUri', rule)
+        self.assertIn('non-text-content', rule['helpUri'])
+        self.assertEqual(rule['help']['text'], 'WCAG 1.1.1')
+        # M1: invocations
+        self.assertTrue(run['invocations'][0]['executionSuccessful'])
+        self.assertEqual(run['invocations'][0]['properties']['target'], 'https://example.com')
+        # M2: contextRegion
+        phys = result['locations'][0]['physicalLocation']
+        self.assertEqual(phys['contextRegion']['startLine'], 16)
+        self.assertEqual(phys['contextRegion']['endLine'], 18)
+        # M2: snippet
+        self.assertEqual(phys['region']['snippet']['text'], 'img.hero')
+
+    def test_report_to_sarif_local_target_uses_file_uri(self) -> None:
+        report = {
+            'findings': [
+                {
+                    'id': 'ISSUE-002',
+                    'rule_id': 'button-name',
+                    'severity': 'moderate',
+                    'current': 'Button needs name',
+                    'changed_target': 'button.submit',
+                    'status': 'open',
+                    'sc': ['4.1.2'],
+                }
+            ]
+        }
+        product_metadata = {
+            'name': 'Libro.AgentWCAG',
+            'product_version': '0.1.0',
+            'source_revision': 'b' * 40,
+            'report_schema_version': '1.0.0',
+        }
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix='.html', delete=False) as f:
+            tmp_path = Path(f.name)
+        try:
+            sarif = runner._report_to_sarif(report, str(tmp_path), tmp_path, product_metadata)
+            uri = sarif['runs'][0]['results'][0]['locations'][0]['physicalLocation']['artifactLocation']['uri']
+            self.assertTrue(uri.startswith('file:///'), f'Expected file:/// URI, got: {uri}')
+        finally:
+            tmp_path.unlink(missing_ok=True)
 
     def test_build_baseline_diff_returns_introduced_and_resolved(self) -> None:
         current = {
