@@ -12,6 +12,9 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ### Changed
 
+- `core-spec.md` now includes a Schema Versioning Policy (§5) documenting the semver rules, compatibility contract, and upgrade checklist for the report schema.
+- `core-spec.md` now includes a Language Separation section (§6) documenting that adapter prompt directives stay in English while only report output respects the `output_language` field.
+- `SKILL.md` Adapter Rules now explicitly states that prompt directives must not be translated based on `output_language`.
 - `SKILL.md` and `core-spec.md` now document `output_language` as `en | zh-TW` with explicit fallback-to-`en` behavior for unsupported BCP-47 values, matching the actual runtime capability.
 
 ### Fixed

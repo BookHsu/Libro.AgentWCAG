@@ -85,6 +85,7 @@ Use `scripts/normalize_report.py` to normalize mixed tool outputs into the contr
 - Use each adapter's `failure-guide.md` for downgrade and recovery behavior.
 - Use each adapter's `e2e-example.md` for platform-specific end-to-end invocation patterns.
 - Never add adapter-specific business logic that alters core output semantics.
+- Adapter prompt directives are written in English and must not be translated based on `output_language`. Only the generated report content (Markdown columns, summary labels) respects the `output_language` field. See `references/core-spec.md` §6 for details.
 
 ## References
 
