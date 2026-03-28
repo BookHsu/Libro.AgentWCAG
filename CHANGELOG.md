@@ -19,6 +19,8 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - Lighthouse debug-port readiness now uses the remaining global timeout instead of a fixed 0.5 second socket window.
 - `rewrite_helpers.py` now uses `re.Pattern` type hints instead of deprecated `typing.Pattern` on Python 3.12+.
 - Repository docs now include a maintained `docs/README.md` section guide plus explicit `CONTRIBUTING.md` and `SECURITY.md` policies for contributors and maintainers.
+- Adapter usage examples now cross-reference the workspace MCP sample configs and explain why Copilot uses `servers` while Claude and Gemini use `mcpServers`.
+- Adapter end-to-end example snapshots now include `run_meta.product` and `summary.remediation_lifecycle.verified` so the published examples match current report output.
 
 ### Added
 

@@ -54,8 +54,8 @@ Testing guidance, playbooks, and realistic sample assets for regression work.
 Example assets that illustrate integration patterns but are not the primary source of truth.
 
 - `examples/claude/`: Claude settings and MCP examples
-- `examples/copilot/`: Copilot MCP configuration examples
-- `examples/gemini/`: Gemini MCP configuration examples
+- `examples/copilot/`: Copilot MCP configuration examples for VS Code-style `servers` documents
+- `examples/gemini/`: Gemini MCP configuration examples using `mcpServers`
 - `examples/ci/`: reusable CI examples including install and release-download flows
 
 ### `archive/`

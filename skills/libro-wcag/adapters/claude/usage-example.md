@@ -7,7 +7,7 @@ python .\scripts\libro.py install claude
 python .\scripts\libro.py doctor claude
 ```
 
-If you need workspace MCP, install dependencies and use the sample config in `docs/examples/claude/mcp.sample.json`. You can also emit a local config directly:
+If you need workspace MCP, install dependencies and use the sample config in `docs/examples/claude/mcp.sample.json`. Claude uses a top-level `mcpServers` object for MCP configuration. You can also emit a local config directly:
 
 ```powershell
 python -m pip install -r .\mcp-server\requirements.txt
@@ -34,6 +34,7 @@ python .\scripts\libro.py install claude --workspace-root . --emit-mcp-config cl
 
 - Confirm Claude preserves the same issue IDs between Markdown and JSON.
 - Confirm W3C citations are version-matched.
+- Confirm Claude MCP config keeps the `mcpServers` top-level key from `docs/examples/claude/mcp.sample.json`.
 
 ## First-Run Output Example
 

@@ -13,7 +13,7 @@ If you need a workspace-local installation, run:
 python .\scripts\libro.py install gemini --workspace-root .
 ```
 
-If you need workspace MCP, install dependencies and emit a workspace-local config:
+If you need workspace MCP, install dependencies and compare against `docs/examples/gemini/settings.mcp.sample.json`. Gemini uses a top-level `mcpServers` object for MCP configuration. You can also emit a workspace-local config:
 
 ```powershell
 python -m pip install -r .\mcp-server\requirements.txt
@@ -40,6 +40,7 @@ python .\scripts\libro.py install gemini --workspace-root . --emit-mcp-config ge
 
 - Confirm tool statuses use `ok`, `skipped`, or `error`.
 - Confirm WCAG 2.2 manual-review findings remain visible when needed.
+- Confirm Gemini MCP config keeps the `mcpServers` top-level key from `docs/examples/gemini/settings.mcp.sample.json`.
 
 ## First-Run Output Example
 
