@@ -1,29 +1,18 @@
 param(
   [Parameter(Mandatory = $true, Position = 0)]
-  [ValidateSet('install','doctor','remove')]
+  [ValidateSet('install','doctor','remove','audit')]
   [string]$Command,
 
-  [Parameter(Mandatory = $true, Position = 1)]
-  [ValidateSet('codex','claude','gemini','copilot','all')]
-  [string]$Agent,
+  [Parameter(Position = 1)]
+  [string]$AgentOrTarget,
 
-  [string]$Dest,
-  [string]$WorkspaceRoot,
-  [string[]]$EmitMcpConfig,
-  [switch]$VerifyManifestIntegrity,
-  [switch]$Force
+  [Parameter(ValueFromRemainingArguments = $true)]
+  [string[]]$ExtraArgs
 )
 
 $script = Join-Path $PSScriptRoot 'libro.py'
-$arguments = @($Command, $Agent)
-if ($Dest) { $arguments += @('--dest', $Dest) }
-if ($WorkspaceRoot) { $arguments += @('--workspace-root', $WorkspaceRoot) }
-if ($EmitMcpConfig) {
-  foreach ($client in $EmitMcpConfig) {
-    $arguments += @('--emit-mcp-config', $client)
-  }
-}
-if ($VerifyManifestIntegrity) { $arguments += '--verify-manifest-integrity' }
-if ($Force) { $arguments += '--force' }
+$arguments = @($Command)
+if ($AgentOrTarget) { $arguments += $AgentOrTarget }
+if ($ExtraArgs) { $arguments += $ExtraArgs }
 
 python $script @arguments

@@ -8,6 +8,9 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ### Added
 
+- `libro audit` subcommand forwards all arguments to `run_accessibility_audit.py`, providing a short CLI entry point for WCAG audits (e.g. `libro audit https://example.com`).
+- `libro doctor --check-scanners` verifies scanner toolchain availability (Node.js, npx, axe, lighthouse) alongside the existing skill file checks.
+- README.md and README.en.md now include a "CLI Quick Start" section with copy-paste CLI examples for audit, suggest, apply-fixes, and preflight checks.
 - `references/cli-reference.md` provides a complete CLI option reference covering policy bundles, baselines, SARIF output, failure gates, and scanner control.
 - All four adapter prompt templates now cross-reference `cli-reference.md` for advanced CLI options.
 - `remediation_library.py` now includes `auto_fix_reason` on every rule where `auto_fix_supported` is `False`, explaining why automatic remediation is not feasible (e.g. color-contrast: "Color choices require design intent").
