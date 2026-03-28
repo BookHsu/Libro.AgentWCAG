@@ -131,11 +131,15 @@ def _build_severity(
 
 def _build_fixability(
     all_findings: list[dict[str, Any]],
-) -> dict[str, dict[str, int | float]]:
-    """A3: Fixability Analysis."""
+) -> dict[str, Any]:
+    """A3: Fixability Analysis.
+
+    Returns a dict with uniform per-level breakdown dicts and a separate
+    ``fix_coverage`` key (float 0-1) for the auto-fix ratio.
+    """
     total = len(all_findings)
     counts = Counter(f.get("fixability", "manual") for f in all_findings)
-    result: dict[str, dict[str, int | float]] = {
+    breakdown: dict[str, dict[str, int | float]] = {
         level: {
             "count": counts.get(level, 0),
             "percentage": _percentage(counts.get(level, 0), total),
@@ -143,8 +147,10 @@ def _build_fixability(
         for level in FIXABILITY_LEVELS
     }
     auto_fix_count = counts.get("auto-fix", 0)
-    result["fix_coverage"] = _percentage(auto_fix_count, total) / 100
-    return result
+    return {
+        **breakdown,
+        "fix_coverage": _percentage(auto_fix_count, total) / 100,
+    }
 
 
 def _build_targets(
@@ -328,6 +334,22 @@ def _build_scanner_health(
     }
 
 
+def _extract_finding_signatures(
+    reports: list[dict[str, Any]],
+) -> set[tuple[str, str, str]]:
+    """Build a set of (target, rule_id, sc_csv) tuples for deduplication."""
+    sigs: set[tuple[str, str, str]] = set()
+    for report in reports:
+        target_value = report.get("target", {}).get("value", "")
+        for f in report.get("findings", []):
+            sigs.add((
+                target_value,
+                f.get("rule_id", ""),
+                ",".join(f.get("sc", [])),
+            ))
+    return sigs
+
+
 def _build_baseline_diff(
     reports: list[dict[str, Any]],
     baseline_reports: list[dict[str, Any]] | None,
@@ -336,34 +358,13 @@ def _build_baseline_diff(
     if not baseline_reports:
         return None
 
-    current_sigs = set()
-    for report in reports:
-        for f in report.get("findings", []):
-            sig = (
-                report.get("target", {}).get("value", ""),
-                f.get("rule_id", ""),
-                ",".join(f.get("sc", [])),
-            )
-            current_sigs.add(sig)
-
-    baseline_sigs = set()
-    for report in baseline_reports:
-        for f in report.get("findings", []):
-            sig = (
-                report.get("target", {}).get("value", ""),
-                f.get("rule_id", ""),
-                ",".join(f.get("sc", [])),
-            )
-            baseline_sigs.add(sig)
-
-    new_findings = current_sigs - baseline_sigs
-    resolved = baseline_sigs - current_sigs
-    persistent = current_sigs & baseline_sigs
+    current_sigs = _extract_finding_signatures(reports)
+    baseline_sigs = _extract_finding_signatures(baseline_reports)
 
     return {
-        "new_count": len(new_findings),
-        "resolved_count": len(resolved),
-        "persistent_count": len(persistent),
+        "new_count": len(current_sigs - baseline_sigs),
+        "resolved_count": len(baseline_sigs - current_sigs),
+        "persistent_count": len(current_sigs & baseline_sigs),
         "current_total": len(current_sigs),
         "baseline_total": len(baseline_sigs),
     }

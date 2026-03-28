@@ -210,10 +210,43 @@ def handle_remove(args: argparse.Namespace) -> int:
     return run_script("uninstall-agent.py", command)
 
 
-def _resolve_scan_targets(args: argparse.Namespace) -> list[str]:
-    """Resolve scan targets from CLI args: inputs + optional --targets file."""
+def _resolve_paths(
+    inputs: list[str],
+    dir_patterns: tuple[str, ...] = ("*",),
+    filename_filter: str | None = None,
+) -> list[Path]:
+    """Resolve file paths from inputs: files, directories, and glob patterns.
+
+    Args:
+        inputs: Raw path strings from CLI args.
+        dir_patterns: Glob patterns to match when expanding directories.
+        filename_filter: If set, only match this exact filename when recursing.
+    """
     import glob as glob_mod
 
+    paths: list[Path] = []
+    for raw_input in inputs:
+        p = Path(raw_input)
+        if p.is_file():
+            paths.append(p)
+        elif p.is_dir():
+            if filename_filter:
+                found = sorted(p.rglob(filename_filter))
+                paths.extend(found)
+            else:
+                for pattern in dir_patterns:
+                    paths.extend(sorted(p.rglob(pattern)))
+        else:
+            expanded = glob_mod.glob(raw_input, recursive=True)
+            for g in sorted(expanded):
+                gp = Path(g)
+                if gp.is_file():
+                    paths.append(gp)
+    return paths
+
+
+def _resolve_scan_targets(args: argparse.Namespace) -> list[str]:
+    """Resolve scan targets from CLI args: inputs + optional --targets file."""
     targets: list[str] = []
 
     # From --targets file (one per line)
@@ -225,19 +258,12 @@ def _resolve_scan_targets(args: argparse.Namespace) -> list[str]:
                 if line and not line.startswith("#"):
                     targets.append(line)
 
-    # From positional inputs: directories expand to HTML files, globs expand
-    for raw_input in args.inputs:
-        p = Path(raw_input)
-        if p.is_file():
-            targets.append(str(p))
-        elif p.is_dir():
-            for ext in ("*.html", "*.htm", "*.xhtml"):
-                targets.extend(str(f) for f in sorted(p.rglob(ext)))
-        else:
-            expanded = glob_mod.glob(raw_input, recursive=True)
-            for g in sorted(expanded):
-                if Path(g).is_file():
-                    targets.append(g)
+    # From positional inputs: directories expand to HTML files
+    found = _resolve_paths(
+        args.inputs,
+        dir_patterns=("*.html", "*.htm", "*.xhtml"),
+    )
+    targets.extend(str(p) for p in found)
     return targets
 
 
@@ -296,30 +322,31 @@ def handle_scan(args: argparse.Namespace) -> int:
     return 0
 
 
+def _resolve_report_paths(inputs: list[str]) -> list[Path]:
+    """Find wcag-report.json files from input paths/directories."""
+    paths = _resolve_paths(inputs, filename_filter="wcag-report.json")
+    if not paths:
+        for raw_input in inputs:
+            p = Path(raw_input)
+            if p.is_dir():
+                print(f"Warning: no wcag-report.json found under {p}", file=sys.stderr)
+    return paths
+
+
+def _write_output(text: str, output_path: str | None) -> None:
+    """Write renderer output to file or stdout."""
+    if output_path:
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        Path(output_path).write_text(text, encoding="utf-8")
+        print(f"Aggregate report written to {output_path}")
+    else:
+        print(text)
+
+
 def handle_report(args: argparse.Namespace) -> int:
-    import glob as glob_mod
     sys.path.insert(0, str(REPO_ROOT / "skills" / "libro-wcag" / "scripts"))
     from aggregate_report import build_aggregate_report, load_reports, write_aggregate_json
     from report_renderers import render_badge, render_csv, render_html, render_markdown, render_terminal
-
-    def _resolve_report_paths(inputs: list[str]) -> list[Path]:
-        paths: list[Path] = []
-        for raw_input in inputs:
-            p = Path(raw_input)
-            if p.is_file():
-                paths.append(p)
-            elif p.is_dir():
-                found = sorted(p.rglob("wcag-report.json"))
-                if not found:
-                    print(f"Warning: no wcag-report.json found under {p}", file=sys.stderr)
-                paths.extend(found)
-            else:
-                expanded = glob_mod.glob(raw_input, recursive=True)
-                for g in expanded:
-                    gp = Path(g)
-                    if gp.is_file():
-                        paths.append(gp)
-        return paths
 
     report_paths = _resolve_report_paths(args.inputs)
     if not report_paths:
@@ -328,7 +355,6 @@ def handle_report(args: argparse.Namespace) -> int:
 
     reports = load_reports(report_paths)
 
-    # Load baseline if provided
     baseline_reports = None
     if args.baseline:
         baseline_paths = _resolve_report_paths([args.baseline])
@@ -337,8 +363,17 @@ def handle_report(args: argparse.Namespace) -> int:
 
     aggregate = build_aggregate_report(reports, baseline_reports=baseline_reports)
 
+    # Dispatch table: format -> renderer callable
+    # Each entry returns the output text given (aggregate, reports, language).
+    format_renderers = {
+        "terminal": lambda: render_terminal(aggregate, language=args.language),
+        "markdown": lambda: render_markdown(aggregate, language=args.language),
+        "html": lambda: render_html(aggregate, language=args.language),
+        "csv": lambda: render_csv(reports, aggregate=aggregate),
+        "badge": lambda: render_badge(aggregate),
+    }
+
     fmt = args.format
-    output_text: str | None = None
     if fmt == "json":
         if args.output:
             write_aggregate_json(aggregate, Path(args.output))
@@ -346,24 +381,9 @@ def handle_report(args: argparse.Namespace) -> int:
         else:
             import json as json_mod
             print(json_mod.dumps(aggregate, ensure_ascii=False, indent=2))
-    elif fmt == "markdown":
-        output_text = render_markdown(aggregate, language=args.language)
-    elif fmt == "html":
-        output_text = render_html(aggregate, language=args.language)
-    elif fmt == "csv":
-        output_text = render_csv(reports, aggregate=aggregate)
-    elif fmt == "badge":
-        output_text = render_badge(aggregate)
     else:
-        output_text = render_terminal(aggregate, language=args.language)
-
-    if output_text:
-        if args.output:
-            Path(args.output).parent.mkdir(parents=True, exist_ok=True)
-            Path(args.output).write_text(output_text, encoding="utf-8")
-            print(f"Aggregate report written to {args.output}")
-        else:
-            print(output_text)
+        renderer = format_renderers.get(fmt, format_renderers["terminal"])
+        _write_output(renderer(), args.output)
 
     return 0
 
