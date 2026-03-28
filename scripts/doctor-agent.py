@@ -13,7 +13,10 @@ SCRIPT_ROOT = Path(__file__).resolve().parents[1] / 'skills' / 'libro-wcag' / 's
 if str(SCRIPT_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPT_ROOT))
 
+from scanner_runtime import run_preflight_checks
 from shared_constants import get_product_provenance
+
+DEFAULT_PREFLIGHT_TIMEOUT = 30
 
 SKILL_NAME = 'libro-wcag'
 SUPPORTED_AGENTS = ('codex', 'claude', 'gemini', 'copilot')
@@ -43,6 +46,11 @@ def parse_args() -> argparse.Namespace:
         '--verify-manifest-integrity',
         action='store_true',
         help='Verify adapter and companion entrypoint hashes from install-manifest.json.',
+    )
+    parser.add_argument(
+        '--check-scanners',
+        action='store_true',
+        help='Verify scanner toolchain (Node.js, npx, axe, lighthouse) is available.',
     )
     return parser.parse_args()
 
@@ -219,7 +227,7 @@ def _build_version_consistency(
     return consistency
 
 
-def doctor(destination: Path, verify_manifest_integrity_mode: bool) -> dict[str, object]:
+def doctor(destination: Path, verify_manifest_integrity_mode: bool, check_scanners: bool = False) -> dict[str, object]:
     manifest_path = destination / 'install-manifest.json'
     expected_provenance = get_product_provenance()
     result = {
@@ -281,11 +289,24 @@ def doctor(destination: Path, verify_manifest_integrity_mode: bool) -> dict[str,
         )
         if verify_manifest_integrity_mode:
             result['manifest_integrity'] = verify_manifest_integrity(destination, manifest)
+    if check_scanners:
+        preflight = run_preflight_checks(DEFAULT_PREFLIGHT_TIMEOUT)
+        result['scanner_toolchain'] = {
+            'ok': preflight['ok'],
+            'tools': {
+                name: {
+                    'status': info['status'],
+                    'version': info.get('version', ''),
+                    'message': info.get('message', ''),
+                }
+                for name, info in preflight.get('tools', {}).items()
+            },
+        }
     return result
 
 
-def run_for_agent(agent: str, destination: Path, verify_manifest_integrity_mode: bool) -> bool:
-    result = doctor(destination, verify_manifest_integrity_mode)
+def run_for_agent(agent: str, destination: Path, verify_manifest_integrity_mode: bool, check_scanners: bool = False) -> bool:
+    result = doctor(destination, verify_manifest_integrity_mode, check_scanners=check_scanners)
     checks = [
         result['exists'],
         result['skill_md'],
@@ -296,6 +317,8 @@ def run_for_agent(agent: str, destination: Path, verify_manifest_integrity_mode:
     ]
     if verify_manifest_integrity_mode:
         checks.append(bool(result['manifest_integrity']['verified']))
+    if check_scanners:
+        checks.append(bool(result.get('scanner_toolchain', {}).get('ok')))
     status = all(checks)
     print(json.dumps({'agent': agent, 'ok': status, **result}, indent=2, ensure_ascii=False))
     return status
@@ -308,11 +331,11 @@ def main() -> int:
         statuses = []
         for agent in SUPPORTED_AGENTS:
             destination = (base_destination / agent / SKILL_NAME) if base_destination else default_destination(agent)
-            statuses.append(run_for_agent(agent, destination, args.verify_manifest_integrity))
+            statuses.append(run_for_agent(agent, destination, args.verify_manifest_integrity, check_scanners=args.check_scanners))
         return 0 if all(statuses) else 1
 
     destination = Path(args.dest) if args.dest else default_destination(args.agent)
-    return 0 if run_for_agent(args.agent, destination, args.verify_manifest_integrity) else 1
+    return 0 if run_for_agent(args.agent, destination, args.verify_manifest_integrity, check_scanners=args.check_scanners) else 1
 
 
 if __name__ == '__main__':

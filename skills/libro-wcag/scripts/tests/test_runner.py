@@ -410,6 +410,27 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(artifact['kind'], 'machine-report-json')
         self.assertGreater(artifact['size_bytes'], 0)
         self.assertEqual(len(artifact['sha256']), 64)
+
+    def test_stage_report_schema_artifact_rejects_version_mismatch(self) -> None:
+        workspace = self._workspace('schema-version-mismatch')
+        schema_path = workspace / 'wcag-report-1.0.0.schema.json'
+        schema_path.write_text(
+            json.dumps(
+                {
+                    'properties': {
+                        'report_schema': {
+                            'properties': {
+                                'version': {'const': '0.9.0'},
+                            }
+                        }
+                    }
+                }
+            ),
+            encoding='utf-8',
+        )
+        with patch("report_artifacts._report_schema_source_path", return_value=schema_path):
+            with self.assertRaisesRegex(ValueError, r"report schema version mismatch: expected 1\.0\.0, got '0\.9\.0'"):
+                report_artifacts._stage_report_schema_artifact(workspace / 'out')
     @patch("scanner_runtime.subprocess.run")
     def test_run_command_returns_stdout_on_success(self, mock_run) -> None:
         mock_run.return_value = type("Result", (), {"returncode": 0, "stdout": "ok", "stderr": ""})()
@@ -429,13 +450,58 @@ class RunnerTests(unittest.TestCase):
         mock_run.side_effect = subprocess.TimeoutExpired(cmd=["npx", "tool"], timeout=7)
         ok, result = scanner_runtime._run_command(["npx", "tool"], timeout_seconds=7)
         self.assertFalse(ok)
-        self.assertEqual(result, "command timed out after 7 seconds")
+        self.assertEqual(result, "command timed out after 7 seconds: npx tool")
+
+    @patch("scanner_runtime.subprocess.run")
+    def test_run_command_returns_oserror_message(self, mock_run) -> None:
+        mock_run.side_effect = OSError("Access is denied")
+        ok, result = scanner_runtime._run_command(["npx", "tool"], timeout_seconds=30)
+        self.assertFalse(ok)
+        self.assertEqual(result, "failed to execute command npx: Access is denied")
+
+    @patch("scanner_runtime.subprocess.run")
+    def test_run_command_returns_permission_denied_message(self, mock_run) -> None:
+        mock_run.side_effect = PermissionError("Permission denied")
+        ok, result = scanner_runtime._run_command(["npx", "tool"], timeout_seconds=30)
+        self.assertFalse(ok)
+        self.assertEqual(result, "permission denied while executing command npx: Permission denied")
+
+    @patch("scanner_runtime.subprocess.run")
+    def test_run_command_returns_temporary_oserror_message(self, mock_run) -> None:
+        mock_run.side_effect = OSError(scanner_runtime.errno.EAGAIN, "Resource temporarily unavailable")
+        ok, result = scanner_runtime._run_command(["npx", "tool"], timeout_seconds=30)
+        self.assertFalse(ok)
+        self.assertIn("temporary failure while executing command npx", result)
+
+    @patch("scanner_runtime.time.sleep")
+    @patch("scanner_runtime.socket.create_connection")
+    @patch("scanner_runtime.time.monotonic")
+    def test_wait_for_debug_port_uses_remaining_timeout(self, mock_monotonic, mock_create_connection, mock_sleep) -> None:
+        mock_monotonic.side_effect = [100.0, 100.0, 100.25]
+        mock_create_connection.side_effect = OSError("not ready")
+
+        ready = scanner_runtime._wait_for_debug_port(9222, timeout_seconds=0.2)
+
+        self.assertFalse(ready)
+        self.assertEqual(mock_create_connection.call_count, 1)
+        self.assertAlmostEqual(mock_create_connection.call_args.kwargs["timeout"], 0.2)
+        mock_sleep.assert_called_once_with(0.1)
 
     @patch("scanner_runtime.shutil.which")
     @patch("scanner_runtime.os.name", "nt")
     def test_resolve_npx_executable_prefers_cmd_on_windows(self, mock_which) -> None:
         mock_which.side_effect = lambda tool: "C:/Program Files/nodejs/npx.cmd" if tool == "npx.cmd" else None
         self.assertEqual(scanner_runtime._resolve_npx_executable(), "npx.cmd")
+
+    @patch("scanner_runtime.shutil.which", return_value=None)
+    @patch("scanner_runtime.os.name", "posix")
+    @patch("scanner_runtime.sys.platform", "darwin")
+    @patch("scanner_runtime.Path.home", return_value=Path("/Users/tester"))
+    @patch("scanner_runtime.Path.exists")
+    def test_find_browser_executable_checks_macos_app_bundle_paths(self, mock_exists, _mock_home, _mock_which) -> None:
+        chrome_path = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+        mock_exists.side_effect = [True]
+        self.assertEqual(scanner_runtime._find_browser_executable(), chrome_path)
 
     def test_try_run_axe_uses_resolved_npx_executable(self) -> None:
         output_dir = Path(__file__).parent / "fixtures" / "_tmp-npx-command"
@@ -464,6 +530,22 @@ class RunnerTests(unittest.TestCase):
                 payload, err = scanner_runtime._try_run_axe("https://example.com", output_dir, timeout_seconds=15)
             self.assertIsNone(err)
             self.assertEqual(payload, {"violations": [{"id": "image-alt"}]})
+        finally:
+            if axe_json.exists():
+                axe_json.unlink()
+            if output_dir.exists():
+                output_dir.rmdir()
+
+    def test_try_run_axe_returns_error_for_malformed_json(self) -> None:
+        output_dir = Path(__file__).parent / "fixtures" / "_tmp-axe-malformed-json"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        axe_json = output_dir / "axe.raw.json"
+        axe_json.write_text('{"violations": }', encoding="utf-8")
+        try:
+            with patch("scanner_runtime._run_command", return_value=(True, "")):
+                payload, err = scanner_runtime._try_run_axe("https://example.com", output_dir, timeout_seconds=15)
+            self.assertIsNone(payload)
+            self.assertRegex(err or "", r"axe output json is malformed: .*axe\.raw\.json")
         finally:
             if axe_json.exists():
                 axe_json.unlink()
@@ -529,6 +611,35 @@ class RunnerTests(unittest.TestCase):
             temp_root = output_dir / "lighthouse-tmp"
             if temp_root.exists():
                 import shutil
+                shutil.rmtree(temp_root, ignore_errors=True)
+            if output_dir.exists():
+                output_dir.rmdir()
+
+    def test_try_run_lighthouse_returns_error_for_malformed_json(self) -> None:
+        output_dir = Path(__file__).parent / "fixtures" / "_tmp-lighthouse-malformed-json"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        lighthouse_json = output_dir / "lighthouse.raw.json"
+        lighthouse_json.write_text('{"audits": }', encoding="utf-8")
+        try:
+            process = Mock()
+            process.poll.return_value = None
+            with (
+                patch("scanner_runtime._find_browser_executable", return_value="chrome.exe"),
+                patch("scanner_runtime._find_free_port", return_value=9222),
+                patch("scanner_runtime._wait_for_debug_port", return_value=True),
+                patch("scanner_runtime.subprocess.Popen", return_value=process),
+                patch("scanner_runtime._run_command", return_value=(True, "")),
+            ):
+                payload, err = scanner_runtime._try_run_lighthouse("https://example.com", output_dir, timeout_seconds=15)
+            self.assertIsNone(payload)
+            self.assertRegex(err or "", r"lighthouse output json is malformed: .*lighthouse\.raw\.json")
+        finally:
+            if lighthouse_json.exists():
+                lighthouse_json.unlink()
+            temp_root = output_dir / "lighthouse-tmp"
+            if temp_root.exists():
+                import shutil
+
                 shutil.rmtree(temp_root, ignore_errors=True)
             if output_dir.exists():
                 output_dir.rmdir()
@@ -782,13 +893,60 @@ class RunnerPolicyTests(unittest.TestCase):
         }
         sarif = runner._report_to_sarif(report, 'https://example.com', None, product_metadata)
         result = sarif['runs'][0]['results'][0]
-        driver = sarif['runs'][0]['tool']['driver']
+        run = sarif['runs'][0]
+        driver = run['tool']['driver']
         self.assertEqual(result['ruleId'], 'image-alt')
         self.assertIn('selector: img.hero', result['message']['text'])
         self.assertEqual(result['locations'][0]['physicalLocation']['region']['startLine'], 17)
         self.assertEqual(result['locations'][0]['physicalLocation']['region']['startColumn'], 5)
         self.assertEqual(driver['version'], '0.1.0')
         self.assertEqual(driver['properties']['source_revision'], 'a' * 40)
+        # M1: ruleIndex
+        self.assertEqual(result['ruleIndex'], 0)
+        # M1: helpUri and help on rule
+        rule = driver['rules'][0]
+        self.assertIn('helpUri', rule)
+        self.assertIn('non-text-content', rule['helpUri'])
+        self.assertEqual(rule['help']['text'], 'WCAG 1.1.1')
+        # M1: invocations
+        self.assertTrue(run['invocations'][0]['executionSuccessful'])
+        self.assertEqual(run['invocations'][0]['properties']['target'], 'https://example.com')
+        # M2: contextRegion
+        phys = result['locations'][0]['physicalLocation']
+        self.assertEqual(phys['contextRegion']['startLine'], 16)
+        self.assertEqual(phys['contextRegion']['endLine'], 18)
+        # M2: snippet
+        self.assertEqual(phys['region']['snippet']['text'], 'img.hero')
+
+    def test_report_to_sarif_local_target_uses_file_uri(self) -> None:
+        report = {
+            'findings': [
+                {
+                    'id': 'ISSUE-002',
+                    'rule_id': 'button-name',
+                    'severity': 'moderate',
+                    'current': 'Button needs name',
+                    'changed_target': 'button.submit',
+                    'status': 'open',
+                    'sc': ['4.1.2'],
+                }
+            ]
+        }
+        product_metadata = {
+            'name': 'Libro.AgentWCAG',
+            'product_version': '0.1.0',
+            'source_revision': 'b' * 40,
+            'report_schema_version': '1.0.0',
+        }
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix='.html', delete=False) as f:
+            tmp_path = Path(f.name)
+        try:
+            sarif = runner._report_to_sarif(report, str(tmp_path), tmp_path, product_metadata)
+            uri = sarif['runs'][0]['results'][0]['locations'][0]['physicalLocation']['artifactLocation']['uri']
+            self.assertTrue(uri.startswith('file:///'), f'Expected file:/// URI, got: {uri}')
+        finally:
+            tmp_path.unlink(missing_ok=True)
 
     def test_build_baseline_diff_returns_introduced_and_resolved(self) -> None:
         current = {

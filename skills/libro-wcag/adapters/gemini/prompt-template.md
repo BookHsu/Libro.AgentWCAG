@@ -34,4 +34,5 @@ Execution rules:
    - JSON report with canonical top-level keys
 10. Include execution_mode in JSON and Markdown summary text.
 11. Keep finding IDs aligned between Markdown and JSON.
+12. For advanced CLI options (policy bundles, baselines, SARIF output, failure gates), see references/cli-reference.md.
 ```

@@ -30,4 +30,5 @@ Requirements:
    - JSON with canonical keys
 8) Include execution_mode in JSON and Markdown summary text.
 9) Keep finding IDs aligned across Markdown and JSON.
+10) For advanced CLI options (policy bundles, baselines, SARIF output, failure gates), see references/cli-reference.md.
 ```

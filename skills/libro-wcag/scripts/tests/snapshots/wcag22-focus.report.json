@@ -1,0 +1,134 @@
+{
+  "run_meta": {
+    "generated_at": "<generated>",
+    "workflow_version": "1.0.0",
+    "execution_mode": "suggest-only",
+    "output_language": "en",
+    "files_modified": false,
+    "modification_owner": "agent-or-adapter",
+    "diff_artifacts": [],
+    "verification_evidence": [],
+    "tools": {
+      "axe": "ok",
+      "lighthouse": "ok"
+    },
+    "notes": []
+  },
+  "target": {
+    "value": "fixtures/wcag22-focus.html",
+    "task_mode": "modify"
+  },
+  "standard": {
+    "wcag_version": "2.1",
+    "conformance_level": "AA"
+  },
+  "findings": [
+    {
+      "id": "ISSUE-001",
+      "source": "axe",
+      "sources": [
+        "axe"
+      ],
+      "rule_id": "color-contrast",
+      "severity": "serious",
+      "confidence": "medium",
+      "sc": [
+        "1.4.3"
+      ],
+      "current": "Elements must meet color contrast requirements",
+      "changed_target": "a.nav-link",
+      "source_line": null,
+      "source_column": null,
+      "status": "open",
+      "fixability": "assisted",
+      "verification_status": "not-run",
+      "manual_review_required": false,
+      "risk_level": "high",
+      "rule_family": "visual",
+      "downgrade_reason": null,
+      "before_after_targets": [],
+      "citations": [
+        {
+          "sc": "1.4.3",
+          "url": "https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum"
+        }
+      ]
+    }
+  ],
+  "fixes": [
+    {
+      "id": "FIX-001",
+      "finding_id": "ISSUE-001",
+      "description": "Adjust foreground/background colors to meet the required contrast ratio.",
+      "changed_target": "a.nav-link",
+      "status": "planned",
+      "remediation_priority": "high",
+      "confidence": "medium",
+      "auto_fix_supported": false,
+      "fixability": "assisted",
+      "verification_status": "not-run",
+      "manual_review_required": false,
+      "risk_level": "high",
+      "rule_family": "visual",
+      "downgrade_reason": null,
+      "before_after_targets": [],
+      "fix_blockers": [],
+      "assisted_steps": [
+        "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
+        "Apply a minimal structural change that preserves existing behavior and layout.",
+        "Re-run scanner checks and validate keyboard/screen-reader behavior manually."
+      ],
+      "verification_rules": [
+        "The finding no longer appears in scanner output for the modified target.",
+        "Keyboard navigation and focus order remain functional after the change."
+      ],
+      "verification_evidence": [
+        {
+          "type": "scanner-detection",
+          "source": [
+            "axe"
+          ],
+          "status": "captured"
+        }
+      ],
+      "framework_hints": {
+        "html": "Use semantic HTML and explicit accessible names.",
+        "react": "Prefer semantic JSX and explicit aria/label props.",
+        "vue": "Bind semantic attributes explicitly in templates.",
+        "nextjs": "Preserve semantic output after server/client rendering."
+      }
+    }
+  ],
+  "citations": [
+    {
+      "finding_id": "ISSUE-001",
+      "sc": "1.4.3",
+      "url": "https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum"
+    }
+  ],
+  "summary": {
+    "total_findings": 1,
+    "fixed_findings": 0,
+    "auto_fixed_count": 0,
+    "needs_manual_review": 0,
+    "manual_required_count": 0,
+    "change_summary": [
+      {
+        "finding_id": "ISSUE-001",
+        "rule_id": "color-contrast",
+        "changed_target": "a.nav-link",
+        "recommended_action": "Adjust foreground/background colors to meet the required contrast ratio.",
+        "remediation_priority": "high"
+      }
+    ],
+    "diff_summary": [],
+    "before_after_targets": [],
+    "remediation_lifecycle": {
+      "planned": 1,
+      "implemented": 0,
+      "verified": 0,
+      "manual_review_required": 0
+    },
+    "fix_blockers": []
+  }
+}

@@ -1,37 +1,38 @@
-# Apply-Fixes Scope (M16)
+# `apply-fixes` 適用範圍（M16）
 
-This document defines the productionized `apply-fixes` boundary used by
-`skills/libro-wcag/scripts/run_accessibility_audit.py` and
-`skills/libro-wcag/scripts/auto_fix.py`.
+本文件定義生產化 `apply-fixes` 模式在下列程式中的適用邊界：
 
-## Behavior Audit (2026-03-12)
+- `skills/libro-wcag/scripts/run_accessibility_audit.py`
+- `skills/libro-wcag/scripts/auto_fix.py`
 
-- `execution_mode=apply-fixes` only attempts core rewrites when `target` resolves to an existing local file path.
-- Supported local file types are limited to: `.html`, `.htm`, `.xhtml`, `.jsx`, `.tsx`, `.vue`.
-- Unsupported local file types and non-local targets are always skipped by core rewrites and logged in `run_meta.notes`.
-- When no rewrite is applied, stale `wcag-fixes.diff` and `wcag-fixed-report.snapshot.json` artifacts are removed to keep repeated runs stable.
+## 行為稽核（2026-03-12）
 
-## Scope Matrix
+- `execution_mode=apply-fixes` 只有在 `target` 解析為既有本機檔案路徑時，才會嘗試核心重寫。
+- 支援的本機檔案類型僅限：`.html`、`.htm`、`.xhtml`、`.jsx`、`.tsx`、`.vue`。
+- 不支援的本機檔案類型與非本機目標，一律跳過核心重寫，並記錄到 `run_meta.notes`。
+- 若本次執行未套用任何重寫，系統會刪除陳舊的 `wcag-fixes.diff` 與 `wcag-fixed-report.snapshot.json` 工件，以維持重複執行的穩定性。
 
-| Rule Family | Rule IDs | File Types | Safety Level | Core Behavior |
+## 適用範圍矩陣
+
+| 規則類別 | 規則 ID | 檔案類型 | 安全等級 | 核心行為 |
 | --- | --- | --- | --- | --- |
-| Language semantics | `html-has-lang`, `html-lang-valid`, `html-xml-lang-mismatch`, `valid-lang` | `.html`, `.htm`, `.xhtml`, `.tsx` (Next.js layout), `.jsx`, `.vue` | low-risk deterministic | auto-fix in core workflow |
-| Alternative text | `image-alt`, `input-image-alt`, `area-alt` | `.html`, `.htm`, `.xhtml`, `.jsx`, `.tsx`, `.vue` | low-risk deterministic | auto-fix in core workflow |
-| Accessible names | `button-name`, `link-name`, `label`, `select-name`, `aria-toggle-field-name`, `aria-tooltip-name`, `aria-progressbar-name`, `aria-meter-name` | `.html`, `.htm`, `.xhtml`, `.jsx`, `.tsx`, `.vue` | low-risk deterministic | auto-fix in core workflow |
-| ARIA validity | `aria-required-attr`, `aria-valid-attr-value` | `.html`, `.htm`, `.xhtml`, `.jsx`, `.tsx`, `.vue` | low-risk deterministic | auto-fix in core workflow |
-| Document/structure | `document-title`, `list`, `listitem`, `table-fake-caption`, `td-has-header`, `th-has-data-cells` | `.html`, `.htm`, `.xhtml`, `.jsx`, `.tsx`, `.vue` | low-risk deterministic | auto-fix in core workflow |
-| Timing/viewport | `meta-refresh`, `meta-viewport` | `.html`, `.htm`, `.xhtml` | low-risk deterministic | auto-fix in core workflow |
+| 語言語意 | `html-has-lang`、`html-lang-valid`、`html-xml-lang-mismatch`、`valid-lang` | `.html`、`.htm`、`.xhtml`、`.tsx`（Next.js layout）、`.jsx`、`.vue` | 低風險、可確定 | 由核心工作流程自動修復 |
+| 替代文字 | `image-alt`、`input-image-alt`、`area-alt` | `.html`、`.htm`、`.xhtml`、`.jsx`、`.tsx`、`.vue` | 低風險、可確定 | 由核心工作流程自動修復 |
+| 無障礙名稱 | `button-name`、`link-name`、`label`、`select-name`、`aria-toggle-field-name`、`aria-tooltip-name`、`aria-progressbar-name`、`aria-meter-name` | `.html`、`.htm`、`.xhtml`、`.jsx`、`.tsx`、`.vue` | 低風險、可確定 | 由核心工作流程自動修復 |
+| ARIA 有效性 | `aria-required-attr`、`aria-valid-attr-value` | `.html`、`.htm`、`.xhtml`、`.jsx`、`.tsx`、`.vue` | 低風險、可確定 | 由核心工作流程自動修復 |
+| 文件／結構 | `document-title`、`list`、`listitem`、`table-fake-caption`、`td-has-header`、`th-has-data-cells` | `.html`、`.htm`、`.xhtml`、`.jsx`、`.tsx`、`.vue` | 低風險、可確定 | 由核心工作流程自動修復 |
+| 時間／視口 | `meta-refresh`、`meta-viewport` | `.html`、`.htm`、`.xhtml` | 低風險、可確定 | 由核心工作流程自動修復 |
 
-## Intentionally Not Auto-Fixed
+## 明確不自動修復的範圍
 
-These classes remain outside core `apply-fixes` and are expected to be handled as `suggest-only` or assisted/manual remediation:
+下列類別仍位於核心 `apply-fixes` 範圍之外，預期以 `suggest-only` 或輔助／手動修復方式處理：
 
-- Assisted-only rule classes: structural/interaction refactors such as `heading-order`, `region`, `skip-link`, `tabindex`, `presentation-role-conflict`, `nested-interactive`, `duplicate-id-aria`.
-- Manual-review classes: WCAG 2.2 manual checks (`wcag22-manual-*`) and scanner/tool failure fallback findings.
-- Unsupported target classes: non-local targets, local files outside the supported extension list, and high-risk transformations requiring project-specific intent.
+- 僅提供輔助的規則類別：結構或互動重構，例如 `heading-order`、`region`、`skip-link`、`tabindex`、`presentation-role-conflict`、`nested-interactive`、`duplicate-id-aria`。
+- 需人工審核的類別：WCAG 2.2 手動檢查（`wcag22-manual-*`）以及掃描器／工具失敗時的 fallback findings。
+- 不支援的目標類別：非本機目標、不在支援副檔名清單內的本機檔案，以及需要專案特定意圖才能安全處理的高風險轉換。
 
-## Contract Expectations
+## 合約層級的預期行為
 
-- `run_meta.files_modified=true` and `run_meta.modification_owner=core-workflow` only when a supported local target is rewritten.
-- `run_meta.diff_artifacts[]` should contain generated diff artifacts only for runs with applied changes.
-- Findings and fixes that are not auto-fixed must keep canonical downgrade metadata (`downgrade_reason`, `fix_blockers`, and manual review flags).
+- 只有在支援的本機目標真的被重寫時，`run_meta.files_modified=true` 與 `run_meta.modification_owner=core-workflow` 才應成立。
+- `run_meta.diff_artifacts[]` 應只包含本次實際套用變更所產生的 diff 工件。
+- 未自動修復的 finding 與 fix，必須保留標準化的降級中繼資料，例如 `downgrade_reason`、`fix_blockers` 與手動審核旗標。

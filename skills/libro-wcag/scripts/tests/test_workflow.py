@@ -16,8 +16,11 @@ if str(SCRIPT_ROOT) not in sys.path:
 from wcag_workflow import (
     AXE_RULE_TO_SC,
     LIGHTHOUSE_RULE_TO_SC,
+    SCANNER_RULE_TO_SC,
+    WCAG_UNDERSTANDING_PATHS,
     _escape_pipe,
     build_citation_url,
+    load_json_file,
     normalize_report,
     resolve_contract,
     to_markdown_table,
@@ -90,6 +93,17 @@ class WorkflowTests(unittest.TestCase):
         markdown = to_markdown_table(report)
         self.assertIn('債務趨勢: new=1, accepted=2, retired=3, regressed=1 (window=4)', markdown)
         self.assertIn('債務趨勢變化: new=1, accepted=0, retired=-1, regressed=1', markdown)
+
+    def test_markdown_warns_when_scanner_coverage_is_incomplete_in_chinese(self) -> None:
+        contract = resolve_contract({"target": "https://example.com"})
+        report = normalize_report(
+            contract,
+            {"violations": []},
+            None,
+            lighthouse_error="command timed out after 30 seconds",
+        )
+        markdown = to_markdown_table(report)
+        self.assertIn('⚠️ 掃描器覆蓋不完整: lighthouse (timeout)', markdown)
 
     def test_citation_presence_for_major_finding(self) -> None:
         contract = resolve_contract({"target": "https://example.com"})
@@ -189,6 +203,8 @@ class WorkflowTests(unittest.TestCase):
             item for item in report["summary"]["scanner_failures"] if item["tool"] == "lighthouse"
         )
         self.assertEqual(lighthouse_failure["classification"], "timeout")
+        markdown = to_markdown_table(report)
+        self.assertIn("⚠️ Scanner coverage incomplete: lighthouse (timeout)", markdown)
 
     def test_partial_success_preserves_actionable_findings_when_axe_fails(self) -> None:
         contract = resolve_contract({"target": "https://example.com", "output_language": "en"})
@@ -213,9 +229,29 @@ class WorkflowTests(unittest.TestCase):
         axe_failure = next(item for item in report["summary"]["scanner_failures"] if item["tool"] == "axe")
         self.assertEqual(axe_failure["classification"], "missing-tool")
     def test_citation_url_uses_selected_version(self) -> None:
-        self.assertIn("/WCAG20/", build_citation_url("2.0", "1.1.1"))
+        self.assertEqual(
+            build_citation_url("2.0", "1.1.1"),
+            "https://www.w3.org/WAI/WCAG20/Understanding/non-text-content",
+        )
         self.assertIn("/WCAG21/", build_citation_url("2.1", "1.1.1"))
         self.assertIn("/WCAG22/", build_citation_url("2.2", "1.1.1"))
+
+    def test_citation_url_covers_previously_missing_common_success_criteria(self) -> None:
+        expected = {
+            "1.2.1": "audio-only-and-video-only-prerecorded",
+            "1.3.4": "orientation",
+            "1.3.5": "identify-input-purpose",
+            "1.4.1": "use-of-color",
+            "1.4.2": "audio-control",
+        }
+        for sc, slug in expected.items():
+            self.assertEqual(
+                build_citation_url("2.2", sc),
+                f"https://www.w3.org/WAI/WCAG22/Understanding/{slug}",
+            )
+
+    def test_understanding_slug_table_covers_most_success_criteria(self) -> None:
+        self.assertGreaterEqual(len(WCAG_UNDERSTANDING_PATHS), 75)
 
     def test_expanded_rule_mapping_generates_citation(self) -> None:
         contract = resolve_contract({"target": "https://example.com"})
@@ -236,6 +272,12 @@ class WorkflowTests(unittest.TestCase):
     def test_rule_mappings_cover_broad_common_rules(self) -> None:
         self.assertGreaterEqual(len(AXE_RULE_TO_SC), 30)
         self.assertGreaterEqual(len(LIGHTHOUSE_RULE_TO_SC), 20)
+
+    def test_source_specific_rule_mapping_is_derived_from_shared_scanner_table(self) -> None:
+        self.assertIs(AXE_RULE_TO_SC, SCANNER_RULE_TO_SC['axe'])
+        self.assertIs(LIGHTHOUSE_RULE_TO_SC, SCANNER_RULE_TO_SC['lighthouse'])
+        self.assertEqual(SCANNER_RULE_TO_SC['axe']['meta-refresh'], ['2.2.1', '3.2.5'])
+        self.assertEqual(SCANNER_RULE_TO_SC['lighthouse']['meta-refresh'], ['2.2.2', '3.2.5'])
 
     def test_write_report_files(self) -> None:
         contract = resolve_contract({"target": "https://example.com"})
@@ -482,6 +524,13 @@ class WorkflowTests(unittest.TestCase):
     def test_invalid_execution_mode_raises(self) -> None:
         with self.assertRaises(ValueError):
             resolve_contract({"target": "https://example.com", "execution_mode": "rewrite-all"})
+
+    def test_load_json_file_raises_descriptive_error_for_malformed_json(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            payload = Path(tmp) / "broken.json"
+            payload.write_text('{"broken": }', encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, r"Invalid JSON in .*broken\.json: .*line 1, column"):
+                load_json_file(str(payload))
 
     def test_escape_pipe_handles_none(self) -> None:
         self.assertEqual(_escape_pipe(None), "None")

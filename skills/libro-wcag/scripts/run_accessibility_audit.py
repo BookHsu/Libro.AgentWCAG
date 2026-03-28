@@ -102,7 +102,7 @@ from scanner_runtime import (
     run_preflight_checks,
 )
 from shared_constants import REPORT_SCHEMA_VERSION, get_product_provenance
-from wcag_workflow import normalize_report, resolve_contract, to_markdown_table, write_report_files
+from wcag_workflow import build_citation_url, normalize_report, resolve_contract, to_markdown_table, write_report_files
 
 DEFAULT_TIMEOUT_SECONDS = 120
 SEVERITY_RANK = {"critical": 4, "serious": 3, "moderate": 2, "minor": 1, "info": 0}
@@ -276,21 +276,38 @@ def _report_to_sarif(
     product_metadata: dict[str, Any],
 ) -> dict[str, Any]:
     rules: dict[str, dict[str, Any]] = {}
+    rule_index_map: dict[str, int] = {}
     results: list[dict[str, Any]] = []
-    location_uri = local_target.as_posix() if local_target else contract_target
+    if local_target:
+        posix = local_target.resolve().as_posix()
+        # RFC 3986: Windows paths like C:/foo → file:///C:/foo
+        location_uri = 'file:///' + posix.lstrip('/') if not posix.startswith('/') else 'file://' + posix
+    else:
+        location_uri = contract_target
+
+    wcag_version = str(report.get('standard', {}).get('wcag_version', '2.1'))
 
     for finding in report.get('findings', []):
         rule_id = str(finding.get('rule_id', 'unknown'))
         if rule_id not in rules:
-            rules[rule_id] = {
+            sc_list = finding.get('sc', [])
+            help_uri = ''
+            if sc_list:
+                help_uri = build_citation_url(wcag_version, sc_list[0])
+            rule_def: dict[str, Any] = {
                 'id': rule_id,
                 'name': rule_id,
                 'shortDescription': {'text': rule_id},
+                'help': {'text': f'WCAG {", ".join(sc_list)}' if sc_list else rule_id},
                 'properties': {
                     'severity': finding.get('severity', 'info'),
-                    'wcag': finding.get('sc', []),
+                    'wcag': sc_list,
                 },
             }
+            if help_uri:
+                rule_def['helpUri'] = help_uri
+            rule_index_map[rule_id] = len(rules)
+            rules[rule_id] = rule_def
         message_parts = [str(finding.get('current', rule_id))]
         selector = str(finding.get('changed_target', '')).strip()
         if selector and selector != 'unknown':
@@ -308,26 +325,36 @@ def _report_to_sarif(
             if source_column is not None:
                 region['startColumn'] = source_column
             physical_location['region'] = region
-
-        results.append(
-            {
-                'ruleId': rule_id,
-                'level': _sarif_level_from_severity(str(finding.get('severity', 'info'))),
-                'message': {'text': ' | '.join(message_parts)},
-                'locations': [
-                    {
-                        'physicalLocation': physical_location,
-                    }
-                ],
-                'properties': {
-                    'finding_id': finding.get('id'),
-                    'status': finding.get('status'),
-                    'sc': finding.get('sc', []),
-                    'source_line': source_line,
-                    'source_column': source_column,
-                },
+            # M2: contextRegion — provide a 1-line window around the finding
+            physical_location['contextRegion'] = {
+                'startLine': max(1, source_line - 1),
+                'endLine': source_line + 1,
             }
-        )
+
+        # M2: snippet from CSS selector when available
+        if selector and selector != 'unknown':
+            physical_location.setdefault('region', {})
+            physical_location['region']['snippet'] = {'text': selector}
+
+        result_entry: dict[str, Any] = {
+            'ruleId': rule_id,
+            'ruleIndex': rule_index_map[rule_id],
+            'level': _sarif_level_from_severity(str(finding.get('severity', 'info'))),
+            'message': {'text': ' | '.join(message_parts)},
+            'locations': [
+                {
+                    'physicalLocation': physical_location,
+                }
+            ],
+            'properties': {
+                'finding_id': finding.get('id'),
+                'status': finding.get('status'),
+                'sc': finding.get('sc', []),
+                'source_line': source_line,
+                'source_column': source_column,
+            },
+        }
+        results.append(result_entry)
 
     return {
         '$schema': 'https://json.schemastore.org/sarif-2.1.0.json',
@@ -346,6 +373,15 @@ def _report_to_sarif(
                         },
                     }
                 },
+                'invocations': [
+                    {
+                        'executionSuccessful': True,
+                        'commandLine': 'libro-wcag audit',
+                        'properties': {
+                            'target': contract_target,
+                        },
+                    }
+                ],
                 'results': results,
             }
         ],
@@ -714,7 +750,15 @@ def main() -> int:
         }
     )
     local_target = target_to_local_path(contract.target)
-    scanner_target = _resolve_target_for_scanners(contract.target)
+    create_mode_no_target = False
+    try:
+        scanner_target = _resolve_target_for_scanners(contract.target)
+    except ValueError:
+        if contract.task_mode == "create":
+            create_mode_no_target = True
+            scanner_target = contract.target
+        else:
+            raise
 
     preflight_required = not (
         (args.skip_axe or args.mock_axe_json) and (args.skip_lighthouse or args.mock_lighthouse_json)
@@ -759,34 +803,59 @@ def main() -> int:
 
     axe_data = None
     axe_error = None
-    scanner_retry_runs: list[dict[str, Any]] = []
-    if args.mock_axe_json:
-        axe_data = json.loads(Path(args.mock_axe_json).read_text(encoding='utf-8'))
-    elif not args.skip_axe:
-        axe_data, axe_error, axe_retry = _run_scanner_with_retry(
-            'axe',
-            lambda: _try_run_axe(scanner_target, output_dir, args.timeout),
-            args.scanner_retry_attempts,
-            args.scanner_retry_backoff_seconds,
-        )
-        scanner_retry_runs.append(axe_retry)
-
     lighthouse_data = None
     lighthouse_error = None
+    scanner_retry_runs: list[dict[str, Any]] = []
+
+    if create_mode_no_target:
+        axe_error = "Skipped: target does not exist (create mode — guidance only)"
+        lighthouse_error = "Skipped: target does not exist (create mode — guidance only)"
+
+    run_axe = not args.skip_axe and not args.mock_axe_json and not create_mode_no_target
+    run_lighthouse = not args.skip_lighthouse and not args.mock_lighthouse_json and not create_mode_no_target
+    if args.mock_axe_json:
+        axe_data = json.loads(Path(args.mock_axe_json).read_text(encoding='utf-8'))
     if args.mock_lighthouse_json:
         lighthouse_data = json.loads(Path(args.mock_lighthouse_json).read_text(encoding='utf-8'))
-    elif not args.skip_lighthouse:
-        lighthouse_data, lighthouse_error, lighthouse_retry = _run_scanner_with_retry(
-            'lighthouse',
-            lambda: _try_run_lighthouse(
-                scanner_target,
-                output_dir,
-                args.timeout,
-            ),
-            args.scanner_retry_attempts,
-            args.scanner_retry_backoff_seconds,
-        )
-        scanner_retry_runs.append(lighthouse_retry)
+
+    if run_axe and run_lighthouse:
+        from concurrent.futures import ThreadPoolExecutor
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            axe_future = executor.submit(
+                _run_scanner_with_retry,
+                'axe',
+                lambda: _try_run_axe(scanner_target, output_dir, args.timeout),
+                args.scanner_retry_attempts,
+                args.scanner_retry_backoff_seconds,
+            )
+            lighthouse_future = executor.submit(
+                _run_scanner_with_retry,
+                'lighthouse',
+                lambda: _try_run_lighthouse(scanner_target, output_dir, args.timeout),
+                args.scanner_retry_attempts,
+                args.scanner_retry_backoff_seconds,
+            )
+            axe_data, axe_error, axe_retry = axe_future.result()
+            lighthouse_data, lighthouse_error, lighthouse_retry = lighthouse_future.result()
+            scanner_retry_runs.extend([axe_retry, lighthouse_retry])
+    else:
+        if run_axe:
+            axe_data, axe_error, axe_retry = _run_scanner_with_retry(
+                'axe',
+                lambda: _try_run_axe(scanner_target, output_dir, args.timeout),
+                args.scanner_retry_attempts,
+                args.scanner_retry_backoff_seconds,
+            )
+            scanner_retry_runs.append(axe_retry)
+        if run_lighthouse:
+            lighthouse_data, lighthouse_error, lighthouse_retry = _run_scanner_with_retry(
+                'lighthouse',
+                lambda: _try_run_lighthouse(scanner_target, output_dir, args.timeout),
+                args.scanner_retry_attempts,
+                args.scanner_retry_backoff_seconds,
+            )
+            scanner_retry_runs.append(lighthouse_retry)
 
     report = normalize_report(
         contract=contract,

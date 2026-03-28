@@ -32,7 +32,8 @@
     "skills/libro-wcag/agents/",
     "skills/libro-wcag/references/",
     "skills/libro-wcag/schemas/",
-    "skills/libro-wcag/scripts/*.py"
+    "skills/libro-wcag/scripts/*.py",
+    "skills/libro-wcag/scripts/py.typed"
   ],
   "engines": {
     "node": ">=18"

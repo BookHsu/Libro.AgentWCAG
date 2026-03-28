@@ -7,12 +7,14 @@ python .\scripts\libro.py install copilot
 python .\scripts\libro.py doctor copilot
 ```
 
-If you need workspace MCP, install dependencies and emit a local `.vscode/mcp.json`:
+If you need workspace MCP, install dependencies, compare against `docs/examples/copilot/mcp.sample.json`, and emit a local `.vscode/mcp.json`:
 
 ```powershell
 python -m pip install -r .\mcp-server\requirements.txt
 python .\scripts\libro.py install copilot --workspace-root . --emit-mcp-config copilot
 ```
+
+Copilot writes VS Code MCP settings, so the sample uses a top-level `servers` object instead of the `mcpServers` key used by Claude and Gemini.
 
 ## Use
 
@@ -34,6 +36,7 @@ python .\scripts\libro.py install copilot --workspace-root . --emit-mcp-config c
 
 - Confirm create mode avoids fake scan claims when no concrete target exists.
 - Confirm canonical JSON keys remain unchanged.
+- Confirm Copilot MCP config keeps the VS Code `servers` top-level key from `docs/examples/copilot/mcp.sample.json`.
 
 ## First-Run Output Example
 
@@ -57,3 +60,19 @@ python .\scripts\libro.py install copilot --workspace-root . --emit-mcp-config c
   }
 }
 ```
+
+## Advanced: Baseline & Risk Calibration
+
+Use `--risk-calibration-source` and `--stability-baseline` to compare the current audit against a prior run. These flags work identically across all adapters. See `references/cli-reference.md` for the full option reference.
+
+```powershell
+python skills/libro-wcag/scripts/run_accessibility_audit.py `
+  --target ./index.html `
+  --output-dir out/current `
+  --risk-calibration-source out/prior/wcag-report.json `
+  --risk-calibration-mode warn `
+  --stability-baseline out/prior/wcag-report.json `
+  --stability-mode warn
+```
+
+The audit report will include `run_meta.risk_calibration` and `run_meta.stability_check` sections when these flags are active.

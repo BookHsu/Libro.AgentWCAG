@@ -18,7 +18,7 @@ Collect or infer this contract before doing work:
   "wcag_version": "2.0 | 2.1 | 2.2",
   "conformance_level": "A | AA | AAA",
   "target": "local file path or URL",
-  "output_language": "BCP-47, default zh-TW"
+  "output_language": "en | zh-TW (default zh-TW; other BCP-47 values fall back to en)"
 }
 ```
 
@@ -85,9 +85,11 @@ Use `scripts/normalize_report.py` to normalize mixed tool outputs into the contr
 - Use each adapter's `failure-guide.md` for downgrade and recovery behavior.
 - Use each adapter's `e2e-example.md` for platform-specific end-to-end invocation patterns.
 - Never add adapter-specific business logic that alters core output semantics.
+- Adapter prompt directives are written in English and must not be translated based on `output_language`. Only the generated report content (Markdown columns, summary labels) respects the `output_language` field. See `references/core-spec.md` §6 for details.
 
 ## References
 
+- Load `references/cli-reference.md` for the complete CLI option reference (policy bundles, baselines, SARIF, gates).
 - Load `references/core-spec.md` for strict field definitions and process details.
 - Load `references/wcag-citations.md` for official W3C citation mapping.
 - Load `references/adapter-mapping.md` for cross-agent translation rules.

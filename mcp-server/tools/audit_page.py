@@ -13,6 +13,28 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 AUDIT_SCRIPT = REPO_ROOT / "skills" / "libro-wcag" / "scripts" / "run_accessibility_audit.py"
 
 
+def _validate_target(target: str) -> str:
+    """Validate the target parameter to prevent path traversal attacks.
+
+    URL targets (http://, https://) are passed through unchanged.
+    Local file targets are resolved to absolute paths and checked to ensure
+    they do not escape the repository root or access sensitive directories.
+    """
+    stripped = target.strip()
+    if stripped.lower().startswith(("http://", "https://", "file://")):
+        return stripped
+    resolved = Path(stripped).resolve()
+    repo_resolved = REPO_ROOT.resolve()
+    try:
+        resolved.relative_to(repo_resolved)
+    except ValueError:
+        raise ValueError(
+            f"Target path escapes the repository root: {stripped!r} "
+            f"(resolved to {resolved})"
+        )
+    return str(resolved)
+
+
 def build_audit_command(
     *,
     target: str,
@@ -58,10 +80,11 @@ def audit_page(
     output_language: str = "zh-TW",
     timeout: int = 120,
 ) -> dict[str, object]:
+    validated_target = _validate_target(target)
     with tempfile.TemporaryDirectory(prefix="libro-wcag-mcp-audit-") as tmp:
         output_dir = Path(tmp) / "out"
         command = build_audit_command(
-            target=target,
+            target=validated_target,
             output_dir=output_dir,
             task_mode=task_mode,
             execution_mode=execution_mode,
@@ -88,4 +111,4 @@ def audit_page(
         }
 
 
-__all__ = ["audit_page", "build_audit_command"]
+__all__ = ["audit_page", "build_audit_command", "_validate_target"]
