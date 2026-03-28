@@ -11,7 +11,7 @@ Use this schema as the single source of truth:
   "wcag_version": "2.0 | 2.1 | 2.2",
   "conformance_level": "A | AA | AAA",
   "target": "local file path or URL",
-  "output_language": "string"
+  "output_language": "en | zh-TW"
 }
 ```
 
@@ -20,6 +20,7 @@ Validation rules:
 - `execution_mode` must be `audit-only`, `suggest-only`, or `apply-fixes`.
 - `wcag_version` must be one of `2.0`, `2.1`, `2.2`.
 - `conformance_level` must be one of `A`, `AA`, `AAA`.
+- `output_language` currently supports `en` and `zh-TW` only. Other BCP-47 values are accepted but fall back to `en`. The internal dictionary design allows adding languages in the future.
 - Apply defaults: `suggest-only`, `2.1`, `AA`, `zh-TW`.
 - Allow only `http`, `https`, `file`, or an existing local file path.
 - Existing local paths must be normalized to `file://` URLs before scanner execution.
@@ -137,4 +138,31 @@ Diff artifacts must be recorded in `run_meta.diff_artifacts[]`, and fix verifica
 Status vocabulary:
 - Findings: `open`, `fixed`, `partial`, `needs-review`
 - Fixes: `planned`, `implemented`, `verified`
+
+## 5. Schema Versioning Policy
+
+The report schema follows semantic versioning (`MAJOR.MINOR.PATCH`):
+
+- **MAJOR** — breaking changes to required fields, removed keys, or incompatible structural changes. Consumers relying on the previous schema may fail.
+- **MINOR** — new optional fields or additive changes. Existing consumers continue to work.
+- **PATCH** — documentation fixes, description updates, or constraint tightening that does not alter field presence.
+
+The authoritative version lives in `shared_constants.REPORT_SCHEMA_VERSION` and is mirrored as a `const` in the schema file's `report_schema.version` field. The `report_artifacts` module validates that both values match before staging any report artifact.
+
+Compatibility contract:
+
+- The `report_schema.compatibility` field uses a semver range (e.g. `^1.0.0`) indicating that consumers built for the same major version can safely read the report.
+- When upgrading the schema, update `REPORT_SCHEMA_VERSION`, the schema filename, the `$id`, the `version` const, and the compatibility range in a single commit.
+- Baseline governance checks (`baseline_governance.py`, `advanced_gates.py`) compare the report's `report_schema.version` against the expected version and flag mismatches.
+
+No automated migration between major versions is provided at this time. Consumers should treat major version bumps as requiring manual review.
+
+## 6. Language Separation
+
+Prompt instructions and output language serve different purposes and are intentionally decoupled:
+
+- **Prompt language**: All adapter prompt templates (`adapters/*/prompt-template.md`) use English for agent directives. This ensures precise, unambiguous instructions regardless of the user's preferred output language.
+- **Output language**: Controlled by the `output_language` contract field (default `zh-TW`). Affects Markdown column headers, summary labels, and human-facing report text. The `_language_key()` helper in `wcag_workflow.py` maps any value starting with `zh` to the `zh-TW` dictionary; all other values fall back to `en`.
+
+Adapters must not translate their directive sections based on `output_language`. Only the generated report content respects this field.
 

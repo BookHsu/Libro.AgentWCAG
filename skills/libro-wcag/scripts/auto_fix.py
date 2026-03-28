@@ -188,76 +188,115 @@ def _fix_area_alt(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, An
     }
 
 
-def _guess_accessible_name(attributes: str, fallback: str = 'Control') -> str:
+def _guess_accessible_name_with_source(attributes: str, fallback: str = 'Control') -> tuple[str, str | None]:
     for attribute in ('aria-label', 'title', 'placeholder', 'name', 'id'):
         match = re.search(rf'\b{attribute}\s*=\s*["\']([^"\']+)["\']', attributes, flags=re.IGNORECASE)
         if match:
             value = match.group(1).strip().replace('-', ' ').replace('_', ' ')
-            return value[:1].upper() + value[1:] if value else fallback
-    return fallback
+            if value:
+                return value[:1].upper() + value[1:], attribute
+    return fallback, None
+
+
+def _guess_accessible_name(attributes: str, fallback: str = 'Control') -> str:
+    label, _ = _guess_accessible_name_with_source(attributes, fallback=fallback)
+    return label
+
+
+def _has_programmatic_name(attributes: str) -> bool:
+    return bool(re.search(r'\baria-label\s*=|\baria-labelledby\s*=|\btitle\s*=', attributes, flags=re.IGNORECASE))
+
+
+def _has_visible_name(inner_html: str) -> bool:
+    visible_text = re.sub(r'<[^>]+>', '', inner_html).strip()
+    return bool(visible_text and re.search(r'[A-Za-z0-9]', visible_text))
+
+
+def _with_guess_source(description: str, guessed_from: str | None) -> str:
+    if not guessed_from:
+        return description
+    return f'{description} (guessed from: {guessed_from})'
+
+
+def _fix_missing_accessible_name(
+    html: str,
+    finding: dict[str, Any],
+    *,
+    pattern: re.Pattern[str],
+    fallback: str,
+    attribute_getter: Callable[[re.Match[str]], str],
+    inner_html_getter: Callable[[re.Match[str]], str],
+    replacement_builder: Callable[[re.Match[str], str], str],
+    description_builder: Callable[[str, str | None], str],
+) -> tuple[str, dict[str, Any] | None]:
+    for match in pattern.finditer(html):
+        attributes = attribute_getter(match)
+        inner_html = inner_html_getter(match)
+        if _has_programmatic_name(attributes) or _has_visible_name(inner_html):
+            continue
+        label, guessed_from = _guess_accessible_name_with_source(attributes, fallback=fallback)
+        replacement = replacement_builder(match, label)
+        updated = html[: match.start()] + replacement + html[match.end() :]
+        return updated, {
+            'rule_id': finding['rule_id'],
+            'changed_target': finding['changed_target'],
+            'description': description_builder(label, guessed_from),
+        }
+    return html, None
 
 
 def _fix_button_name(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
     pattern = re.compile(r'<button\b([^>]*)>(.*?)</button>', flags=re.IGNORECASE | re.DOTALL)
-    for match in pattern.finditer(html):
-        attributes = match.group(1)
-        inner_html = match.group(2)
-        if re.search(r'\baria-label\s*=|\baria-labelledby\s*=|\btitle\s*=', attributes, flags=re.IGNORECASE):
-            continue
-        visible_text = re.sub(r'<[^>]+>', '', inner_html).strip()
-        if visible_text and re.search(r'[A-Za-z0-9]', visible_text):
-            continue
-        label = _guess_accessible_name(attributes, fallback='Button')
-        replacement = f'<button{attributes} aria-label="{label}">{inner_html}</button>'
-        updated = html[: match.start()] + replacement + html[match.end() :]
-        return updated, {
-            'rule_id': finding['rule_id'],
-            'changed_target': finding['changed_target'],
-            'description': f'Added aria-label="{label}" to an icon-only button.',
-        }
-    return html, None
+    return _fix_missing_accessible_name(
+        html,
+        finding,
+        pattern=pattern,
+        fallback='Button',
+        attribute_getter=lambda match: match.group(1),
+        inner_html_getter=lambda match: match.group(2),
+        replacement_builder=lambda match, label: f'<button{match.group(1)} aria-label="{label}">{match.group(2)}</button>',
+        description_builder=lambda label, guessed_from: _with_guess_source(
+            f'Added aria-label="{label}" to an icon-only button.',
+            guessed_from,
+        ),
+    )
 
 
 def _fix_link_name(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
     pattern = re.compile(r'<a\b([^>]*)>(.*?)</a>', flags=re.IGNORECASE | re.DOTALL)
-    for match in pattern.finditer(html):
-        attributes = match.group(1)
-        inner_html = match.group(2)
-        if re.search(r'\baria-label\s*=|\baria-labelledby\s*=|\btitle\s*=', attributes, flags=re.IGNORECASE):
-            continue
-        visible_text = re.sub(r'<[^>]+>', '', inner_html).strip()
-        if visible_text and re.search(r'[A-Za-z0-9]', visible_text):
-            continue
-        label = _guess_accessible_name(attributes, fallback='Link')
-        replacement = f'<a{attributes} aria-label="{label}">{inner_html}</a>'
-        updated = html[: match.start()] + replacement + html[match.end() :]
-        return updated, {
-            'rule_id': finding['rule_id'],
-            'changed_target': finding['changed_target'],
-            'description': f'Added aria-label="{label}" to an empty link.',
-        }
-    return html, None
+    return _fix_missing_accessible_name(
+        html,
+        finding,
+        pattern=pattern,
+        fallback='Link',
+        attribute_getter=lambda match: match.group(1),
+        inner_html_getter=lambda match: match.group(2),
+        replacement_builder=lambda match, label: f'<a{match.group(1)} aria-label="{label}">{match.group(2)}</a>',
+        description_builder=lambda label, guessed_from: _with_guess_source(
+            f'Added aria-label="{label}" to an empty link.',
+            guessed_from,
+        ),
+    )
 
 
 def _fix_role_name(html: str, finding: dict[str, Any], role: str, fallback: str) -> tuple[str, dict[str, Any] | None]:
     pattern = re.compile(rf"<([a-z0-9:-]+)\b([^>]*)\brole\s*=\s*['\"]{role}['\"]([^>]*)>(.*?)</\1>", flags=re.IGNORECASE | re.DOTALL)
-    for match in pattern.finditer(html):
-        attributes = f'{match.group(2)}{match.group(3)}'
-        inner_html = match.group(4)
-        if re.search(r'\baria-label\s*=|\baria-labelledby\s*=|\btitle\s*=', attributes, flags=re.IGNORECASE):
-            continue
-        visible_text = re.sub(r'<[^>]+>', '', inner_html).strip()
-        if visible_text and re.search(r'[A-Za-z0-9]', visible_text):
-            continue
-        label = _guess_accessible_name(attributes, fallback=fallback)
-        replacement = f'<{match.group(1)}{match.group(2)} role="{role}"{match.group(3)} aria-label="{label}">{inner_html}</{match.group(1)}>'
-        updated = html[: match.start()] + replacement + html[match.end() :]
-        return updated, {
-            'rule_id': finding['rule_id'],
-            'changed_target': finding['changed_target'],
-            'description': f'Added aria-label="{label}" to a {role} widget missing an accessible name.',
-        }
-    return html, None
+    return _fix_missing_accessible_name(
+        html,
+        finding,
+        pattern=pattern,
+        fallback=fallback,
+        attribute_getter=lambda match: f'{match.group(2)}{match.group(3)}',
+        inner_html_getter=lambda match: match.group(4),
+        replacement_builder=lambda match, label: (
+            f'<{match.group(1)}{match.group(2)} role="{role}"{match.group(3)} '
+            f'aria-label="{label}">{match.group(4)}</{match.group(1)}>'
+        ),
+        description_builder=lambda label, guessed_from: _with_guess_source(
+            f'Added aria-label="{label}" to a {role} widget missing an accessible name.',
+            guessed_from,
+        ),
+    )
 
 
 def _fix_aria_toggle_field_name(html: str, finding: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:

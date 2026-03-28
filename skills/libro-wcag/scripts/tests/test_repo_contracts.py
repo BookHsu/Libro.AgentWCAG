@@ -64,6 +64,7 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('scripts/*.py', payload['files'])
         self.assertIn('scripts/*.ps1', payload['files'])
         self.assertIn('skills/libro-wcag/scripts/*.py', payload['files'])
+        self.assertIn('skills/libro-wcag/scripts/py.typed', payload['files'])
 
     def test_npmignore_excludes_tests_and_python_cache_from_published_cli(self) -> None:
         content = self._read(self.repo_root / '.npmignore')
@@ -206,6 +207,14 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('requires-python = ">=3.12"', content)
         self.assertIn('skills/libro-wcag/scripts/tests', content)
 
+    def test_skill_script_package_has_explicit_init_and_typed_markers(self) -> None:
+        scripts_init = self.skill_root / 'scripts' / '__init__.py'
+        tests_init = self.skill_root / 'scripts' / 'tests' / '__init__.py'
+        py_typed = self.skill_root / 'scripts' / 'py.typed'
+        self.assertTrue(scripts_init.exists())
+        self.assertTrue(tests_init.exists())
+        self.assertTrue(py_typed.exists())
+
     def test_license_is_mit_and_credits_book_hsu(self) -> None:
         content = self._read(self.repo_root / 'LICENSE')
         self.assertIn('MIT License', content)
@@ -233,10 +242,21 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('failure-guide.md', content)
         self.assertIn('e2e-example.md', content)
 
-    def test_openai_agent_yaml_points_to_libro_agentwcag_prompt(self) -> None:
-        payload = yaml.safe_load((self.skill_root / 'agents' / 'openai.yaml').read_text(encoding='utf-8'))
-        self.assertEqual(payload['interface']['display_name'], 'Libro.AgentWCAG')
-        self.assertIn('$libro-wcag', payload['interface']['default_prompt'])
+    def test_agent_manifests_point_to_libro_agentwcag_prompt(self) -> None:
+        expected_prompts = {
+            'openai.yaml': '$libro-wcag',
+            'claude.yaml': 'adapters/claude/prompt-template.md',
+            'gemini.yaml': 'adapters/gemini/prompt-template.md',
+            'copilot.yaml': 'adapters/copilot/prompt-template.md',
+        }
+        for manifest_name, adapter_hint in expected_prompts.items():
+            with self.subTest(manifest_name=manifest_name):
+                payload = yaml.safe_load(
+                    (self.skill_root / 'agents' / manifest_name).read_text(encoding='utf-8')
+                )
+                self.assertEqual(payload['interface']['display_name'], 'Libro.AgentWCAG')
+                self.assertIn('$libro-wcag', payload['interface']['default_prompt'])
+                self.assertIn(adapter_hint, payload['interface']['default_prompt'])
 
     def test_core_spec_and_adapter_mapping_define_contract_boundaries(self) -> None:
         core_spec = self._read(self.skill_root / 'references' / 'core-spec.md')
@@ -260,6 +280,69 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('2.4.11 Focus Not Obscured (Minimum)', content)
         self.assertIn('merge them into one finding and preserve both sources', content)
 
+    def test_report_schema_defines_core_finding_fix_and_summary_contract_fields(self) -> None:
+        payload = json.loads(
+            (self.skill_root / 'schemas' / 'wcag-report-1.0.0.schema.json').read_text(encoding='utf-8')
+        )
+        run_meta = payload['$defs']['runMeta']
+        finding = payload['$defs']['finding']
+        fix = payload['$defs']['fix']
+        summary = payload['$defs']['summary']
+
+        self.assertEqual(
+            run_meta['properties']['diff_artifacts']['items']['required'],
+            ['path', 'type'],
+        )
+
+        self.assertIn('fixability', finding['required'])
+        self.assertIn('verification_status', finding['required'])
+        self.assertIn('manual_review_required', finding['required'])
+        self.assertIn('confidence', finding['required'])
+        self.assertIn('sc', finding['required'])
+        self.assertEqual(finding['properties']['fixability']['$ref'], '#/$defs/fixability')
+        self.assertEqual(
+            finding['properties']['verification_status']['$ref'],
+            '#/$defs/verificationStatus',
+        )
+
+        self.assertIn('remediation_priority', fix['required'])
+        self.assertIn('confidence', fix['required'])
+        self.assertIn('fixability', fix['required'])
+        self.assertIn('verification_status', fix['required'])
+        self.assertIn('manual_review_required', fix['required'])
+        self.assertIn('framework_hints', fix['required'])
+        self.assertEqual(
+            fix['properties']['remediation_priority']['$ref'],
+            '#/$defs/remediationPriority',
+        )
+        self.assertEqual(fix['properties']['framework_hints']['type'], 'object')
+
+        self.assertIn('diff_summary', summary['required'])
+        self.assertIn('remediation_lifecycle', summary['required'])
+        self.assertIn('change_summary', summary['required'])
+        self.assertIn('auto_fixed_count', summary['required'])
+        self.assertIn('manual_required_count', summary['required'])
+        self.assertIn('debt_trend', summary['properties'])
+        self.assertEqual(
+            summary['properties']['debt_trend']['properties']['latest_counts']['$ref'],
+            '#/$defs/debtTrendCounts',
+        )
+
+    def test_report_schema_uses_enums_for_status_and_priority_vocabularies(self) -> None:
+        payload = json.loads(
+            (self.skill_root / 'schemas' / 'wcag-report-1.0.0.schema.json').read_text(encoding='utf-8')
+        )
+        self.assertEqual(payload['$defs']['fixability']['enum'], ['auto-fix', 'assisted', 'manual'])
+        self.assertEqual(
+            payload['$defs']['verificationStatus']['enum'],
+            ['not-run', 'diff-generated', 'verified', 'manual-review'],
+        )
+        self.assertEqual(payload['$defs']['remediationPriority']['enum'], ['high', 'medium', 'low'])
+        self.assertEqual(
+            payload['$defs']['severity']['enum'],
+            ['critical', 'serious', 'moderate', 'minor', 'info'],
+        )
+
     def test_framework_pattern_guides_cover_key_rule_families(self) -> None:
         react = self._read(self.skill_root / 'references' / 'framework-patterns-react.md')
         vue = self._read(self.skill_root / 'references' / 'framework-patterns-vue.md')
@@ -269,6 +352,60 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('button-name', vue)
         self.assertIn('html-has-lang', nextjs)
         self.assertIn('focus', nextjs.lower())
+
+    def test_mcp_tool_defaults_match_skill_md_contract(self) -> None:
+        """C5: MCP tool parameter defaults must align with SKILL.md."""
+        import ast
+
+        server_src = self._read(self.repo_root / 'mcp-server' / 'server.py')
+        skill_md = self._read(self.skill_root / 'SKILL.md')
+        tree = ast.parse(server_src)
+
+        # Extract default values from MCP tool function signatures
+        mcp_defaults: dict[str, dict[str, str]] = {}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name.startswith('libro_wcag_'):
+                defaults: dict[str, str] = {}
+                args = node.args
+                # Match defaults to the last N arguments
+                num_defaults = len(args.defaults)
+                default_args = args.args[-num_defaults:] if num_defaults else []
+                for arg, default in zip(default_args, args.defaults):
+                    if isinstance(default, ast.Constant) and isinstance(default.value, str):
+                        defaults[arg.arg] = default.value
+                mcp_defaults[node.name] = defaults
+
+        self.assertIn('libro_wcag_audit', mcp_defaults)
+        self.assertIn('libro_wcag_suggest', mcp_defaults)
+        self.assertIn('libro_wcag_normalize', mcp_defaults)
+
+        # SKILL.md contract defaults
+        skill_defaults = {
+            'wcag_version': '2.1',
+            'conformance_level': 'AA',
+            'output_language': 'zh-TW',
+        }
+
+        # All three MCP tools must share the same core defaults
+        for tool_name, defaults in mcp_defaults.items():
+            with self.subTest(tool=tool_name):
+                for param, expected in skill_defaults.items():
+                    self.assertEqual(
+                        defaults.get(param),
+                        expected,
+                        f'{tool_name}.{param} default {defaults.get(param)!r} != SKILL.md {expected!r}',
+                    )
+
+        # MCP audit deliberately uses audit-only (not suggest-only) per Batch 6 decision
+        self.assertEqual(mcp_defaults['libro_wcag_audit']['execution_mode'], 'audit-only')
+        # MCP normalize uses suggest-only (matches SKILL.md default)
+        self.assertEqual(mcp_defaults['libro_wcag_normalize']['execution_mode'], 'suggest-only')
+
+        # Verify SKILL.md documents these exact defaults
+        self.assertIn('`execution_mode`: `suggest-only`', skill_md)
+        self.assertIn('`wcag_version`: `2.1`', skill_md)
+        self.assertIn('`conformance_level`: `AA`', skill_md)
+        self.assertIn('`output_language`: `zh-TW`', skill_md)
 
     def test_all_repo_files_have_a_test_or_static_contract_check(self) -> None:
         expected = {
@@ -280,6 +417,8 @@ class RepoContractTests(unittest.TestCase):
             '.claude/skills/libro-wcag/SKILL.md',
             '.claude-plugin/plugin.json',
             '.claude-plugin/marketplace.json',
+            '.codex/skills/libro-wcag/SKILL.md',
+            '.copilot/skills/libro-wcag/SKILL.md',
             '.gemini/skills/libro-wcag/SKILL.md',
             'mcp-server/server.py',
             'mcp-server/requirements.txt',
@@ -316,6 +455,9 @@ class RepoContractTests(unittest.TestCase):
             'scripts/uninstall-agent.py',
             'scripts/validate_skill.py',
             'skills/libro-wcag/SKILL.md',
+            'skills/libro-wcag/agents/claude.yaml',
+            'skills/libro-wcag/agents/copilot.yaml',
+            'skills/libro-wcag/agents/gemini.yaml',
             'skills/libro-wcag/agents/openai.yaml',
             'skills/libro-wcag/adapters/claude/e2e-example.md',
             'skills/libro-wcag/adapters/claude/failure-guide.md',
@@ -359,6 +501,64 @@ class RepoContractTests(unittest.TestCase):
             and 'scripts/tests' not in str(path).replace('\\', '/')
         }
         self.assertTrue(expected.issubset(actual))
+
+
+class WcagUrlSlugTests(unittest.TestCase):
+    """Z3: Validate WCAG_UNDERSTANDING_PATHS slugs are well-formed and (optionally) reachable."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        import sys
+        scripts_dir = str(Path(__file__).resolve().parents[1])
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        from wcag_workflow import WCAG_UNDERSTANDING_PATHS, build_citation_url
+        cls.paths = WCAG_UNDERSTANDING_PATHS
+        cls.build_url = staticmethod(build_citation_url)
+
+    def test_all_slugs_are_lowercase_hyphenated(self) -> None:
+        import re
+        slug_pattern = re.compile(r'^[a-z0-9]+(-[a-z0-9]+)*$')
+        for sc, slug in self.paths.items():
+            with self.subTest(sc=sc):
+                self.assertRegex(slug, slug_pattern, f'SC {sc} slug {slug!r} is not lowercase-hyphenated')
+
+    def test_all_sc_numbers_are_valid_format(self) -> None:
+        import re
+        sc_pattern = re.compile(r'^\d+\.\d+\.\d+$')
+        for sc in self.paths:
+            with self.subTest(sc=sc):
+                self.assertRegex(sc, sc_pattern, f'{sc!r} is not a valid SC number format')
+
+    def test_no_duplicate_slugs(self) -> None:
+        slugs = list(self.paths.values())
+        self.assertEqual(len(slugs), len(set(slugs)), 'Duplicate slugs found')
+
+    def test_build_citation_url_produces_valid_urls_for_all_versions(self) -> None:
+        for sc in self.paths:
+            for version in ('2.0', '2.1', '2.2'):
+                with self.subTest(sc=sc, version=version):
+                    url = self.build_url(version, sc)
+                    self.assertTrue(url.startswith('https://www.w3.org/WAI/WCAG'))
+                    self.assertIn(f'WCAG{version.replace(".", "")}', url)
+
+    @unittest.skipUnless(
+        __import__('os').environ.get('LIBRO_RUN_URL_VALIDATION') == '1',
+        'WCAG URL HEAD validation disabled (set LIBRO_RUN_URL_VALIDATION=1)',
+    )
+    def test_all_wcag_understanding_urls_are_reachable(self) -> None:
+        import urllib.request
+        failures: list[str] = []
+        for sc, slug in self.paths.items():
+            url = self.build_url('2.2', sc)
+            try:
+                req = urllib.request.Request(url, method='HEAD')
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    if resp.status != 200:
+                        failures.append(f'{sc} ({slug}): HTTP {resp.status}')
+            except Exception as exc:
+                failures.append(f'{sc} ({slug}): {exc}')
+        self.assertEqual(failures, [], f'Unreachable WCAG URLs:\n' + '\n'.join(failures))
 
 
 if __name__ == '__main__':

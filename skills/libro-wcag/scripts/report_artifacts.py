@@ -18,10 +18,27 @@ def _report_schema_source_path() -> Path:
     return Path(__file__).resolve().parents[1] / 'schemas' / REPORT_SCHEMA_FILENAME
 
 
+def _validate_report_schema_version(schema_source_path: Path) -> None:
+    schema = json.loads(schema_source_path.read_text(encoding='utf-8'))
+    if not isinstance(schema, dict):
+        raise ValueError(f'report schema must be a JSON object: {schema_source_path}')
+
+    report_schema = schema.get('properties', {}).get('report_schema', {})
+    properties = report_schema.get('properties', {}) if isinstance(report_schema, dict) else {}
+    version_property = properties.get('version', {}) if isinstance(properties, dict) else {}
+    schema_version = version_property.get('const') if isinstance(version_property, dict) else None
+    if schema_version != REPORT_SCHEMA_VERSION:
+        raise ValueError(
+            'report schema version mismatch: '
+            f'expected {REPORT_SCHEMA_VERSION}, got {schema_version!r} from {schema_source_path}'
+        )
+
+
 def _stage_report_schema_artifact(output_dir: Path) -> tuple[dict[str, Any], Path]:
     schema_source_path = _report_schema_source_path()
     if not schema_source_path.exists():
         raise FileNotFoundError(f'report schema file is missing: {schema_source_path}')
+    _validate_report_schema_version(schema_source_path)
     schema_dir = output_dir / 'schemas'
     schema_dir.mkdir(parents=True, exist_ok=True)
     staged_path = schema_dir / REPORT_SCHEMA_FILENAME

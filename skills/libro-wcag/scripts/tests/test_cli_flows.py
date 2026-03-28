@@ -223,6 +223,32 @@ class CliFlowTests(unittest.TestCase):
             self.assertEqual(payload['run_meta']['tools']['axe'], 'error')
             self.assertTrue(any(item['status'] == 'needs-review' for item in payload['findings']))
 
+    def test_normalize_report_cli_creates_missing_output_directories(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            output_json = Path(tmp) / 'nested' / 'reports' / 'report.json'
+            output_md = Path(tmp) / 'nested' / 'reports' / 'report.md'
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    'skills/libro-wcag/scripts/normalize_report.py',
+                    '--target',
+                    'https://example.com',
+                    '--axe-error',
+                    'scanner crashed',
+                    '--output-json',
+                    str(output_json),
+                    '--output-md',
+                    str(output_md),
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+            self.assertTrue(output_json.exists())
+            self.assertTrue(output_md.exists())
+
     def test_run_accessibility_audit_with_mock_scanners_generates_apply_fixes_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             html_path = Path(tmp) / 'sample.html'

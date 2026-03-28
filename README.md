@@ -35,6 +35,8 @@ winget install Python.Python.3.12           # Windows
 
 ### Claude Marketplace (Claude Code)
 
+Coming soon - pending marketplace availability.
+
 ```text
 /plugin marketplace add BookHsu/Libro.AgentWCAG
 /plugin install libro-wcag@libro-wcag-marketplace
@@ -64,8 +66,35 @@ python .\scripts\libro.py doctor claude
 
 ```powershell
 python .\scripts\libro.py doctor claude --verify-manifest-integrity
+python .\scripts\libro.py doctor claude --check-scanners   # 檢查 Node.js/npx/axe/lighthouse
 python .\scripts\libro.py remove claude
 ```
+
+## CLI Quick Start
+
+裝好之後，可以直接用 CLI 跑稽核，不需要透過 AI agent：
+
+```powershell
+# 稽核一個 URL
+python .\scripts\libro.py audit https://example.com
+
+# 稽核本機檔案，輸出到指定目錄
+python .\scripts\libro.py audit ./src/index.html --output-dir out/wcag
+
+# 帶建議的稽核（suggest-only 模式）
+python .\scripts\libro.py audit ./src/index.html --execution-mode suggest-only
+
+# 自動修正支援的問題
+python .\scripts\libro.py audit ./src/index.html --execution-mode apply-fixes
+
+# 檢查掃描器工具是否正常
+python .\scripts\libro.py audit --preflight-only
+```
+
+執行完成後，會在 `out/` 產出：
+
+- `wcag-report.json` — 結構化 JSON 報告
+- `wcag-report.md` — Markdown 摘要表格
 
 ## 使用方式
 
@@ -97,6 +126,8 @@ Apply fixes
 - 確認要落地修改時，再使用 `apply-fixes`
 
 這樣可以先把問題看清楚，再進入修改流程，避免過早自動改動。
+
+> **MCP 注意事項**：MCP server 僅提供唯讀稽核（`audit-only`）與建議（`suggest-only`），不支援 `apply-fixes` 模式。如需自動修正，請使用 CLI 直接執行。生產部署可使用 `mcp-server/requirements.lock` 取得 hash-pinned 相依版本。
 
 ## License
 

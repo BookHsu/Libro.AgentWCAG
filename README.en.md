@@ -35,6 +35,8 @@ winget install Python.Python.3.12           # Windows
 
 ### Claude Marketplace (Claude Code)
 
+Coming soon - pending marketplace availability.
+
 ```text
 /plugin marketplace add BookHsu/Libro.AgentWCAG
 /plugin install libro-wcag@libro-wcag-marketplace
@@ -64,8 +66,35 @@ Verification and removal:
 
 ```powershell
 python .\scripts\libro.py doctor claude --verify-manifest-integrity
+python .\scripts\libro.py doctor claude --check-scanners   # verify Node.js/npx/axe/lighthouse
 python .\scripts\libro.py remove claude
 ```
+
+## CLI Quick Start
+
+After installation, you can run audits directly from the CLI without going through an AI agent:
+
+```powershell
+# Audit a URL
+python .\scripts\libro.py audit https://example.com
+
+# Audit a local file with custom output directory
+python .\scripts\libro.py audit ./src/index.html --output-dir out/wcag
+
+# Audit with remediation suggestions (suggest-only mode)
+python .\scripts\libro.py audit ./src/index.html --execution-mode suggest-only
+
+# Auto-fix supported issues
+python .\scripts\libro.py audit ./src/index.html --execution-mode apply-fixes
+
+# Check scanner toolchain availability
+python .\scripts\libro.py audit --preflight-only
+```
+
+After a run completes, outputs appear in `out/`:
+
+- `wcag-report.json` — structured JSON report
+- `wcag-report.md` — Markdown summary table
 
 ## Use
 
@@ -97,6 +126,8 @@ Use apply-fixes mode to review src/page.html and apply safe fixes to supported l
 - Move to `apply-fixes` only when you want the changes carried out
 
 This keeps review and modification separate, which makes the workflow easier to control.
+
+> **MCP note**: The MCP server provides read-only audit (`audit-only`) and suggestions (`suggest-only`) only; `apply-fixes` is not exposed via MCP. Use the CLI directly for auto-fix. Production deployments can use `mcp-server/requirements.lock` for hash-pinned dependencies.
 
 ## License
 

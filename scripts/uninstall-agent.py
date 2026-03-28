@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 import shutil
 from pathlib import Path
 
@@ -34,7 +35,17 @@ def parse_args() -> argparse.Namespace:
 
 def uninstall(destination: Path) -> None:
     if destination.exists():
-        shutil.rmtree(destination)
+        try:
+            shutil.rmtree(destination)
+        except PermissionError as exc:
+            raise RuntimeError(
+                f"Failed to remove installation at {destination}: permission denied ({exc})"
+            ) from exc
+        except OSError as exc:
+            detail = exc.strerror or str(exc)
+            raise RuntimeError(
+                f"Failed to remove installation at {destination}: {detail}"
+            ) from exc
 
 
 def uninstall_all(base_destination: Path | None) -> None:
@@ -45,16 +56,20 @@ def uninstall_all(base_destination: Path | None) -> None:
 
 def main() -> int:
     args = parse_args()
-    if args.agent == 'all':
-        base_destination = Path(args.dest) if args.dest else None
-        uninstall_all(base_destination)
-        print('Removed all installed agent bundles.')
-        return 0
+    try:
+        if args.agent == 'all':
+            base_destination = Path(args.dest) if args.dest else None
+            uninstall_all(base_destination)
+            print('Removed all installed agent bundles.')
+            return 0
 
-    destination = Path(args.dest) if args.dest else default_destination(args.agent)
-    uninstall(destination)
-    print(f'Removed installation for {args.agent}: {destination}')
-    return 0
+        destination = Path(args.dest) if args.dest else default_destination(args.agent)
+        uninstall(destination)
+        print(f'Removed installation for {args.agent}: {destination}')
+        return 0
+    except RuntimeError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
 
 
 if __name__ == '__main__':

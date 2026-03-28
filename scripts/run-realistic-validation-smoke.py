@@ -34,6 +34,20 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _load_json_artifact(path: Path, description: str) -> dict[str, object]:
+    if not path.exists():
+        raise FileNotFoundError(f'{description} is missing: {path}')
+    try:
+        payload = json.loads(path.read_text(encoding='utf-8'))
+    except json.JSONDecodeError as err:
+        raise ValueError(
+            f'{description} is not valid JSON: {path} ({err.msg} at line {err.lineno}, column {err.colno})'
+        ) from err
+    if not isinstance(payload, dict):
+        raise ValueError(f'{description} must be a JSON object: {path}')
+    return payload
+
+
 def main() -> int:
     args = parse_args()
     sample = Path(args.sample)
@@ -107,7 +121,7 @@ def main() -> int:
         if source.exists():
             shutil.copyfile(source, destination)
 
-    report = json.loads((output_dir / 'wcag-report.json').read_text(encoding='utf-8'))
+    report = _load_json_artifact(output_dir / 'wcag-report.json', 'Audit report')
     summary = {
         'sample_target': str(sample),
         'steps': steps,

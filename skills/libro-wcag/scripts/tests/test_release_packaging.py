@@ -80,7 +80,9 @@ class ReleasePackagingTests(unittest.TestCase):
 
         with zipfile.ZipFile(output_dir / f"libro-wcag-{self.product_version}-codex.zip") as archive:
             names = set(archive.namelist())
+            self.assertIn(f"libro-wcag-{self.product_version}-codex/CHANGELOG.md", names)
             self.assertIn(f"libro-wcag-{self.product_version}-codex/scripts/install-agent.py", names)
+            self.assertIn(f"libro-wcag-{self.product_version}-codex/skills/libro-wcag/scripts/py.typed", names)
             self.assertIn(
                 f"libro-wcag-{self.product_version}-codex/skills/libro-wcag/adapters/openai-codex/prompt-template.md",
                 names,
@@ -124,6 +126,41 @@ class ReleasePackagingTests(unittest.TestCase):
                     (first_output / filename).read_bytes(),
                     (second_output / filename).read_bytes(),
                 )
+
+    def test_package_release_excludes_temporary_skill_files_from_bundles(self) -> None:
+        output_dir = self._workspace("temp-file-exclusion") / "release"
+        temp_files = [
+            self.repo_root / "skills" / "libro-wcag" / "tmp-note.tmp",
+            self.repo_root / "skills" / "libro-wcag" / "adapters" / "openai-codex" / "draft-guide.bak",
+        ]
+        try:
+            for temp_file in temp_files:
+                temp_file.write_text("temporary release artifact\n", encoding="utf-8")
+
+            completed = self._run_packager(output_dir)
+            self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+
+            with zipfile.ZipFile(output_dir / f"libro-wcag-{self.product_version}-all-in-one.zip") as archive:
+                names = set(archive.namelist())
+                self.assertFalse(any(name.endswith("tmp-note.tmp") for name in names))
+                self.assertFalse(any(name.endswith("draft-guide.bak") for name in names))
+        finally:
+            for temp_file in temp_files:
+                temp_file.unlink(missing_ok=True)
+
+    def test_package_release_fails_when_adapter_docs_are_incomplete(self) -> None:
+        output_dir = self._workspace("missing-adapter-doc") / "release"
+        original_path = self.repo_root / "skills" / "libro-wcag" / "adapters" / "openai-codex" / "e2e-example.md"
+        backup_path = original_path.with_name("e2e-example.md.tmp-test-backup")
+        shutil.move(original_path, backup_path)
+        try:
+            completed = self._run_packager(output_dir)
+            self.assertNotEqual(completed.returncode, 0)
+            combined = completed.stdout + completed.stderr
+            self.assertIn("Release packaging input validation failed", combined)
+            self.assertIn("skills/libro-wcag/adapters/openai-codex/e2e-example.md", combined)
+        finally:
+            shutil.move(backup_path, original_path)
 
 
 if __name__ == "__main__":

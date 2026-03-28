@@ -17,6 +17,20 @@ import yaml
 
 SKILL_NAME_PATTERN = re.compile(r"^[a-z0-9-]{1,64}$")
 RULE_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+SKILL_FRONTMATTER_REQUIRED_KEYS = ("name", "description")
+AGENT_MANIFESTS = ("openai", "claude", "gemini", "copilot")
+AGENT_INTERFACE_REQUIRED_KEYS = {
+    "display_name",
+    "short_description",
+    "default_prompt",
+}
+ADAPTER_DIRECTORY_NAMES = ("openai-codex", "claude", "gemini", "copilot")
+ADAPTER_REQUIRED_FILES = (
+    "prompt-template.md",
+    "usage-example.md",
+    "failure-guide.md",
+    "e2e-example.md",
+)
 POLICY_BUNDLE_REQUIRED_KEYS = [
     "name",
     "description",
@@ -29,6 +43,37 @@ POLICY_BUNDLE_REQUIRED_KEYS = [
 ]
 POLICY_BUNDLE_REQUIRED_KEY_SET = set(POLICY_BUNDLE_REQUIRED_KEYS)
 POLICY_BUNDLE_ALLOWED_FAIL_ON = {"critical", "serious", "moderate"}
+
+_known_rules_cache: set[str] | None = None
+
+
+def _load_known_rules(skill_root: Path) -> set[str]:
+    """Load the set of known scanner rule IDs from the skill scripts."""
+    global _known_rules_cache
+    if _known_rules_cache is not None:
+        return _known_rules_cache
+    scripts_dir = skill_root / "scripts"
+    known: set[str] = set()
+    # Load from SCANNER_RULE_TO_SC in wcag_workflow.py
+    wf_path = scripts_dir / "wcag_workflow.py"
+    if wf_path.exists():
+        saved_path = list(sys.path)
+        sys.path.insert(0, str(scripts_dir))
+        try:
+            import importlib
+            mod = importlib.import_module("wcag_workflow")
+            if hasattr(mod, "SCANNER_RULE_TO_SC"):
+                known.update(mod.SCANNER_RULE_TO_SC.keys())
+            # Also include rules from remediation_library
+            rem = importlib.import_module("remediation_library")
+            if hasattr(rem, "RULE_STRATEGIES"):
+                known.update(rem.RULE_STRATEGIES.keys())
+        except Exception:
+            pass
+        finally:
+            sys.path[:] = saved_path
+    _known_rules_cache = known
+    return known
 
 
 def parse_args() -> argparse.Namespace:
@@ -58,17 +103,58 @@ def validate_skill(skill_dir: Path) -> None:
         raise ValueError("Missing SKILL.md")
 
     frontmatter = _load_frontmatter(skill_md)
-    name = str(frontmatter.get("name", ""))
-    description = str(frontmatter.get("description", ""))
+    if not isinstance(frontmatter, dict):
+        raise ValueError("SKILL.md frontmatter must be a mapping")
 
-    if not name or not SKILL_NAME_PATTERN.match(name):
+    missing_frontmatter = [
+        key for key in SKILL_FRONTMATTER_REQUIRED_KEYS if not str(frontmatter.get(key, "")).strip()
+    ]
+    if missing_frontmatter:
+        raise ValueError(f"SKILL.md frontmatter missing required keys: {missing_frontmatter}")
+
+    name = str(frontmatter["name"]).strip()
+    description = str(frontmatter["description"]).strip()
+
+    if not SKILL_NAME_PATTERN.match(name):
         raise ValueError("Frontmatter name must match ^[a-z0-9-]{1,64}$")
     if not description:
         raise ValueError("Frontmatter description is required")
 
-    openai_yaml = skill_dir / "agents" / "openai.yaml"
-    if openai_yaml.exists():
-        yaml.safe_load(openai_yaml.read_text(encoding="utf-8"))
+    scripts_dir = skill_dir / "scripts"
+    if not scripts_dir.exists() or not scripts_dir.is_dir():
+        raise ValueError(f"Missing scripts directory: {scripts_dir}")
+
+    adapters_dir = skill_dir / "adapters"
+    if not adapters_dir.exists() or not adapters_dir.is_dir():
+        raise ValueError(f"Missing adapters directory: {adapters_dir}")
+    for adapter in ADAPTER_DIRECTORY_NAMES:
+        adapter_dir = adapters_dir / adapter
+        if not adapter_dir.exists() or not adapter_dir.is_dir():
+            raise ValueError(f"Missing adapter directory: {adapter_dir}")
+        missing_docs = [
+            filename for filename in ADAPTER_REQUIRED_FILES if not (adapter_dir / filename).exists()
+        ]
+        if missing_docs:
+            raise ValueError(f"{adapter_dir}: missing required adapter files {missing_docs}")
+
+    agents_dir = skill_dir / "agents"
+    for agent in AGENT_MANIFESTS:
+        manifest_path = agents_dir / f"{agent}.yaml"
+        if not manifest_path.exists():
+            continue
+        payload = yaml.safe_load(manifest_path.read_text(encoding="utf-8")) or {}
+        interface = payload.get("interface")
+        if not isinstance(interface, dict):
+            raise ValueError(f"{manifest_path}: interface must be a mapping")
+        missing_keys = sorted(AGENT_INTERFACE_REQUIRED_KEYS - set(interface))
+        if missing_keys:
+            raise ValueError(f"{manifest_path}: missing interface keys {missing_keys}")
+        display_name = str(interface["display_name"]).strip()
+        default_prompt = str(interface["default_prompt"]).strip()
+        if display_name != "Libro.AgentWCAG":
+            raise ValueError(f"{manifest_path}: interface.display_name must be Libro.AgentWCAG")
+        if "$libro-wcag" not in default_prompt:
+            raise ValueError(f"{manifest_path}: interface.default_prompt must reference $libro-wcag")
 
 
 def _parse_updated_at(value: str, file_path: Path) -> None:
@@ -109,6 +195,7 @@ def _compute_bundle_hash(payload: dict[str, Any]) -> str:
 def _validate_single_policy_bundle(
     file_path: Path,
     payload: dict[str, Any],
+    skill_root: Path | None = None,
 ) -> None:
     keys = list(payload.keys())
     if keys != POLICY_BUNDLE_REQUIRED_KEYS:
@@ -152,6 +239,17 @@ def _validate_single_policy_bundle(
 
     payload["include_rules"] = _normalize_rule_list(include_rules, "include_rules", file_path)
     payload["ignore_rules"] = _normalize_rule_list(ignore_rules, "ignore_rules", file_path)
+
+    if skill_root is not None:
+        known_rules = _load_known_rules(skill_root)
+        if known_rules:
+            all_bundle_rules = set(payload["include_rules"]) | set(payload["ignore_rules"])
+            unknown = sorted(all_bundle_rules - known_rules)
+            if unknown:
+                print(
+                    f"Warning: {file_path}: unknown rule IDs not in scanner/remediation registry: {unknown}",
+                    file=sys.stderr,
+                )
 
     if not isinstance(bundle_hash, str) or not re.match(r"^[0-9a-f]{64}$", bundle_hash):
         raise ValueError(f"{file_path}: bundle_hash must be a 64-char lowercase hex sha256")
@@ -231,7 +329,8 @@ def validate_policy_bundles(repo_root: Path) -> None:
         payload = json.loads(file_path.read_text(encoding="utf-8"))
         if not isinstance(payload, dict):
             raise ValueError(f"{file_path}: payload must be a JSON object")
-        _validate_single_policy_bundle(file_path, payload)
+        skill_root = repo_root / "skills" / "libro-wcag"
+        _validate_single_policy_bundle(file_path, payload, skill_root=skill_root)
         _validate_bundle_explain_policy_compatibility(repo_root, payload)
 
 

@@ -25,7 +25,135 @@
       },
       "additionalProperties": true
     },
-    "run_meta": {
+    "run_meta": {"$ref": "#/$defs/runMeta"},
+    "target": {"$ref": "#/$defs/target"},
+    "standard": {"$ref": "#/$defs/standard"},
+    "findings": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/finding"}
+    },
+    "fixes": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/fix"}
+    },
+    "citations": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/citation"}
+    },
+    "summary": {"$ref": "#/$defs/summary"}
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "executionMode": {
+      "type": "string",
+      "enum": ["audit-only", "suggest-only", "apply-fixes"]
+    },
+    "taskMode": {
+      "type": "string",
+      "enum": ["create", "modify"]
+    },
+    "wcagVersion": {
+      "type": "string",
+      "enum": ["2.0", "2.1", "2.2"]
+    },
+    "conformanceLevel": {
+      "type": "string",
+      "enum": ["A", "AA", "AAA"]
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["critical", "serious", "moderate", "minor", "info"]
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low"]
+    },
+    "findingStatus": {
+      "type": "string",
+      "enum": ["open", "fixed", "partial", "needs-review"]
+    },
+    "fixStatus": {
+      "type": "string",
+      "enum": ["planned", "implemented", "verified"]
+    },
+    "fixability": {
+      "type": "string",
+      "enum": ["auto-fix", "assisted", "manual"]
+    },
+    "verificationStatus": {
+      "type": "string",
+      "enum": ["not-run", "diff-generated", "verified", "manual-review"]
+    },
+    "toolStatus": {
+      "type": "string",
+      "enum": ["ok", "skipped", "error"]
+    },
+    "remediationPriority": {
+      "type": "string",
+      "enum": ["high", "medium", "low"]
+    },
+    "citation": {
+      "type": "object",
+      "required": ["finding_id", "sc", "url"],
+      "properties": {
+        "finding_id": {"type": "string"},
+        "sc": {"type": "string"},
+        "url": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "beforeAfterReference": {
+      "type": "object",
+      "required": ["target"],
+      "properties": {
+        "finding_id": {"type": "string"},
+        "target": {"type": "string"},
+        "before_status": {"type": "string"},
+        "after_status": {"type": "string"}
+      },
+      "additionalProperties": true
+    },
+    "verificationEvidence": {
+      "type": "object",
+      "required": ["type", "status"],
+      "properties": {
+        "type": {"type": "string"},
+        "status": {"type": "string"},
+        "source": {
+          "oneOf": [
+            {"type": "string"},
+            {
+              "type": "array",
+              "items": {"type": "string"}
+            }
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "debtTrendCounts": {
+      "type": "object",
+      "required": ["new", "accepted", "retired", "regressed"],
+      "properties": {
+        "new": {"type": "integer", "minimum": 0},
+        "accepted": {"type": "integer", "minimum": 0},
+        "retired": {"type": "integer", "minimum": 0},
+        "regressed": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": true
+    },
+    "debtTrendDeltaCounts": {
+      "type": "object",
+      "required": ["new", "accepted", "retired", "regressed"],
+      "properties": {
+        "new": {"type": "integer"},
+        "accepted": {"type": "integer"},
+        "retired": {"type": "integer"},
+        "regressed": {"type": "integer"}
+      },
+      "additionalProperties": true
+    },
+    "runMeta": {
       "type": "object",
       "required": [
         "generated_at",
@@ -41,8 +169,82 @@
         "report_schema_version"
       ],
       "properties": {
+        "generated_at": {"type": "string"},
+        "workflow_version": {"type": "string"},
+        "execution_mode": {"$ref": "#/$defs/executionMode"},
+        "output_language": {"type": "string"},
+        "files_modified": {"type": "boolean"},
+        "modification_owner": {
+          "type": "string",
+          "enum": ["agent-or-adapter", "core-workflow"]
+        },
+        "diff_artifacts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "type"],
+            "properties": {
+              "path": {"type": "string"},
+              "type": {"type": "string"}
+            },
+            "additionalProperties": true
+          }
+        },
+        "verification_evidence": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/verificationEvidence"}
+        },
+        "tools": {
+          "type": "object",
+          "required": ["axe", "lighthouse"],
+          "properties": {
+            "axe": {"$ref": "#/$defs/toolStatus"},
+            "lighthouse": {"$ref": "#/$defs/toolStatus"}
+          },
+          "additionalProperties": true
+        },
+        "notes": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
         "report_schema_version": {"type": "string", "const": "1.0.0"},
-        "report_schema_artifact": {"type": "string"}
+        "report_schema_artifact": {"type": "string"},
+        "scanner_failures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["tool", "message", "classification"],
+            "properties": {
+              "tool": {"type": "string"},
+              "message": {"type": "string"},
+              "classification": {"type": "string"}
+            },
+            "additionalProperties": true
+          }
+        },
+        "debt_trend": {
+          "type": "object",
+          "required": [
+            "schema_version",
+            "window",
+            "artifact_path",
+            "latest_counts",
+            "delta_from_previous",
+            "history_meta"
+          ],
+          "properties": {
+            "schema_version": {"type": "string"},
+            "window": {"type": "integer", "minimum": 1},
+            "artifact_path": {"type": "string"},
+            "latest_counts": {"$ref": "#/$defs/debtTrendCounts"},
+            "delta_from_previous": {"$ref": "#/$defs/debtTrendDeltaCounts"},
+            "history_meta": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": true
+        }
       },
       "additionalProperties": true
     },
@@ -51,7 +253,7 @@
       "required": ["value", "task_mode"],
       "properties": {
         "value": {"type": "string"},
-        "task_mode": {"type": "string"}
+        "task_mode": {"$ref": "#/$defs/taskMode"}
       },
       "additionalProperties": true
     },
@@ -59,43 +261,245 @@
       "type": "object",
       "required": ["wcag_version", "conformance_level"],
       "properties": {
-        "wcag_version": {"type": "string"},
-        "conformance_level": {"type": "string"}
+        "wcag_version": {"$ref": "#/$defs/wcagVersion"},
+        "conformance_level": {"$ref": "#/$defs/conformanceLevel"}
       },
       "additionalProperties": true
     },
-    "findings": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["id", "source", "rule_id", "severity", "changed_target", "status"],
-        "properties": {
-          "id": {"type": "string"},
-          "source": {"type": "string"},
-          "rule_id": {"type": "string"},
-          "severity": {"type": "string"},
-          "changed_target": {"type": "string"},
-          "status": {"type": "string"}
+    "finding": {
+      "type": "object",
+      "required": [
+        "id",
+        "source",
+        "sources",
+        "rule_id",
+        "severity",
+        "confidence",
+        "sc",
+        "current",
+        "changed_target",
+        "status",
+        "fixability",
+        "verification_status",
+        "manual_review_required"
+      ],
+      "properties": {
+        "id": {"type": "string"},
+        "source": {"type": "string"},
+        "sources": {
+          "type": "array",
+          "items": {"type": "string"}
         },
-        "additionalProperties": true
-      }
+        "rule_id": {"type": "string"},
+        "severity": {"$ref": "#/$defs/severity"},
+        "confidence": {"$ref": "#/$defs/confidence"},
+        "sc": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "current": {"type": "string"},
+        "changed_target": {"type": "string"},
+        "source_line": {"type": ["integer", "null"], "minimum": 1},
+        "source_column": {"type": ["integer", "null"], "minimum": 1},
+        "status": {"$ref": "#/$defs/findingStatus"},
+        "fixability": {"$ref": "#/$defs/fixability"},
+        "verification_status": {"$ref": "#/$defs/verificationStatus"},
+        "manual_review_required": {"type": "boolean"},
+        "risk_level": {"type": "string"},
+        "rule_family": {"type": "string"},
+        "downgrade_reason": {
+          "oneOf": [
+            {"type": "string"},
+            {"type": "null"}
+          ]
+        },
+        "before_after_targets": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/beforeAfterReference"}
+        },
+        "citations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["sc", "url"],
+            "properties": {
+              "sc": {"type": "string"},
+              "url": {"type": "string"}
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
     },
-    "fixes": {
-      "type": "array",
-      "items": {"type": "object", "additionalProperties": true}
-    },
-    "citations": {
-      "type": "array",
-      "items": {"type": "object", "additionalProperties": true}
+    "fix": {
+      "type": "object",
+      "required": [
+        "id",
+        "finding_id",
+        "description",
+        "changed_target",
+        "status",
+        "remediation_priority",
+        "confidence",
+        "auto_fix_supported",
+        "fixability",
+        "verification_status",
+        "manual_review_required",
+        "framework_hints"
+      ],
+      "properties": {
+        "id": {"type": "string"},
+        "finding_id": {"type": "string"},
+        "description": {"type": "string"},
+        "changed_target": {"type": "string"},
+        "status": {"$ref": "#/$defs/fixStatus"},
+        "remediation_priority": {"$ref": "#/$defs/remediationPriority"},
+        "confidence": {"$ref": "#/$defs/confidence"},
+        "auto_fix_supported": {"type": "boolean"},
+        "fixability": {"$ref": "#/$defs/fixability"},
+        "verification_status": {"$ref": "#/$defs/verificationStatus"},
+        "manual_review_required": {"type": "boolean"},
+        "risk_level": {"type": "string"},
+        "rule_family": {"type": "string"},
+        "downgrade_reason": {
+          "oneOf": [
+            {"type": "string"},
+            {"type": "null"}
+          ]
+        },
+        "before_after_targets": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/beforeAfterReference"}
+        },
+        "fix_blockers": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "assisted_steps": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "verification_rules": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "verification_evidence": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/verificationEvidence"}
+        },
+        "framework_hints": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
     },
     "summary": {
       "type": "object",
-      "required": ["total_findings"],
+      "required": [
+        "total_findings",
+        "fixed_findings",
+        "needs_manual_review",
+        "manual_required_count",
+        "change_summary",
+        "diff_summary",
+        "before_after_targets",
+        "remediation_lifecycle",
+        "fix_blockers",
+        "auto_fixed_count"
+      ],
       "properties": {
-        "total_findings": {"type": "integer"}
+        "total_findings": {"type": "integer", "minimum": 0},
+        "fixed_findings": {"type": "integer", "minimum": 0},
+        "auto_fixed_count": {"type": "integer", "minimum": 0},
+        "needs_manual_review": {"type": "integer", "minimum": 0},
+        "manual_required_count": {"type": "integer", "minimum": 0},
+        "change_summary": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "finding_id",
+              "rule_id",
+              "changed_target",
+              "recommended_action",
+              "remediation_priority"
+            ],
+            "properties": {
+              "finding_id": {"type": "string"},
+              "rule_id": {"type": "string"},
+              "changed_target": {"type": "string"},
+              "recommended_action": {"type": "string"},
+              "remediation_priority": {"$ref": "#/$defs/remediationPriority"}
+            },
+            "additionalProperties": true
+          }
+        },
+        "diff_summary": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "before_after_targets": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/beforeAfterReference"}
+        },
+        "remediation_lifecycle": {
+          "type": "object",
+          "required": ["planned", "implemented", "verified", "manual_review_required"],
+          "properties": {
+            "planned": {"type": "integer", "minimum": 0},
+            "implemented": {"type": "integer", "minimum": 0},
+            "verified": {"type": "integer", "minimum": 0},
+            "manual_review_required": {"type": "integer", "minimum": 0}
+          },
+          "additionalProperties": true
+        },
+        "fix_blockers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["finding_id", "rule_id", "blockers"],
+            "properties": {
+              "finding_id": {"type": "string"},
+              "rule_id": {"type": "string"},
+              "blockers": {
+                "type": "array",
+                "items": {"type": "string"}
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "scanner_failures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["tool", "message", "classification"],
+            "properties": {
+              "tool": {"type": "string"},
+              "message": {"type": "string"},
+              "classification": {"type": "string"}
+            },
+            "additionalProperties": true
+          }
+        },
+        "debt_trend": {
+          "type": "object",
+          "required": ["window", "latest_counts", "delta_from_previous", "history_points_used"],
+          "properties": {
+            "window": {"type": "integer", "minimum": 1},
+            "latest_counts": {"$ref": "#/$defs/debtTrendCounts"},
+            "delta_from_previous": {"$ref": "#/$defs/debtTrendDeltaCounts"},
+            "history_points_used": {"type": "integer", "minimum": 0}
+          },
+          "additionalProperties": true
+        }
       },
       "additionalProperties": true
     }
-  },
-  "additionalProperties": true
+  }
 }
