@@ -11,6 +11,7 @@ import os
 import socket
 import shutil
 import subprocess
+import sys
 import threading
 import time
 from pathlib import Path
@@ -244,6 +245,17 @@ def _find_browser_executable() -> str | None:
             Path(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"),
         ]
         for candidate in windows_candidates:
+            if candidate.exists():
+                return str(candidate)
+
+    if sys.platform == "darwin":
+        macos_candidates = [
+            Path("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
+            Path("/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"),
+            Path.home() / "Applications" / "Google Chrome.app" / "Contents" / "MacOS" / "Google Chrome",
+            Path.home() / "Applications" / "Microsoft Edge.app" / "Contents" / "MacOS" / "Microsoft Edge",
+        ]
+        for candidate in macos_candidates:
             if candidate.exists():
                 return str(candidate)
 
