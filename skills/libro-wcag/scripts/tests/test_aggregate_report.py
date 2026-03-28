@@ -19,7 +19,7 @@ from aggregate_report import (
     load_reports,
     write_aggregate_json,
 )
-from report_renderers import render_csv, render_markdown, render_terminal
+from report_renderers import render_badge, render_csv, render_markdown, render_terminal
 
 
 def _make_finding(
@@ -468,6 +468,62 @@ class TestMarkdownBaselineDiff(unittest.TestCase):
         agg = build_aggregate_report([_make_report()])
         output = render_markdown(agg, language="en")
         self.assertNotIn("Baseline Diff", output)
+
+
+class TestScannerHealth(unittest.TestCase):
+    """A10: Scanner Health Status."""
+
+    def test_all_ok(self) -> None:
+        report = _make_report(findings=[_make_finding()])
+        agg = build_aggregate_report([report])
+        health = agg["scanner_health"]
+        self.assertEqual(health["tools"]["axe"], "ok")
+        self.assertEqual(health["tools"]["lighthouse"], "ok")
+        self.assertEqual(health["scanner_failures"], [])
+
+    def test_scanner_failure_collected(self) -> None:
+        report = _make_report(findings=[])
+        report["run_meta"]["scanner_failures"] = [
+            {"tool": "axe", "message": "timeout", "classification": "transient"},
+        ]
+        report["run_meta"]["tools"]["axe"] = "error"
+        agg = build_aggregate_report([report])
+        health = agg["scanner_health"]
+        self.assertEqual(health["tools"]["axe"], "error")
+        self.assertEqual(len(health["scanner_failures"]), 1)
+
+
+class TestBadgeRenderer(unittest.TestCase):
+    """B6: Badge Output."""
+
+    def test_badge_green_for_high_compliance(self) -> None:
+        report = _make_report(target="clean.html", findings=[])
+        agg = build_aggregate_report([report])
+        output = render_badge(agg)
+        data = json.loads(output)
+        self.assertEqual(data["schemaVersion"], 1)
+        self.assertEqual(data["label"], "WCAG")
+        self.assertEqual(data["color"], "brightgreen")
+
+    def test_badge_red_for_low_compliance(self) -> None:
+        reports = [
+            _make_report(target=f"page{i}.html", findings=[_make_finding(severity="critical")])
+            for i in range(5)
+        ]
+        agg = build_aggregate_report(reports)
+        output = render_badge(agg)
+        data = json.loads(output)
+        self.assertEqual(data["color"], "red")
+
+    def test_badge_yellow_for_moderate_compliance(self) -> None:
+        reports = [
+            _make_report(target="ok.html", findings=[]),
+            _make_report(target="bad.html", findings=[_make_finding()]),
+        ]
+        agg = build_aggregate_report(reports)
+        output = render_badge(agg)
+        data = json.loads(output)
+        self.assertEqual(data["color"], "yellow")
 
 
 class TestLoadReports(unittest.TestCase):

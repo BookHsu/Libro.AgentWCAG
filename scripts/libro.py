@@ -119,7 +119,7 @@ def parse_args() -> argparse.Namespace:
     )
     report_parser.add_argument(
         "--format",
-        choices=("json", "terminal", "markdown", "csv"),
+        choices=("json", "terminal", "markdown", "csv", "badge"),
         default="terminal",
         help="Output format (default: terminal).",
     )
@@ -300,7 +300,7 @@ def handle_report(args: argparse.Namespace) -> int:
     import glob as glob_mod
     sys.path.insert(0, str(REPO_ROOT / "skills" / "libro-wcag" / "scripts"))
     from aggregate_report import build_aggregate_report, load_reports, write_aggregate_json
-    from report_renderers import render_csv, render_markdown, render_terminal
+    from report_renderers import render_badge, render_csv, render_markdown, render_terminal
 
     def _resolve_report_paths(inputs: list[str]) -> list[Path]:
         paths: list[Path] = []
@@ -350,6 +350,8 @@ def handle_report(args: argparse.Namespace) -> int:
         output_text = render_markdown(aggregate, language=args.language)
     elif fmt == "csv":
         output_text = render_csv(reports, aggregate=aggregate)
+    elif fmt == "badge":
+        output_text = render_badge(aggregate)
     else:
         output_text = render_terminal(aggregate, language=args.language)
 

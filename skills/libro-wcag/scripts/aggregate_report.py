@@ -292,6 +292,42 @@ def _build_auto_fix_opportunity(
     return result
 
 
+def _build_scanner_health(
+    reports: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """A10: Scanner Health Status — tool versions, failures, timings."""
+    tools_status: dict[str, set[str]] = {}
+    scanner_failures: list[dict[str, str]] = []
+
+    for report in reports:
+        run_meta = report.get("run_meta", {})
+        tools = run_meta.get("tools", {})
+        for tool_name, status in tools.items():
+            tools_status.setdefault(tool_name, set()).add(status)
+        for failure in run_meta.get("scanner_failures", []):
+            scanner_failures.append({
+                "tool": failure.get("tool", "unknown"),
+                "message": failure.get("message", ""),
+                "classification": failure.get("classification", "error"),
+                "target": report.get("target", {}).get("value", ""),
+            })
+
+    tools_summary: dict[str, str] = {}
+    for tool_name, statuses in tools_status.items():
+        if statuses == {"ok"}:
+            tools_summary[tool_name] = "ok"
+        elif "error" in statuses:
+            tools_summary[tool_name] = "error"
+        else:
+            tools_summary[tool_name] = "mixed"
+
+    return {
+        "tools": tools_summary,
+        "scanner_failures": scanner_failures,
+        "total_reports": len(reports),
+    }
+
+
 def _build_baseline_diff(
     reports: list[dict[str, Any]],
     baseline_reports: list[dict[str, Any]] | None,
@@ -369,6 +405,7 @@ def build_aggregate_report(
     remediation = _build_remediation_lifecycle(reports, all_findings)
     auto_fix = _build_auto_fix_opportunity(all_findings, reports)
     baseline_diff = _build_baseline_diff(reports, baseline_reports)
+    scanner_health = _build_scanner_health(reports)
 
     return {
         "report_type": "aggregate",
@@ -386,6 +423,7 @@ def build_aggregate_report(
         "remediation_lifecycle": remediation,
         "baseline_diff": baseline_diff,
         "auto_fix_opportunity": auto_fix,
+        "scanner_health": scanner_health,
     }
 
 
