@@ -10,6 +10,7 @@ This matrix defines the currently supported runtime and scanner prerequisites.
 | Scanner tools | `@axe-core/cli`, `lighthouse` via `npx` | Missing tools cause scanner-path failures. |
 | OS scripts | Windows PowerShell + POSIX shell | Wrapper scripts are provided for both. |
 | Agent adapters | Codex, Claude, Gemini, Copilot | Installed via `scripts/install-agent.py`. |
+| MCP server | Python 3.12+, `mcp>=1.2,<2` | Hash-pinned lock file at `mcp-server/requirements.lock`. MCP tools are read-only (audit + suggest); `apply-fixes` is not exposed via MCP. |
 | Release packaging | Python stdlib `zipfile`, local filesystem write access | `scripts/package-release.py` builds deterministic ZIP bundles, checksums, and release manifest assets. |
 
 ## Baseline prerequisites
