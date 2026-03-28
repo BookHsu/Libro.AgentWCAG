@@ -18,6 +18,8 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - `scripts/package-release.py` now fails fast when required release inputs are missing and excludes temporary skill files such as `.tmp`, `.bak`, and editor backup files from shipped bundles.
 - Scanner command execution now distinguishes permission-denied failures from transient process-launch `OSError` conditions, improving retry classification.
 - Lighthouse debug-port readiness now uses the remaining global timeout instead of a fixed 0.5 second socket window.
+- Schema artifact staging now rejects mismatched `report_schema.version.const` values instead of silently recording the wrong schema version in generated reports.
+- Browser discovery now checks standard macOS Chrome and Edge app bundle paths before giving up.
 - `rewrite_helpers.py` now uses `re.Pattern` type hints instead of deprecated `typing.Pattern` on Python 3.12+.
 - Repository docs now include a maintained `docs/README.md` section guide plus explicit `CONTRIBUTING.md` and `SECURITY.md` policies for contributors and maintainers.
 - Adapter usage examples now cross-reference the workspace MCP sample configs and explain why Copilot uses `servers` while Claude and Gemini use `mcpServers`.
@@ -31,6 +33,7 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - Regression coverage for skill validation contract checks and release-bundle changelog contents.
 - Regression coverage for release-packaging input validation and temporary-file exclusion.
 - Regression coverage for scanner launch error classification and debug-port timeout handling.
+- Regression coverage for macOS browser bundle discovery, schema-version mismatch rejection, and nested normalize-report output directories.
 - Explicit `__init__.py` and `py.typed` markers for `skills/libro-wcag/scripts`, plus contract/release checks that keep the typed package metadata in shipped bundles.
 
 ## [1.2.1] - 2026-03-25

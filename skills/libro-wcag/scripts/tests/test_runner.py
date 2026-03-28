@@ -410,6 +410,27 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(artifact['kind'], 'machine-report-json')
         self.assertGreater(artifact['size_bytes'], 0)
         self.assertEqual(len(artifact['sha256']), 64)
+
+    def test_stage_report_schema_artifact_rejects_version_mismatch(self) -> None:
+        workspace = self._workspace('schema-version-mismatch')
+        schema_path = workspace / 'wcag-report-1.0.0.schema.json'
+        schema_path.write_text(
+            json.dumps(
+                {
+                    'properties': {
+                        'report_schema': {
+                            'properties': {
+                                'version': {'const': '0.9.0'},
+                            }
+                        }
+                    }
+                }
+            ),
+            encoding='utf-8',
+        )
+        with patch("report_artifacts._report_schema_source_path", return_value=schema_path):
+            with self.assertRaisesRegex(ValueError, r"report schema version mismatch: expected 1\.0\.0, got '0\.9\.0'"):
+                report_artifacts._stage_report_schema_artifact(workspace / 'out')
     @patch("scanner_runtime.subprocess.run")
     def test_run_command_returns_stdout_on_success(self, mock_run) -> None:
         mock_run.return_value = type("Result", (), {"returncode": 0, "stdout": "ok", "stderr": ""})()
@@ -471,6 +492,16 @@ class RunnerTests(unittest.TestCase):
     def test_resolve_npx_executable_prefers_cmd_on_windows(self, mock_which) -> None:
         mock_which.side_effect = lambda tool: "C:/Program Files/nodejs/npx.cmd" if tool == "npx.cmd" else None
         self.assertEqual(scanner_runtime._resolve_npx_executable(), "npx.cmd")
+
+    @patch("scanner_runtime.shutil.which", return_value=None)
+    @patch("scanner_runtime.os.name", "posix")
+    @patch("scanner_runtime.sys.platform", "darwin")
+    @patch("scanner_runtime.Path.home", return_value=Path("/Users/tester"))
+    @patch("scanner_runtime.Path.exists")
+    def test_find_browser_executable_checks_macos_app_bundle_paths(self, mock_exists, _mock_home, _mock_which) -> None:
+        chrome_path = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+        mock_exists.side_effect = [True]
+        self.assertEqual(scanner_runtime._find_browser_executable(), chrome_path)
 
     def test_try_run_axe_uses_resolved_npx_executable(self) -> None:
         output_dir = Path(__file__).parent / "fixtures" / "_tmp-npx-command"
