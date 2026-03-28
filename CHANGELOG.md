@@ -18,6 +18,8 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 ### Fixed
 
 - `_report_to_sarif()` now generates RFC 3986 compliant `file:///` URIs for local targets on Windows, instead of bare `C:/path` style strings that some SARIF consumers cannot parse.
+- SARIF output now includes `helpUri` (W3C Understanding URL), `help` text, `ruleIndex`, and `invocations` object per SARIF 2.1.0 spec, improving tool interoperability.
+- SARIF results now include `contextRegion` (±1 line around the finding) and `snippet` (CSS selector) for better IDE and analysis tool integration.
 
 ### Changed
 
