@@ -292,6 +292,104 @@ class TestMarkdownRenderer(unittest.TestCase):
         self.assertIn("Scope", output)
 
 
+class TestWcagPrincipleCoverage(unittest.TestCase):
+    """A5: WCAG SC Coverage Analysis."""
+
+    def test_principles_grouped_correctly(self) -> None:
+        report = _make_report(findings=[
+            _make_finding(rule_id="image-alt"),          # sc=["1.1.1"] → perceivable
+            _make_finding(rule_id="button-name"),        # sc=["1.1.1"] → perceivable
+            _make_finding(rule_id="link-name"),          # sc=["1.1.1"] → perceivable
+        ])
+        # Override SCs for diversity
+        report["findings"][1]["sc"] = ["4.1.2"]  # robust
+        report["findings"][2]["sc"] = ["2.4.4"]  # operable
+
+        agg = build_aggregate_report([report])
+        principles = agg["wcag_principles"]
+        self.assertEqual(principles["perceivable"]["count"], 1)
+        self.assertIn("1.1.1", principles["perceivable"]["sc"])
+        self.assertEqual(principles["operable"]["count"], 1)
+        self.assertIn("2.4.4", principles["operable"]["sc"])
+        self.assertEqual(principles["robust"]["count"], 1)
+        self.assertIn("4.1.2", principles["robust"]["sc"])
+        self.assertEqual(principles["understandable"]["count"], 0)
+
+    def test_empty_findings_all_zeros(self) -> None:
+        agg = build_aggregate_report([])
+        for p in ("perceivable", "operable", "understandable", "robust"):
+            self.assertEqual(agg["wcag_principles"][p]["count"], 0)
+            self.assertEqual(agg["wcag_principles"][p]["sc"], [])
+
+
+class TestTopRules(unittest.TestCase):
+    """A6: Top Issues Analysis."""
+
+    def test_rules_ranked_by_frequency(self) -> None:
+        report = _make_report(findings=[
+            _make_finding(rule_id="image-alt"),
+            _make_finding(rule_id="image-alt"),
+            _make_finding(rule_id="image-alt"),
+            _make_finding(rule_id="button-name"),
+            _make_finding(rule_id="link-name"),
+        ])
+        agg = build_aggregate_report([report])
+        top = agg["top_rules"]
+        self.assertEqual(top[0]["rule_id"], "image-alt")
+        self.assertEqual(top[0]["count"], 3)
+        self.assertEqual(len(top), 3)
+
+    def test_empty_findings_no_rules(self) -> None:
+        agg = build_aggregate_report([])
+        self.assertEqual(agg["top_rules"], [])
+
+
+class TestAutoFixOpportunityEnhanced(unittest.TestCase):
+    """A7: Enhanced auto-fix opportunity with framework groups."""
+
+    def test_framework_groups_from_fix_hints(self) -> None:
+        report = _make_report(findings=[_make_finding()])
+        report["fixes"] = [
+            {
+                "id": "FIX-001",
+                "finding_id": "F-image-alt-001",
+                "description": "Add alt",
+                "changed_target": "",
+                "status": "planned",
+                "remediation_priority": "high",
+                "confidence": "high",
+                "auto_fix_supported": True,
+                "fixability": "auto-fix",
+                "verification_status": "not-run",
+                "manual_review_required": False,
+                "framework_hints": {"react": {"component": "Image"}},
+            },
+        ]
+        agg = build_aggregate_report([report])
+        auto_fix = agg["auto_fix_opportunity"]
+        self.assertIn("framework_groups", auto_fix)
+        self.assertEqual(auto_fix["framework_groups"][0]["framework"], "react")
+
+
+class TestRendererP1Sections(unittest.TestCase):
+    """Verify A5 and A6 appear in terminal and markdown renderers."""
+
+    def test_terminal_includes_principles_and_top_issues(self) -> None:
+        report = _make_report(findings=[_make_finding()])
+        agg = build_aggregate_report([report])
+        output = render_terminal(agg, language="zh-TW")
+        self.assertIn("WCAG 原則涵蓋分析", output)
+        self.assertIn("熱點分析", output)
+
+    def test_markdown_includes_principles_and_top_issues(self) -> None:
+        report = _make_report(findings=[_make_finding()])
+        agg = build_aggregate_report([report])
+        output = render_markdown(agg, language="en")
+        self.assertIn("WCAG Principle Coverage", output)
+        self.assertIn("Top Issues", output)
+        self.assertIn("image-alt", output)
+
+
 class TestLoadReports(unittest.TestCase):
     def test_load_multiple_files(self) -> None:
         reports_data = [

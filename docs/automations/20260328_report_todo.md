@@ -41,14 +41,17 @@
   > 📋 **優先級：P0。** 開發者最需要知道「改哪裡」。
   > ✅ 實作於 `aggregate_report.py:_build_targets()` + `report_renderers.py` `<details>` 折疊
 
-- [ ] **A5** **WCAG SC 涵蓋分析（Success Criteria Coverage）**：有觸發的 SC 清單；按 WCAG 四原則分群（Perceivable / Operable / Understandable / Robust）各原則缺失佔比；未涵蓋的 SC（掃描器無法檢測，需人工審核）。
+- [x] **A5** **WCAG SC 涵蓋分析（Success Criteria Coverage）**：有觸發的 SC 清單；按 WCAG 四原則分群（Perceivable / Operable / Understandable / Robust）各原則缺失佔比；未涵蓋的 SC（掃描器無法檢測，需人工審核）。
   > 📋 **優先級：P1。** 合規報告必備。
+  > ✅ 實作於 `aggregate_report.py:_build_wcag_principles()` + 兩種 renderer
 
-- [ ] **A6** **熱點分析（Top Issues）**：Top N 規則（出現次數排序）；Top N 目標（缺失最多的頁面）；跨目標重複出現的系統性問題。
+- [x] **A6** **熱點分析（Top Issues）**：Top N 規則（出現次數排序）；Top N 目標（缺失最多的頁面）；跨目標重複出現的系統性問題。
   > 📋 **優先級：P1。** 幫助決定修復優先級。
+  > ✅ 實作於 `aggregate_report.py:_build_top_rules()` + 兩種 renderer
 
-- [ ] **A7** **自動修正機會（Auto-Fix Opportunity）**：可修正清單、按框架分群建議（React / Vue / Next.js）、預計修正後殘餘缺失數、建議執行指令。
+- [x] **A7** **自動修正機會（Auto-Fix Opportunity）**：可修正清單、按框架分群建議（React / Vue / Next.js）、預計修正後殘餘缺失數、建議執行指令。
   > 📋 **優先級：P1。**
+  > ✅ 實作於 `aggregate_report.py:_build_auto_fix_opportunity()` — 含 framework_groups
 
 - [ ] **A8** **修復生命週期（Remediation Lifecycle）**：planned → implemented → verified 各階段數量；已修復但未驗證的項目；需要人工審核的項目；修復進度百分比。
   > 📋 **優先級：P2。** 追蹤修復進度。
@@ -92,8 +95,9 @@
   > 📋 **優先級：P0。** 核心新功能。
   > ✅ 實作於 `scripts/libro.py:handle_report()` — 支援 `--format json|terminal|markdown`、`--output`、`--language`
 
-- [ ] **C2** **`libro scan` 子命令**：接受目錄 / glob / `--targets <file>` 清單，對每個目標呼叫 `run_accessibility_audit.py`，支援 `--parallel <N>` 並行、`--output-dir` 指定輸出根目錄。錯誤收集與部分失敗處理。
+- [x] **C2** **`libro scan` 子命令**：接受目錄 / glob / `--targets <file>` 清單，對每個目標呼叫 `run_accessibility_audit.py`，支援 `--parallel <N>` 並行、`--output-dir` 指定輸出根目錄。錯誤收集與部分失敗處理。
   > 📋 **優先級：P1。** `libro report` 可先用手動跑多次 `libro audit` 的結果。
+  > ✅ 實作於 `scripts/libro.py:handle_scan()` — 支援 `--parallel`、`--output-dir`、`--targets`、`--execution-mode`
 
 ---
 
