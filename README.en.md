@@ -66,8 +66,35 @@ Verification and removal:
 
 ```powershell
 python .\scripts\libro.py doctor claude --verify-manifest-integrity
+python .\scripts\libro.py doctor claude --check-scanners   # verify Node.js/npx/axe/lighthouse
 python .\scripts\libro.py remove claude
 ```
+
+## CLI Quick Start
+
+After installation, you can run audits directly from the CLI without going through an AI agent:
+
+```powershell
+# Audit a URL
+python .\scripts\libro.py audit https://example.com
+
+# Audit a local file with custom output directory
+python .\scripts\libro.py audit ./src/index.html --output-dir out/wcag
+
+# Audit with remediation suggestions (suggest-only mode)
+python .\scripts\libro.py audit ./src/index.html --execution-mode suggest-only
+
+# Auto-fix supported issues
+python .\scripts\libro.py audit ./src/index.html --execution-mode apply-fixes
+
+# Check scanner toolchain availability
+python .\scripts\libro.py audit --preflight-only
+```
+
+After a run completes, outputs appear in `out/`:
+
+- `wcag-report.json` — structured JSON report
+- `wcag-report.md` — Markdown summary table
 
 ## Use
 

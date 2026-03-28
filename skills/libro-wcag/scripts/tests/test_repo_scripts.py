@@ -252,6 +252,35 @@ class RepoScriptTests(unittest.TestCase):
             payloads = self._decode_json_stream(doctor.stdout)
             self.assertTrue(all(item['manifest_integrity']['verified'] for item in payloads))
 
+    def test_doctor_check_scanners_reports_toolchain_status(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            dest = os.path.join(tmp, 'codex-skill')
+            install = subprocess.run(
+                [sys.executable, 'scripts/install-agent.py', '--agent', 'codex', '--dest', dest],
+                cwd=self.repo_root, capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(install.returncode, 0, install.stdout + install.stderr)
+            doctor = subprocess.run(
+                [sys.executable, 'scripts/doctor-agent.py', '--agent', 'codex', '--dest', dest, '--check-scanners'],
+                cwd=self.repo_root, capture_output=True, text=True, check=False,
+            )
+            payload = json.loads(doctor.stdout)
+            self.assertIn('scanner_toolchain', payload)
+            self.assertIn('ok', payload['scanner_toolchain'])
+            self.assertIn('tools', payload['scanner_toolchain'])
+            for tool_name in ('npx', '@axe-core/cli', 'lighthouse'):
+                self.assertIn(tool_name, payload['scanner_toolchain']['tools'])
+                self.assertIn('status', payload['scanner_toolchain']['tools'][tool_name])
+
+    def test_libro_audit_preflight_only_returns_json(self) -> None:
+        result = subprocess.run(
+            [sys.executable, 'scripts/libro.py', 'audit', '--preflight-only'],
+            cwd=self.repo_root, capture_output=True, text=True, check=False,
+        )
+        payload = json.loads(result.stdout)
+        self.assertIn('ok', payload)
+        self.assertIn('checks', payload)
+
     def test_force_reinstall_replaces_existing_installation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             destination = Path(tmp) / 'codex-skill'
@@ -410,16 +439,14 @@ class RepoScriptTests(unittest.TestCase):
 
     def test_libro_ps1_wrapper_invokes_unified_cli(self) -> None:
         wrapper = (self.repo_root / 'scripts' / 'libro.ps1').read_text(encoding='utf-8')
-        self.assertIn("[ValidateSet('install','doctor','remove')]", wrapper)
-        self.assertIn("[ValidateSet('codex','claude','gemini','copilot','all')]", wrapper)
+        self.assertIn("[ValidateSet('install','doctor','remove','audit')]", wrapper)
         self.assertIn("Join-Path $PSScriptRoot 'libro.py'", wrapper)
         self.assertIn('python $script @arguments', wrapper)
 
     def test_libro_sh_wrapper_invokes_unified_cli(self) -> None:
         wrapper = (self.repo_root / 'scripts' / 'libro.sh').read_text(encoding='utf-8')
-        self.assertIn('<install|doctor|remove>', wrapper)
-        self.assertIn('codex|claude|gemini|copilot|all', wrapper)
-        self.assertIn('python "$SCRIPT_DIR/libro.py" "$COMMAND" "$AGENT" "$@"', wrapper)
+        self.assertIn('<install|doctor|remove|audit>', wrapper)
+        self.assertIn('python "$SCRIPT_DIR/libro.py" "$COMMAND" "$@"', wrapper)
 
     def test_npm_cli_wrapper_invokes_bundled_python_entrypoint(self) -> None:
         wrapper = (self.repo_root / 'bin' / 'libro.js').read_text(encoding='utf-8')
