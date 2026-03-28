@@ -6,6 +6,14 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ## [Unreleased]
 
+### Added
+
+- `remediation_library.py` now includes `auto_fix_reason` on every rule where `auto_fix_supported` is `False`, explaining why automatic remediation is not feasible (e.g. color-contrast: "Color choices require design intent").
+
+### Changed
+
+- `SKILL.md` and `core-spec.md` now document `output_language` as `en | zh-TW` with explicit fallback-to-`en` behavior for unsupported BCP-47 values, matching the actual runtime capability.
+
 ### Fixed
 
 - `auto_fix.py` now routes button/link/ARIA widget accessible-name remediation through a shared helper and records attribute-based guesses in diff descriptions as `(guessed from: <attr>)` for reviewer traceability.

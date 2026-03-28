@@ -11,7 +11,7 @@ Use this schema as the single source of truth:
   "wcag_version": "2.0 | 2.1 | 2.2",
   "conformance_level": "A | AA | AAA",
   "target": "local file path or URL",
-  "output_language": "string"
+  "output_language": "en | zh-TW"
 }
 ```
 
@@ -20,6 +20,7 @@ Validation rules:
 - `execution_mode` must be `audit-only`, `suggest-only`, or `apply-fixes`.
 - `wcag_version` must be one of `2.0`, `2.1`, `2.2`.
 - `conformance_level` must be one of `A`, `AA`, `AAA`.
+- `output_language` currently supports `en` and `zh-TW` only. Other BCP-47 values are accepted but fall back to `en`. The internal dictionary design allows adding languages in the future.
 - Apply defaults: `suggest-only`, `2.1`, `AA`, `zh-TW`.
 - Allow only `http`, `https`, `file`, or an existing local file path.
 - Existing local paths must be normalized to `file://` URLs before scanner execution.

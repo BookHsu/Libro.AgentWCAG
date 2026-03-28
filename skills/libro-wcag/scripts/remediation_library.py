@@ -10,6 +10,7 @@ DEFAULT_STRATEGY = {
     "priority": "medium",
     "confidence": "medium",
     "auto_fix_supported": False,
+    "auto_fix_reason": "Requires manual review to determine correct remediation",
     "assisted_steps": [
         "Identify the affected DOM node and confirm the semantic role expected by WCAG.",
         "Apply a minimal structural change that preserves existing behavior and layout.",
@@ -86,6 +87,7 @@ RULE_STRATEGIES = {
         "priority": "high",
         "confidence": "medium",
         "auto_fix_supported": False,
+        "auto_fix_reason": "Color choices require design intent",
     },
     "button-name": {
         "summary": "Give each button a discernible accessible name.",
@@ -162,6 +164,7 @@ RULE_STRATEGIES = {
         "priority": "high",
         "confidence": "medium",
         "auto_fix_supported": False,
+        "auto_fix_reason": "Renaming IDs requires understanding of cross-reference relationships",
         "assisted_steps": [
             "Locate duplicated IDs used by aria-* relationships.",
             "Rename duplicated IDs to unique values and update all references.",
@@ -177,6 +180,7 @@ RULE_STRATEGIES = {
         "priority": "medium",
         "confidence": "medium",
         "auto_fix_supported": False,
+        "auto_fix_reason": "Heading hierarchy depends on content structure and design intent",
         "assisted_steps": [
             "Identify heading level jumps in document reading order.",
             "Adjust heading tags or section structure to maintain a logical hierarchy.",
@@ -204,6 +208,7 @@ RULE_STRATEGIES = {
         "priority": "high",
         "confidence": "medium",
         "auto_fix_supported": False,
+        "auto_fix_reason": "Resolving role conflicts requires understanding element purpose",
         "assisted_steps": [
             "Find elements where role='presentation' or role='none' conflicts with interactive semantics.",
             "Remove conflicting role or replace element with semantically correct markup.",
@@ -219,6 +224,7 @@ RULE_STRATEGIES = {
         "priority": "medium",
         "confidence": "medium",
         "auto_fix_supported": False,
+        "auto_fix_reason": "Landmark structure depends on page layout and content organization",
         "assisted_steps": [
             "Locate repeated structural containers and decide whether they should be landmarks (main/nav/aside/section).",
             "Promote non-semantic wrappers to semantic landmarks or add region roles conservatively.",
@@ -234,6 +240,7 @@ RULE_STRATEGIES = {
         "priority": "high",
         "confidence": "medium",
         "auto_fix_supported": False,
+        "auto_fix_reason": "Skip link placement and styling require design coordination",
         "assisted_steps": [
             "Add a first-focusable skip link near the beginning of the document.",
             "Ensure the skip link target points to an existing main content container with a stable id.",
@@ -249,6 +256,7 @@ RULE_STRATEGIES = {
         "priority": "high",
         "confidence": "medium",
         "auto_fix_supported": False,
+        "auto_fix_reason": "Focus order depends on visual layout and interaction design",
         "assisted_steps": [
             "Find elements using positive tabindex and review whether they are natively focusable.",
             "Replace positive tabindex with semantic controls or tabindex='0' only when necessary.",
@@ -264,6 +272,7 @@ RULE_STRATEGIES = {
         "priority": "high",
         "confidence": "medium",
         "auto_fix_supported": False,
+        "auto_fix_reason": "Separating nested controls requires markup restructuring",
         "assisted_steps": [
             "Locate interactive descendants placed inside other interactive ancestors.",
             "Refactor markup so only one interactive root handles the action, or split controls into sibling elements.",
