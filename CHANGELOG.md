@@ -22,6 +22,7 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - Document governance audit (AA1) classifies all formal documents with keep/merge/remove decisions; 20 documents confirmed as authoritative, 11 archive documents identified for removal.
 - `README.md` and `README.en.md` now document MCP read-only limitation and `requirements.lock` availability for production deployments.
 - `supported-environments.md` now includes MCP server as a supported environment with hash-pinned dependency lock file reference.
+- Removed 11 superseded `docs/archive/release/` files; updated `docs/README.md` index with 7 previously unlisted release docs.
 
 ### Fixed
 
