@@ -81,8 +81,9 @@
   > 📋 **優先級：P0。**
   > ✅ 實作於 `report_renderers.py:render_markdown()`
 
-- [ ] **B4** **HTML 輸出**：單一自包含 HTML 檔（inline CSS + inline SVG 圓餅圖/橫條圖，零外部依賴），可瀏覽器開啟、email 附件、存檔交付。`--format html --output wcag-dashboard.html`。
+- [x] **B4** **HTML 輸出**：單一自包含 HTML 檔（inline CSS + inline SVG 圓餅圖/橫條圖，零外部依賴），可瀏覽器開啟、email 附件、存檔交付。`--format html --output wcag-dashboard.html`。
   > 📋 **優先級：P1。** 對外交付最有說服力。
+  > ✅ 實作於 `report_renderers.py:render_html()` — inline CSS/SVG, cards, bar charts
 
 - [x] **B5** **CSV 輸出**：每個 finding 一行，含 target / rule_id / severity / fixability / sc / status / changed_target，Excel 可直接篩選排序。`--format csv`。
   > 📋 **優先級：P2。**

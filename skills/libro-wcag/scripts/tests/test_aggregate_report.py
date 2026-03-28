@@ -19,7 +19,7 @@ from aggregate_report import (
     load_reports,
     write_aggregate_json,
 )
-from report_renderers import render_badge, render_csv, render_markdown, render_terminal
+from report_renderers import render_badge, render_csv, render_html, render_markdown, render_terminal
 
 
 def _make_finding(
@@ -524,6 +524,38 @@ class TestBadgeRenderer(unittest.TestCase):
         output = render_badge(agg)
         data = json.loads(output)
         self.assertEqual(data["color"], "yellow")
+
+
+class TestHtmlRenderer(unittest.TestCase):
+    """B4: HTML Dashboard."""
+
+    def test_html_contains_structure(self) -> None:
+        r1 = _make_report(
+            target="index.html",
+            findings=[_make_finding(severity="critical"), _make_finding(severity="serious")],
+        )
+        r2 = _make_report(target="about.html", findings=[])
+        agg = build_aggregate_report([r1, r2])
+        output = render_html(agg, language="zh-TW")
+        self.assertIn("<!DOCTYPE html>", output)
+        self.assertIn("WCAG 彙總報告", output)
+        self.assertIn("<svg", output)
+        self.assertIn("index.html", output)
+        self.assertIn("</html>", output)
+
+    def test_html_english(self) -> None:
+        report = _make_report(findings=[_make_finding()])
+        agg = build_aggregate_report([report])
+        output = render_html(agg, language="en")
+        self.assertIn("WCAG Aggregate Report", output)
+
+    def test_html_is_self_contained(self) -> None:
+        report = _make_report(findings=[_make_finding()])
+        agg = build_aggregate_report([report])
+        output = render_html(agg)
+        # Must not reference external stylesheets or scripts
+        self.assertNotIn("href=", output.split("<style>")[0])
+        self.assertNotIn("<script src=", output)
 
 
 class TestLoadReports(unittest.TestCase):
