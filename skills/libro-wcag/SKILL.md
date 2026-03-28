@@ -18,7 +18,7 @@ Collect or infer this contract before doing work:
   "wcag_version": "2.0 | 2.1 | 2.2",
   "conformance_level": "A | AA | AAA",
   "target": "local file path or URL",
-  "output_language": "BCP-47, default zh-TW"
+  "output_language": "en | zh-TW (default zh-TW; other BCP-47 values fall back to en)"
 }
 ```
 
