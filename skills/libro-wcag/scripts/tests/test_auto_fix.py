@@ -148,6 +148,27 @@ class AutoFixTests(unittest.TestCase):
             self.assertIn('<title>Dashboard</title>', diff_text)
             self.assertGreaterEqual(updated_report['summary']['remediation_lifecycle']['implemented'], 5)
 
+    def test_apply_report_fixes_records_accessible_name_guess_source(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            working = Path(tmp) / 'guess-source.html'
+            working.write_text(
+                '<!doctype html><html><body><button class="icon-only" name="close-dialog"></button></body></html>',
+                encoding='utf-8',
+            )
+            contract = resolve_contract({'target': str(working), 'execution_mode': 'apply-fixes'})
+            axe_data = {
+                'violations': [
+                    {'id': 'button-name', 'impact': 'serious', 'description': 'Buttons need names', 'nodes': [{'target': ['button.icon-only']}]},
+                ]
+            }
+
+            report = normalize_report(contract, axe_data, {'audits': {}}, None, None)
+            updated_report, _ = apply_report_fixes(working, report)
+
+            self.assertIn('aria-label="Close dialog"', working.read_text(encoding='utf-8'))
+            applied_change = updated_report['summary']['diff_summary'][0]
+            self.assertIn('(guessed from: name)', applied_change['description'])
+
     def test_apply_report_fixes_supports_aria_and_table_semantic_rules(self) -> None:
         fixture = Path(__file__).parent / 'fixtures' / 'aria-table-auto-fix.html'
         with tempfile.TemporaryDirectory() as tmp:

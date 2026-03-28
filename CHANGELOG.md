@@ -8,6 +8,8 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ### Fixed
 
+- `auto_fix.py` now routes button/link/ARIA widget accessible-name remediation through a shared helper and records attribute-based guesses in diff descriptions as `(guessed from: <attr>)` for reviewer traceability.
+- `wcag_workflow.py` now derives `AXE_RULE_TO_SC` and `LIGHTHOUSE_RULE_TO_SC` from a single `SCANNER_RULE_TO_SC` table so shared WCAG mappings stay aligned while preserving scanner-specific overrides.
 - `scripts/uninstall-agent.py` now converts filesystem removal failures into clear CLI error messages instead of surfacing raw tracebacks for permission or path-type problems.
 - Markdown report summaries now include a visible `⚠️` scanner-coverage warning line whenever axe or Lighthouse fails, so partial reports are easier to notice.
 - `README.md` and `README.en.md` now mark the Claude Marketplace install commands as coming soon pending marketplace availability.
@@ -34,6 +36,7 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ### Added
 
+- Regression coverage for shared scanner rule mappings and accessible-name guess provenance in auto-fix summaries.
 - Regression coverage for Markdown scanner-failure warnings and uninstall error handling.
 - Static contract coverage for the WCAG report schema so required finding/fix fields and status vocabularies stay aligned with the documented contract.
 - Regression coverage for version-specific citation URLs and previously missing common SC citation mappings such as `1.2.1`, `1.3.4`, `1.3.5`, `1.4.1`, and `1.4.2`.

@@ -16,6 +16,7 @@ if str(SCRIPT_ROOT) not in sys.path:
 from wcag_workflow import (
     AXE_RULE_TO_SC,
     LIGHTHOUSE_RULE_TO_SC,
+    SCANNER_RULE_TO_SC,
     WCAG_UNDERSTANDING_PATHS,
     _escape_pipe,
     build_citation_url,
@@ -271,6 +272,12 @@ class WorkflowTests(unittest.TestCase):
     def test_rule_mappings_cover_broad_common_rules(self) -> None:
         self.assertGreaterEqual(len(AXE_RULE_TO_SC), 30)
         self.assertGreaterEqual(len(LIGHTHOUSE_RULE_TO_SC), 20)
+
+    def test_source_specific_rule_mapping_is_derived_from_shared_scanner_table(self) -> None:
+        self.assertIs(AXE_RULE_TO_SC, SCANNER_RULE_TO_SC['axe'])
+        self.assertIs(LIGHTHOUSE_RULE_TO_SC, SCANNER_RULE_TO_SC['lighthouse'])
+        self.assertEqual(SCANNER_RULE_TO_SC['axe']['meta-refresh'], ['2.2.1', '3.2.5'])
+        self.assertEqual(SCANNER_RULE_TO_SC['lighthouse']['meta-refresh'], ['2.2.2', '3.2.5'])
 
     def test_write_report_files(self) -> None:
         contract = resolve_contract({"target": "https://example.com"})
