@@ -61,8 +61,9 @@
   > 📋 **優先級：P2。** 需要歷史資料，第二階段做。
   > ✅ 實作於 `aggregate_report.py:_build_baseline_diff()` + `libro report --baseline`
 
-- [ ] **A10** **掃描器健康狀態（Scanner Health）**：axe / lighthouse 版本與狀態；是否有 scanner failure / fallback findings；掃描耗時。
+- [x] **A10** **掃描器健康狀態（Scanner Health）**：axe / lighthouse 版本與狀態；是否有 scanner failure / fallback findings；掃描耗時。
   > 📋 **優先級：P3。** 除錯用。
+  > ✅ 實作於 `aggregate_report.py:_build_scanner_health()`
 
 ---
 
@@ -87,8 +88,9 @@
   > 📋 **優先級：P2。**
   > ✅ 實作於 `report_renderers.py:render_csv()` + `libro report --format csv`
 
-- [ ] **B6** **Badge 輸出**：Shields.io endpoint JSON 格式，可嵌入 README 顯示合規標章（色彩依合規率變化）。`--format badge --output badge.json`。
+- [x] **B6** **Badge 輸出**：Shields.io endpoint JSON 格式，可嵌入 README 顯示合規標章（色彩依合規率變化）。`--format badge --output badge.json`。
   > 📋 **優先級：P3。** 錦上添花。
+  > ✅ 實作於 `report_renderers.py:render_badge()` + `libro report --format badge`
 
 ---
 

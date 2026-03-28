@@ -469,3 +469,35 @@ def render_csv(
             lines.append(",".join(row))
 
     return "\n".join(lines) + "\n"
+
+
+# ---------------------------------------------------------------------------
+# B6: Badge renderer (Shields.io endpoint JSON)
+# ---------------------------------------------------------------------------
+
+def render_badge(report: dict[str, Any]) -> str:
+    """Render a Shields.io endpoint JSON badge based on compliance rate.
+
+    Output format follows https://shields.io/endpoint.
+    Colour changes by compliance rate: green >=90%, yellow >=50%, red <50%.
+    """
+    import json as json_mod
+
+    scope = report.get("scope", {})
+    rate = scope.get("compliance_rate", 0)
+    total = scope.get("total_findings", 0)
+
+    if rate >= 0.9:
+        color = "brightgreen"
+    elif rate >= 0.5:
+        color = "yellow"
+    else:
+        color = "red"
+
+    badge = {
+        "schemaVersion": 1,
+        "label": "WCAG",
+        "message": f"{rate:.0%} ({total} findings)",
+        "color": color,
+    }
+    return json_mod.dumps(badge, ensure_ascii=False, indent=2) + "\n"
