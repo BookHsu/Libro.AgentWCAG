@@ -16,6 +16,7 @@ if str(SCRIPT_ROOT) not in sys.path:
 from wcag_workflow import (
     AXE_RULE_TO_SC,
     LIGHTHOUSE_RULE_TO_SC,
+    WCAG_UNDERSTANDING_PATHS,
     _escape_pipe,
     build_citation_url,
     load_json_file,
@@ -214,9 +215,29 @@ class WorkflowTests(unittest.TestCase):
         axe_failure = next(item for item in report["summary"]["scanner_failures"] if item["tool"] == "axe")
         self.assertEqual(axe_failure["classification"], "missing-tool")
     def test_citation_url_uses_selected_version(self) -> None:
-        self.assertIn("/WCAG20/", build_citation_url("2.0", "1.1.1"))
+        self.assertEqual(
+            build_citation_url("2.0", "1.1.1"),
+            "https://www.w3.org/WAI/WCAG20/Understanding/non-text-content",
+        )
         self.assertIn("/WCAG21/", build_citation_url("2.1", "1.1.1"))
         self.assertIn("/WCAG22/", build_citation_url("2.2", "1.1.1"))
+
+    def test_citation_url_covers_previously_missing_common_success_criteria(self) -> None:
+        expected = {
+            "1.2.1": "audio-only-and-video-only-prerecorded",
+            "1.3.4": "orientation",
+            "1.3.5": "identify-input-purpose",
+            "1.4.1": "use-of-color",
+            "1.4.2": "audio-control",
+        }
+        for sc, slug in expected.items():
+            self.assertEqual(
+                build_citation_url("2.2", sc),
+                f"https://www.w3.org/WAI/WCAG22/Understanding/{slug}",
+            )
+
+    def test_understanding_slug_table_covers_most_success_criteria(self) -> None:
+        self.assertGreaterEqual(len(WCAG_UNDERSTANDING_PATHS), 75)
 
     def test_expanded_rule_mapping_generates_citation(self) -> None:
         contract = resolve_contract({"target": "https://example.com"})
