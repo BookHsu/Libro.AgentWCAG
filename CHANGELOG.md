@@ -12,6 +12,12 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - All four adapter prompt templates now cross-reference `cli-reference.md` for advanced CLI options.
 - `remediation_library.py` now includes `auto_fix_reason` on every rule where `auto_fix_supported` is `False`, explaining why automatic remediation is not feasible (e.g. color-contrast: "Color choices require design intent").
 
+### Changed
+
+- `run_accessibility_audit.py` now runs axe and Lighthouse scanners in parallel using `concurrent.futures.ThreadPoolExecutor` when both are active, reducing total audit wall-clock time.
+- `run_accessibility_audit.py` now gracefully handles `task_mode=create` with non-existent targets by skipping scanners and producing guidance-only manual-review findings instead of crashing.
+- `validate_skill.py` now warns when policy bundle `include_rules` or `ignore_rules` contain rule IDs not found in the scanner/remediation registry.
+
 ### Security
 
 - MCP server `audit_page.py` now validates local file targets with `Path.resolve()` + `relative_to(REPO_ROOT)` to prevent path traversal attacks. URL targets are passed through unchanged.

@@ -714,7 +714,15 @@ def main() -> int:
         }
     )
     local_target = target_to_local_path(contract.target)
-    scanner_target = _resolve_target_for_scanners(contract.target)
+    create_mode_no_target = False
+    try:
+        scanner_target = _resolve_target_for_scanners(contract.target)
+    except ValueError:
+        if contract.task_mode == "create":
+            create_mode_no_target = True
+            scanner_target = contract.target
+        else:
+            raise
 
     preflight_required = not (
         (args.skip_axe or args.mock_axe_json) and (args.skip_lighthouse or args.mock_lighthouse_json)
@@ -759,34 +767,59 @@ def main() -> int:
 
     axe_data = None
     axe_error = None
-    scanner_retry_runs: list[dict[str, Any]] = []
-    if args.mock_axe_json:
-        axe_data = json.loads(Path(args.mock_axe_json).read_text(encoding='utf-8'))
-    elif not args.skip_axe:
-        axe_data, axe_error, axe_retry = _run_scanner_with_retry(
-            'axe',
-            lambda: _try_run_axe(scanner_target, output_dir, args.timeout),
-            args.scanner_retry_attempts,
-            args.scanner_retry_backoff_seconds,
-        )
-        scanner_retry_runs.append(axe_retry)
-
     lighthouse_data = None
     lighthouse_error = None
+    scanner_retry_runs: list[dict[str, Any]] = []
+
+    if create_mode_no_target:
+        axe_error = "Skipped: target does not exist (create mode — guidance only)"
+        lighthouse_error = "Skipped: target does not exist (create mode — guidance only)"
+
+    run_axe = not args.skip_axe and not args.mock_axe_json and not create_mode_no_target
+    run_lighthouse = not args.skip_lighthouse and not args.mock_lighthouse_json and not create_mode_no_target
+    if args.mock_axe_json:
+        axe_data = json.loads(Path(args.mock_axe_json).read_text(encoding='utf-8'))
     if args.mock_lighthouse_json:
         lighthouse_data = json.loads(Path(args.mock_lighthouse_json).read_text(encoding='utf-8'))
-    elif not args.skip_lighthouse:
-        lighthouse_data, lighthouse_error, lighthouse_retry = _run_scanner_with_retry(
-            'lighthouse',
-            lambda: _try_run_lighthouse(
-                scanner_target,
-                output_dir,
-                args.timeout,
-            ),
-            args.scanner_retry_attempts,
-            args.scanner_retry_backoff_seconds,
-        )
-        scanner_retry_runs.append(lighthouse_retry)
+
+    if run_axe and run_lighthouse:
+        from concurrent.futures import ThreadPoolExecutor
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            axe_future = executor.submit(
+                _run_scanner_with_retry,
+                'axe',
+                lambda: _try_run_axe(scanner_target, output_dir, args.timeout),
+                args.scanner_retry_attempts,
+                args.scanner_retry_backoff_seconds,
+            )
+            lighthouse_future = executor.submit(
+                _run_scanner_with_retry,
+                'lighthouse',
+                lambda: _try_run_lighthouse(scanner_target, output_dir, args.timeout),
+                args.scanner_retry_attempts,
+                args.scanner_retry_backoff_seconds,
+            )
+            axe_data, axe_error, axe_retry = axe_future.result()
+            lighthouse_data, lighthouse_error, lighthouse_retry = lighthouse_future.result()
+            scanner_retry_runs.extend([axe_retry, lighthouse_retry])
+    else:
+        if run_axe:
+            axe_data, axe_error, axe_retry = _run_scanner_with_retry(
+                'axe',
+                lambda: _try_run_axe(scanner_target, output_dir, args.timeout),
+                args.scanner_retry_attempts,
+                args.scanner_retry_backoff_seconds,
+            )
+            scanner_retry_runs.append(axe_retry)
+        if run_lighthouse:
+            lighthouse_data, lighthouse_error, lighthouse_retry = _run_scanner_with_retry(
+                'lighthouse',
+                lambda: _try_run_lighthouse(scanner_target, output_dir, args.timeout),
+                args.scanner_retry_attempts,
+                args.scanner_retry_backoff_seconds,
+            )
+            scanner_retry_runs.append(lighthouse_retry)
 
     report = normalize_report(
         contract=contract,
