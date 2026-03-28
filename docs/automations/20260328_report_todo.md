@@ -25,17 +25,21 @@
 
 ## A. 報告內容區段（依優先級排列）
 
-- [ ] **A1** **總覽（Executive Summary）**：掃描範圍（目標數、WCAG 版本/等級）、總缺失數、合規率（無缺失目標 / 總目標）、結論（pass / fail / needs-review）。
+- [x] **A1** **總覽（Executive Summary）**：掃描範圍（目標數、WCAG 版本/等級）、總缺失數、合規率（無缺失目標 / 總目標）、結論（pass / fail / needs-review）。
   > 📋 **優先級：P0。** 最核心的數字，立即有用。
+  > ✅ 實作於 `aggregate_report.py:_build_scope()`
 
-- [ ] **A2** **嚴重度分級（Severity Breakdown）**：critical / serious / moderate / minor / info 各數量與佔比；橫條圖視覺化；與上次基線比較的變化（如有 baseline）。
+- [x] **A2** **嚴重度分級（Severity Breakdown）**：critical / serious / moderate / minor / info 各數量與佔比；橫條圖視覺化；與上次基線比較的變化（如有 baseline）。
   > 📋 **優先級：P0。**
+  > ✅ 實作於 `aggregate_report.py:_build_severity()` + `report_renderers.py` 橫條圖
 
-- [ ] **A3** **可修正性分析（Fixability Analysis）**：auto-fix / assisted / manual 各數量與佔比；預估「跑一次 apply-fixes 可解決 X% 問題」的修復覆蓋率。
+- [x] **A3** **可修正性分析（Fixability Analysis）**：auto-fix / assisted / manual 各數量與佔比；預估「跑一次 apply-fixes 可解決 X% 問題」的修復覆蓋率。
   > 📋 **優先級：P0。** 本系統的差異化價值。
+  > ✅ 實作於 `aggregate_report.py:_build_fixability()`
 
-- [ ] **A4** **各目標明細（Per-Target Breakdown）**：每個目標的缺失數、嚴重度分佈、狀態標記（✓ clean / ⚠ issues / ✗ critical）；可折疊的個別 finding 清單。
+- [x] **A4** **各目標明細（Per-Target Breakdown）**：每個目標的缺失數、嚴重度分佈、狀態標記（✓ clean / ⚠ issues / ✗ critical）；可折疊的個別 finding 清單。
   > 📋 **優先級：P0。** 開發者最需要知道「改哪裡」。
+  > ✅ 實作於 `aggregate_report.py:_build_targets()` + `report_renderers.py` `<details>` 折疊
 
 - [ ] **A5** **WCAG SC 涵蓋分析（Success Criteria Coverage）**：有觸發的 SC 清單；按 WCAG 四原則分群（Perceivable / Operable / Understandable / Robust）各原則缺失佔比；未涵蓋的 SC（掃描器無法檢測，需人工審核）。
   > 📋 **優先級：P1。** 合規報告必備。
@@ -59,14 +63,17 @@
 
 ## B. 輸出格式（依實作順序）
 
-- [ ] **B1** **JSON 輸出**：彙總報告的機器可讀格式，作為所有其他格式的唯一資料源。包含 `scope`、`severity`、`fixability`、`wcag_principles`、`top_rules`、`targets`、`remediation_lifecycle`、`baseline_diff`、`auto_fix_opportunity` 等頂層 key。
+- [x] **B1** **JSON 輸出**：彙總報告的機器可讀格式，作為所有其他格式的唯一資料源。包含 `scope`、`severity`、`fixability`、`wcag_principles`、`top_rules`、`targets`、`remediation_lifecycle`、`baseline_diff`、`auto_fix_opportunity` 等頂層 key。
   > 📋 **優先級：P0。** 基礎資料結構，其他格式都從它轉換。
+  > ✅ 實作於 `aggregate_report.py:build_aggregate_report()` + `write_aggregate_json()`
 
-- [ ] **B2** **Terminal 輸出**：開發者即時查看的終端格式，含色彩標記、橫條圖、嚴重度圖示。預設格式（`--format terminal`）。
+- [x] **B2** **Terminal 輸出**：開發者即時查看的終端格式，含色彩標記、橫條圖、嚴重度圖示。預設格式（`--format terminal`）。
   > 📋 **優先級：P0。**
+  > ✅ 實作於 `report_renderers.py:render_terminal()`
 
-- [ ] **B3** **Markdown 輸出**：可直接貼到 GitHub PR comment / issue 的格式，含表格、emoji 嚴重度標記、`<details>` 折疊。`--format markdown`。
+- [x] **B3** **Markdown 輸出**：可直接貼到 GitHub PR comment / issue 的格式，含表格、emoji 嚴重度標記、`<details>` 折疊。`--format markdown`。
   > 📋 **優先級：P0。**
+  > ✅ 實作於 `report_renderers.py:render_markdown()`
 
 - [ ] **B4** **HTML 輸出**：單一自包含 HTML 檔（inline CSS + inline SVG 圓餅圖/橫條圖，零外部依賴），可瀏覽器開啟、email 附件、存檔交付。`--format html --output wcag-dashboard.html`。
   > 📋 **優先級：P1。** 對外交付最有說服力。
@@ -81,8 +88,9 @@
 
 ## C. CLI 入口
 
-- [ ] **C1** **`libro report` 子命令**：接受目錄或多個 `wcag-report.json` 路徑，產出彙總報告。`--format <terminal|json|markdown|html|csv|badge>`、`--output <path>`、`--baseline <prior-report.json>`。
+- [x] **C1** **`libro report` 子命令**：接受目錄或多個 `wcag-report.json` 路徑，產出彙總報告。`--format <terminal|json|markdown|html|csv|badge>`、`--output <path>`、`--baseline <prior-report.json>`。
   > 📋 **優先級：P0。** 核心新功能。
+  > ✅ 實作於 `scripts/libro.py:handle_report()` — 支援 `--format json|terminal|markdown`、`--output`、`--language`
 
 - [ ] **C2** **`libro scan` 子命令**：接受目錄 / glob / `--targets <file>` 清單，對每個目標呼叫 `run_accessibility_audit.py`，支援 `--parallel <N>` 並行、`--output-dir` 指定輸出根目錄。錯誤收集與部分失敗處理。
   > 📋 **優先級：P1。** `libro report` 可先用手動跑多次 `libro audit` 的結果。

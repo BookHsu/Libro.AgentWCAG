@@ -77,6 +77,31 @@ def parse_args() -> argparse.Namespace:
     )
     audit_parser.add_argument("target", nargs="?", help="URL or local file path to audit.")
 
+    report_parser = subparsers.add_parser(
+        "report",
+        help="Aggregate multiple wcag-report.json files into a summary report.",
+    )
+    report_parser.add_argument(
+        "inputs",
+        nargs="+",
+        help="Paths to wcag-report.json files or directories containing them.",
+    )
+    report_parser.add_argument(
+        "--format",
+        choices=("json", "terminal", "markdown"),
+        default="terminal",
+        help="Output format (default: terminal).",
+    )
+    report_parser.add_argument(
+        "--output",
+        help="Write output to this file instead of stdout.",
+    )
+    report_parser.add_argument(
+        "--language",
+        default="zh-TW",
+        help="Output language: en or zh-TW (default: zh-TW).",
+    )
+
     args, remaining = parser.parse_known_args()
     args._remaining = remaining
     return args
@@ -150,6 +175,62 @@ def handle_remove(args: argparse.Namespace) -> int:
     return run_script("uninstall-agent.py", command)
 
 
+def handle_report(args: argparse.Namespace) -> int:
+    import glob as glob_mod
+    sys.path.insert(0, str(REPO_ROOT / "skills" / "libro-wcag" / "scripts"))
+    from aggregate_report import build_aggregate_report, load_reports, write_aggregate_json
+    from report_renderers import render_markdown, render_terminal
+
+    # Resolve input paths: expand directories to find wcag-report.json files
+    report_paths: list[Path] = []
+    for raw_input in args.inputs:
+        p = Path(raw_input)
+        if p.is_file():
+            report_paths.append(p)
+        elif p.is_dir():
+            found = sorted(p.rglob("wcag-report.json"))
+            if not found:
+                print(f"Warning: no wcag-report.json found under {p}", file=sys.stderr)
+            report_paths.extend(found)
+        else:
+            expanded = glob_mod.glob(raw_input, recursive=True)
+            for g in expanded:
+                gp = Path(g)
+                if gp.is_file():
+                    report_paths.append(gp)
+
+    if not report_paths:
+        print("Error: no report files found.", file=sys.stderr)
+        return 1
+
+    reports = load_reports(report_paths)
+    aggregate = build_aggregate_report(reports)
+
+    fmt = args.format
+    if fmt == "json":
+        output_text = None
+        if args.output:
+            write_aggregate_json(aggregate, Path(args.output))
+            print(f"Aggregate report written to {args.output}")
+        else:
+            import json as json_mod
+            print(json_mod.dumps(aggregate, ensure_ascii=False, indent=2))
+    elif fmt == "markdown":
+        output_text = render_markdown(aggregate, language=args.language)
+    else:
+        output_text = render_terminal(aggregate, language=args.language)
+
+    if fmt != "json" and output_text:
+        if args.output:
+            Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+            Path(args.output).write_text(output_text, encoding="utf-8")
+            print(f"Aggregate report written to {args.output}")
+        else:
+            print(output_text)
+
+    return 0
+
+
 def handle_audit(args: argparse.Namespace) -> int:
     command = [sys.executable, str(AUDIT_SCRIPT)]
     if args.target:
@@ -169,6 +250,8 @@ def main() -> int:
         return handle_remove(args)
     if args.command == "audit":
         return handle_audit(args)
+    if args.command == "report":
+        return handle_report(args)
     raise ValueError(f"Unsupported command: {args.command}")
 
 
