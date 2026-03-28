@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Aggregate multiple wcag-report.json files into a unified summary report.
 
-Implements TODO items A1–A4 and B1 from 20260328_report_todo.md:
+Implements TODO items from 20260328_report_todo.md:
   A1: Executive Summary (scope, compliance rate, verdict)
   A2: Severity Breakdown (counts, percentages)
   A3: Fixability Analysis (auto-fix/assisted/manual)
   A4: Per-Target Breakdown (per-page severity + status)
+  A5: WCAG SC Coverage Analysis (principle grouping, uncovered SCs)
+  A6: Top Issues (top N rules, top N targets)
+  A7: Auto-Fix Opportunity (framework group, residual, command)
   B1: JSON aggregate output structure
 """
 
@@ -196,20 +199,97 @@ def _build_remediation_lifecycle(
     }
 
 
+WCAG_PRINCIPLE_PREFIXES = {
+    "perceivable": "1.",
+    "operable": "2.",
+    "understandable": "3.",
+    "robust": "4.",
+}
+
+DEFAULT_TOP_N = 10
+
+
+def _build_wcag_principles(
+    all_findings: list[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """A5: WCAG SC Coverage — group findings by WCAG principle."""
+    principle_sc: dict[str, set[str]] = {p: set() for p in WCAG_PRINCIPLE_PREFIXES}
+    principle_counts: dict[str, int] = {p: 0 for p in WCAG_PRINCIPLE_PREFIXES}
+
+    for finding in all_findings:
+        for sc in finding.get("sc", []):
+            for principle, prefix in WCAG_PRINCIPLE_PREFIXES.items():
+                if sc.startswith(prefix):
+                    principle_sc[principle].add(sc)
+                    principle_counts[principle] += 1
+                    break
+
+    return {
+        principle: {
+            "count": principle_counts[principle],
+            "sc": sorted(principle_sc[principle]),
+        }
+        for principle in WCAG_PRINCIPLE_PREFIXES
+    }
+
+
+def _build_top_rules(
+    all_findings: list[dict[str, Any]],
+    top_n: int = DEFAULT_TOP_N,
+) -> list[dict[str, Any]]:
+    """A6: Top Issues — most frequent rules across all targets."""
+    rule_counter: Counter[str] = Counter()
+    rule_fixability: dict[str, str] = {}
+    rule_sc: dict[str, set[str]] = {}
+
+    for finding in all_findings:
+        rule_id = finding.get("rule_id", "unknown")
+        rule_counter[rule_id] += 1
+        if rule_id not in rule_fixability:
+            rule_fixability[rule_id] = finding.get("fixability", "manual")
+        rule_sc.setdefault(rule_id, set()).update(finding.get("sc", []))
+
+    return [
+        {
+            "rule_id": rule_id,
+            "count": count,
+            "fixability": rule_fixability.get(rule_id, "manual"),
+            "sc": sorted(rule_sc.get(rule_id, set())),
+        }
+        for rule_id, count in rule_counter.most_common(top_n)
+    ]
+
+
 def _build_auto_fix_opportunity(
     all_findings: list[dict[str, Any]],
+    reports: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    """A7 (partial): Auto-fix opportunity summary."""
+    """A7: Auto-fix opportunity with framework grouping."""
     fixable_count = sum(
         1 for f in all_findings if f.get("fixability") == "auto-fix"
     )
     total = len(all_findings)
     estimated_residual = total - fixable_count
-    return {
+
+    # Gather framework hints from fixes across reports
+    framework_counts: Counter[str] = Counter()
+    for report in reports:
+        for fix in report.get("fixes", []):
+            hints = fix.get("framework_hints", {})
+            for framework in hints:
+                framework_counts[framework] += 1
+
+    result: dict[str, Any] = {
         "fixable_count": fixable_count,
         "estimated_residual": estimated_residual,
         "command": "libro scan <directory> --execution-mode apply-fixes",
     }
+    if framework_counts:
+        result["framework_groups"] = [
+            {"framework": fw, "count": c}
+            for fw, c in framework_counts.most_common()
+        ]
+    return result
 
 
 def _resolve_standard(
@@ -242,8 +322,10 @@ def build_aggregate_report(
     severity = _build_severity(all_findings)
     fixability = _build_fixability(all_findings)
     targets = _build_targets(reports)
+    wcag_principles = _build_wcag_principles(all_findings)
+    top_rules = _build_top_rules(all_findings)
     remediation = _build_remediation_lifecycle(reports, all_findings)
-    auto_fix = _build_auto_fix_opportunity(all_findings)
+    auto_fix = _build_auto_fix_opportunity(all_findings, reports)
 
     return {
         "report_type": "aggregate",
@@ -255,6 +337,8 @@ def build_aggregate_report(
         "scope": scope,
         "severity": severity,
         "fixability": fixability,
+        "wcag_principles": wcag_principles,
+        "top_rules": top_rules,
         "targets": targets,
         "remediation_lifecycle": remediation,
         "baseline_diff": None,

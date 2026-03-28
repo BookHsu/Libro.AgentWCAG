@@ -53,6 +53,11 @@ LABELS = {
         "manual_review": "Manual review required",
         "wcag_standard": "WCAG standard",
         "generated_at": "Generated at",
+        "wcag_principles": "WCAG Principle Coverage",
+        "top_issues": "Top Issues",
+        "rule_id": "Rule",
+        "count": "Count",
+        "sc": "SC",
     },
     "zh-TW": {
         "title": "WCAG 彙總報告",
@@ -82,6 +87,11 @@ LABELS = {
         "manual_review": "需人工審核",
         "wcag_standard": "WCAG 標準",
         "generated_at": "產生時間",
+        "wcag_principles": "WCAG 原則涵蓋分析",
+        "top_issues": "熱點分析",
+        "rule_id": "規則",
+        "count": "數量",
+        "sc": "SC",
     },
 }
 
@@ -195,6 +205,28 @@ def render_terminal(report: dict[str, Any], language: str | None = None) -> str:
         lines.append(f"  {lbl['fix_coverage']}: {fix_cov:.0%}")
     lines.append("")
 
+    # A5: WCAG Principle Coverage
+    wcag_principles = report.get("wcag_principles", {})
+    if wcag_principles:
+        lines.append(_colored(f"## {lbl['wcag_principles']}", "bold"))
+        for principle, data in wcag_principles.items():
+            count = data.get("count", 0)
+            sc_list = ", ".join(data.get("sc", []))
+            bar = _bar(count, total_findings)
+            lines.append(f"  {principle:15s} {bar} {count:4d}  SC: {sc_list or '-'}")
+        lines.append("")
+
+    # A6: Top Issues
+    top_rules = report.get("top_rules", [])
+    if top_rules:
+        lines.append(_colored(f"## {lbl['top_issues']}", "bold"))
+        lines.append(f"  {lbl['rule_id']:25s} {lbl['count']:>6s}  {lbl['sc']}")
+        lines.append(f"  {'-' * 25} {'-' * 6}  {'-' * 20}")
+        for rule in top_rules:
+            sc_text = ", ".join(rule.get("sc", []))
+            lines.append(f"  {rule.get('rule_id', '?'):25s} {rule.get('count', 0):6d}  {sc_text}")
+        lines.append("")
+
     # A4: Per-Target Breakdown
     lines.append(_colored(f"## {lbl['per_target']}", "bold"))
     if targets:
@@ -286,6 +318,32 @@ def render_markdown(report: dict[str, Any], language: str | None = None) -> str:
         lines.append("")
         lines.append(f"{lbl['fix_coverage']}: **{fix_cov:.0%}**")
     lines.append("")
+
+    # A5: WCAG Principle Coverage
+    wcag_principles = report.get("wcag_principles", {})
+    if wcag_principles:
+        lines.append(f"## {lbl['wcag_principles']}")
+        lines.append("")
+        lines.append(f"| Principle | Count | SC |")
+        lines.append(f"|---|---:|---|")
+        for principle, data in wcag_principles.items():
+            sc_text = ", ".join(data.get("sc", []))
+            lines.append(f"| {principle} | {data.get('count', 0)} | {sc_text or '-'} |")
+        lines.append("")
+
+    # A6: Top Issues
+    top_rules = report.get("top_rules", [])
+    if top_rules:
+        lines.append(f"## {lbl['top_issues']}")
+        lines.append("")
+        lines.append(f"| {lbl['rule_id']} | {lbl['count']} | Fixability | SC |")
+        lines.append(f"|---|---:|---|---|")
+        for rule in top_rules:
+            sc_text = ", ".join(rule.get("sc", []))
+            lines.append(
+                f"| `{rule.get('rule_id', '?')}` | {rule.get('count', 0)} | {rule.get('fixability', 'manual')} | {sc_text} |"
+            )
+        lines.append("")
 
     # A4: Per-Target
     lines.append(f"## {lbl['per_target']}")
