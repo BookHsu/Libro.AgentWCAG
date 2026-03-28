@@ -353,6 +353,60 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('html-has-lang', nextjs)
         self.assertIn('focus', nextjs.lower())
 
+    def test_mcp_tool_defaults_match_skill_md_contract(self) -> None:
+        """C5: MCP tool parameter defaults must align with SKILL.md."""
+        import ast
+
+        server_src = self._read(self.repo_root / 'mcp-server' / 'server.py')
+        skill_md = self._read(self.skill_root / 'SKILL.md')
+        tree = ast.parse(server_src)
+
+        # Extract default values from MCP tool function signatures
+        mcp_defaults: dict[str, dict[str, str]] = {}
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name.startswith('libro_wcag_'):
+                defaults: dict[str, str] = {}
+                args = node.args
+                # Match defaults to the last N arguments
+                num_defaults = len(args.defaults)
+                default_args = args.args[-num_defaults:] if num_defaults else []
+                for arg, default in zip(default_args, args.defaults):
+                    if isinstance(default, ast.Constant) and isinstance(default.value, str):
+                        defaults[arg.arg] = default.value
+                mcp_defaults[node.name] = defaults
+
+        self.assertIn('libro_wcag_audit', mcp_defaults)
+        self.assertIn('libro_wcag_suggest', mcp_defaults)
+        self.assertIn('libro_wcag_normalize', mcp_defaults)
+
+        # SKILL.md contract defaults
+        skill_defaults = {
+            'wcag_version': '2.1',
+            'conformance_level': 'AA',
+            'output_language': 'zh-TW',
+        }
+
+        # All three MCP tools must share the same core defaults
+        for tool_name, defaults in mcp_defaults.items():
+            with self.subTest(tool=tool_name):
+                for param, expected in skill_defaults.items():
+                    self.assertEqual(
+                        defaults.get(param),
+                        expected,
+                        f'{tool_name}.{param} default {defaults.get(param)!r} != SKILL.md {expected!r}',
+                    )
+
+        # MCP audit deliberately uses audit-only (not suggest-only) per Batch 6 decision
+        self.assertEqual(mcp_defaults['libro_wcag_audit']['execution_mode'], 'audit-only')
+        # MCP normalize uses suggest-only (matches SKILL.md default)
+        self.assertEqual(mcp_defaults['libro_wcag_normalize']['execution_mode'], 'suggest-only')
+
+        # Verify SKILL.md documents these exact defaults
+        self.assertIn('`execution_mode`: `suggest-only`', skill_md)
+        self.assertIn('`wcag_version`: `2.1`', skill_md)
+        self.assertIn('`conformance_level`: `AA`', skill_md)
+        self.assertIn('`output_language`: `zh-TW`', skill_md)
+
     def test_all_repo_files_have_a_test_or_static_contract_check(self) -> None:
         expected = {
             '.gitattributes',
@@ -447,6 +501,64 @@ class RepoContractTests(unittest.TestCase):
             and 'scripts/tests' not in str(path).replace('\\', '/')
         }
         self.assertTrue(expected.issubset(actual))
+
+
+class WcagUrlSlugTests(unittest.TestCase):
+    """Z3: Validate WCAG_UNDERSTANDING_PATHS slugs are well-formed and (optionally) reachable."""
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        import sys
+        scripts_dir = str(Path(__file__).resolve().parents[1])
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        from wcag_workflow import WCAG_UNDERSTANDING_PATHS, build_citation_url
+        cls.paths = WCAG_UNDERSTANDING_PATHS
+        cls.build_url = staticmethod(build_citation_url)
+
+    def test_all_slugs_are_lowercase_hyphenated(self) -> None:
+        import re
+        slug_pattern = re.compile(r'^[a-z0-9]+(-[a-z0-9]+)*$')
+        for sc, slug in self.paths.items():
+            with self.subTest(sc=sc):
+                self.assertRegex(slug, slug_pattern, f'SC {sc} slug {slug!r} is not lowercase-hyphenated')
+
+    def test_all_sc_numbers_are_valid_format(self) -> None:
+        import re
+        sc_pattern = re.compile(r'^\d+\.\d+\.\d+$')
+        for sc in self.paths:
+            with self.subTest(sc=sc):
+                self.assertRegex(sc, sc_pattern, f'{sc!r} is not a valid SC number format')
+
+    def test_no_duplicate_slugs(self) -> None:
+        slugs = list(self.paths.values())
+        self.assertEqual(len(slugs), len(set(slugs)), 'Duplicate slugs found')
+
+    def test_build_citation_url_produces_valid_urls_for_all_versions(self) -> None:
+        for sc in self.paths:
+            for version in ('2.0', '2.1', '2.2'):
+                with self.subTest(sc=sc, version=version):
+                    url = self.build_url(version, sc)
+                    self.assertTrue(url.startswith('https://www.w3.org/WAI/WCAG'))
+                    self.assertIn(f'WCAG{version.replace(".", "")}', url)
+
+    @unittest.skipUnless(
+        __import__('os').environ.get('LIBRO_RUN_URL_VALIDATION') == '1',
+        'WCAG URL HEAD validation disabled (set LIBRO_RUN_URL_VALIDATION=1)',
+    )
+    def test_all_wcag_understanding_urls_are_reachable(self) -> None:
+        import urllib.request
+        failures: list[str] = []
+        for sc, slug in self.paths.items():
+            url = self.build_url('2.2', sc)
+            try:
+                req = urllib.request.Request(url, method='HEAD')
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    if resp.status != 200:
+                        failures.append(f'{sc} ({slug}): HTTP {resp.status}')
+            except Exception as exc:
+                failures.append(f'{sc} ({slug}): {exc}')
+        self.assertEqual(failures, [], f'Unreachable WCAG URLs:\n' + '\n'.join(failures))
 
 
 if __name__ == '__main__':

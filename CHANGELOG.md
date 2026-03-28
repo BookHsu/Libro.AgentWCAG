@@ -14,6 +14,9 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - `test_schema_validation.py` validates generated reports against the JSON Schema using `jsonschema`, catching schema/code mismatches at test time.
 - `jsonschema>=4.20` is now an optional test dependency in `pyproject.toml`.
 - `mcp-server/requirements.lock` provides hash-pinned dependency versions for production deployments.
+- All four adapter `usage-example.md` files now include an "Advanced: Baseline & Risk Calibration" section with `--risk-calibration-source` and `--stability-baseline` CLI examples.
+- `test_repo_contracts.py` now validates MCP tool parameter defaults match SKILL.md contract defaults using AST-based source parsing.
+- `WcagUrlSlugTests` validates all `WCAG_UNDERSTANDING_PATHS` slugs are well-formed, unique, and produce correct URLs for WCAG 2.0/2.1/2.2, with optional HTTP HEAD reachability check gated behind `LIBRO_RUN_URL_VALIDATION=1`.
 
 ### Fixed
 
