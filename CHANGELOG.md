@@ -17,6 +17,8 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - All four adapter `usage-example.md` files now include an "Advanced: Baseline & Risk Calibration" section with `--risk-calibration-source` and `--stability-baseline` CLI examples.
 - `test_repo_contracts.py` now validates MCP tool parameter defaults match SKILL.md contract defaults using AST-based source parsing.
 - `WcagUrlSlugTests` validates all `WCAG_UNDERSTANDING_PATHS` slugs are well-formed, unique, and produce correct URLs for WCAG 2.0/2.1/2.2, with optional HTTP HEAD reachability check gated behind `LIBRO_RUN_URL_VALIDATION=1`.
+- `vue-sfc-complex.vue` fixture and integration test verify that Vue SFC auto-fix applies button-name, link-name, and image-alt fixes inside `<template>` without corrupting `<script>` content.
+- `generate_snapshots.py` tool and 15 new `.report.json` + `.report.md` snapshot baselines provide regression detection for all HTML fixture files.
 
 ### Fixed
 

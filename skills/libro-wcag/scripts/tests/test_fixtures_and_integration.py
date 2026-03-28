@@ -125,6 +125,30 @@ class FixtureAndSnapshotTests(unittest.TestCase):
                 self.assertEqual(to_markdown_table(report), expected_md)
 
 
+    def test_snapshot_for_remaining_fixtures_matches_expected_output(self) -> None:
+        """X1: Snapshot regression for all 15 previously uncovered fixtures."""
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            'generate_snapshots',
+            Path(__file__).parent / 'generate_snapshots.py',
+        )
+        mod = importlib.util.module_from_spec(spec)  # type: ignore[arg-type]
+        spec.loader.exec_module(mod)  # type: ignore[union-attr]
+        FIXTURE_VIOLATIONS = mod.FIXTURE_VIOLATIONS
+        for fixture_name, data in sorted(FIXTURE_VIOLATIONS.items()):
+            with self.subTest(fixture=fixture_name):
+                expected_json, expected_md = self._load_snapshot(fixture_name)
+                contract = resolve_contract({
+                    'target': f'fixtures/{fixture_name}.html',
+                    'output_language': 'en',
+                })
+                axe_data = {'violations': data.get('axe', [])}
+                report = normalize_report(contract, axe_data, {'audits': {}}, None, None)
+                report['run_meta']['generated_at'] = '<generated>'
+                self.assertEqual(report, expected_json)
+                self.assertEqual(to_markdown_table(report), expected_md)
+
+
 class FixtureCorpusCoverageTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
