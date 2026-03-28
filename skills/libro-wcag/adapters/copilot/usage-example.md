@@ -60,3 +60,19 @@ Copilot writes VS Code MCP settings, so the sample uses a top-level `servers` ob
   }
 }
 ```
+
+## Advanced: Baseline & Risk Calibration
+
+Use `--risk-calibration-source` and `--stability-baseline` to compare the current audit against a prior run. These flags work identically across all adapters. See `references/cli-reference.md` for the full option reference.
+
+```powershell
+python skills/libro-wcag/scripts/run_accessibility_audit.py `
+  --target ./index.html `
+  --output-dir out/current `
+  --risk-calibration-source out/prior/wcag-report.json `
+  --risk-calibration-mode warn `
+  --stability-baseline out/prior/wcag-report.json `
+  --stability-mode warn
+```
+
+The audit report will include `run_meta.risk_calibration` and `run_meta.stability_check` sections when these flags are active.
