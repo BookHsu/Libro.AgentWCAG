@@ -93,6 +93,17 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn('債務趨勢: new=1, accepted=2, retired=3, regressed=1 (window=4)', markdown)
         self.assertIn('債務趨勢變化: new=1, accepted=0, retired=-1, regressed=1', markdown)
 
+    def test_markdown_warns_when_scanner_coverage_is_incomplete_in_chinese(self) -> None:
+        contract = resolve_contract({"target": "https://example.com"})
+        report = normalize_report(
+            contract,
+            {"violations": []},
+            None,
+            lighthouse_error="command timed out after 30 seconds",
+        )
+        markdown = to_markdown_table(report)
+        self.assertIn('⚠️ 掃描器覆蓋不完整: lighthouse (timeout)', markdown)
+
     def test_citation_presence_for_major_finding(self) -> None:
         contract = resolve_contract({"target": "https://example.com"})
         axe_data = {
@@ -191,6 +202,8 @@ class WorkflowTests(unittest.TestCase):
             item for item in report["summary"]["scanner_failures"] if item["tool"] == "lighthouse"
         )
         self.assertEqual(lighthouse_failure["classification"], "timeout")
+        markdown = to_markdown_table(report)
+        self.assertIn("⚠️ Scanner coverage incomplete: lighthouse (timeout)", markdown)
 
     def test_partial_success_preserves_actionable_findings_when_axe_fails(self) -> None:
         contract = resolve_contract({"target": "https://example.com", "output_language": "en"})

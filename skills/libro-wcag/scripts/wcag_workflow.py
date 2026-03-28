@@ -55,6 +55,7 @@ MARKDOWN_LABELS = {
         "execution_mode": "Execution mode",
         "files_modified": "Files modified by core workflow",
         "modification_owner": "Modification executed by",
+        "scanner_warning": "⚠️ Scanner coverage incomplete",
         "task_mode": "Task mode",
         "debt_trend": "Debt trend",
         "debt_trend_delta": "Debt trend delta",
@@ -65,6 +66,7 @@ MARKDOWN_LABELS = {
         "execution_mode": "執行模式",
         "files_modified": "核心流程是否已修改檔案",
         "modification_owner": "實際修改執行者",
+        "scanner_warning": "⚠️ 掃描器覆蓋不完整",
         "task_mode": "任務模式",
         "debt_trend": "債務趨勢",
         "debt_trend_delta": "債務趨勢變化",
@@ -929,6 +931,13 @@ def to_markdown_table(report: dict[str, Any]) -> str:
             f"retired={delta_counts.get('retired', 0)}, "
             f"regressed={delta_counts.get('regressed', 0)}"
         )
+    scanner_failures = report.get('summary', {}).get('scanner_failures', [])
+    if scanner_failures:
+        failure_summary = ", ".join(
+            f"{item.get('tool', 'unknown')} ({item.get('classification', 'error')})"
+            for item in scanner_failures
+        )
+        summary_lines.append(f"{labels['scanner_warning']}: {failure_summary}")
     summary_lines.append("")
     header_columns = MARKDOWN_COLUMNS[language_key]
     header = "| " + " | ".join(header_columns) + " |"
