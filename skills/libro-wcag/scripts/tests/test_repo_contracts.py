@@ -73,9 +73,11 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('**/__pycache__/', content)
         self.assertIn('**/*.pyc', content)
         self.assertIn('skills/libro-wcag/scripts/tests/', content)
-        self.assertNotIn('.codex/', content)
-        self.assertNotIn('.claude/', content)
-        self.assertNotIn('.gemini/', content)
+        self.assertIn('/.claude/', content)
+        self.assertIn('/.codex/', content)
+        self.assertIn('/.copilot/', content)
+        self.assertIn('/.gemini/', content)
+        self.assertIn('/.claude-plugin/', content)
 
     def test_testing_plan_tracks_matrix_mapping_and_gaps(self) -> None:
         content = self._read(self.repo_root / 'docs' / 'testing' / 'test-matrix.md')
