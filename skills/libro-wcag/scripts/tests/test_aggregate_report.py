@@ -578,5 +578,143 @@ class TestLoadReports(unittest.TestCase):
         self.assertEqual(loaded[1]["target"]["value"], "b.html")
 
 
+class TestAggregateEdgeCases(unittest.TestCase):
+    """Edge cases for aggregate_report internals."""
+
+    def test_mixed_wcag_versions_fallback_to_default(self) -> None:
+        r1 = _make_report(target="a.html", wcag_version="2.1")
+        r2 = _make_report(target="b.html", wcag_version="2.2")
+        agg = build_aggregate_report([r1, r2])
+        # When versions differ, _resolve_standard falls back to "2.1"
+        self.assertEqual(agg["standard"]["wcag_version"], "2.1")
+
+    def test_mixed_conformance_levels_fallback_to_default(self) -> None:
+        r1 = _make_report(target="a.html", conformance_level="AA")
+        r2 = _make_report(target="b.html", conformance_level="AAA")
+        agg = build_aggregate_report([r1, r2])
+        self.assertEqual(agg["standard"]["conformance_level"], "AA")
+
+    def test_explicit_version_overrides_resolved(self) -> None:
+        r1 = _make_report(target="a.html", wcag_version="2.1")
+        r2 = _make_report(target="b.html", wcag_version="2.2")
+        agg = build_aggregate_report([r1, r2], wcag_version="2.2", conformance_level="AAA")
+        self.assertEqual(agg["standard"]["wcag_version"], "2.2")
+        self.assertEqual(agg["standard"]["conformance_level"], "AAA")
+
+    def test_zero_targets_verdict_is_pass(self) -> None:
+        agg = build_aggregate_report([])
+        self.assertEqual(agg["scope"]["verdict"], "pass")
+        self.assertEqual(agg["scope"]["total_targets"], 0)
+
+    def test_all_clean_targets_verdict_is_pass(self) -> None:
+        r1 = _make_report(target="a.html", findings=[])
+        r2 = _make_report(target="b.html", findings=[])
+        agg = build_aggregate_report([r1, r2])
+        self.assertEqual(agg["scope"]["verdict"], "pass")
+        self.assertEqual(agg["scope"]["compliance_rate"], 1.0)
+
+    def test_issues_without_critical_verdict_is_needs_review(self) -> None:
+        r1 = _make_report(target="a.html", findings=[_make_finding(severity="serious")])
+        agg = build_aggregate_report([r1])
+        self.assertEqual(agg["scope"]["verdict"], "needs-review")
+
+    def test_report_missing_optional_remediation_lifecycle(self) -> None:
+        report = _make_report(findings=[_make_finding()])
+        del report["summary"]["remediation_lifecycle"]
+        agg = build_aggregate_report([report])
+        lifecycle = agg["remediation_lifecycle"]
+        # Should gracefully produce counts from findings fallback
+        self.assertIn("planned", lifecycle)
+
+    def test_report_missing_run_meta_tools(self) -> None:
+        report = _make_report(findings=[_make_finding()])
+        del report["run_meta"]["tools"]
+        agg = build_aggregate_report([report])
+        health = agg["scanner_health"]
+        # Should not crash; tools dict should be empty
+        self.assertEqual(health["tools"], {})
+
+    def test_baseline_identical_reports_all_persistent(self) -> None:
+        r1 = _make_report(target="a.html", findings=[_make_finding()])
+        agg = build_aggregate_report([r1], baseline_reports=[r1])
+        diff = agg["baseline_diff"]
+        self.assertEqual(diff["new_count"], 0)
+        self.assertEqual(diff["resolved_count"], 0)
+        self.assertEqual(diff["persistent_count"], 1)
+
+
+class TestCsvEscapeEdgeCases(unittest.TestCase):
+    """Edge cases for _csv_escape and render_csv."""
+
+    def test_csv_escape_double_quotes(self) -> None:
+        from report_renderers import _csv_escape
+        self.assertEqual(_csv_escape('say "hello"'), '"say ""hello"""')
+
+    def test_csv_escape_newline(self) -> None:
+        from report_renderers import _csv_escape
+        self.assertEqual(_csv_escape("line1\nline2"), '"line1\nline2"')
+
+    def test_csv_escape_carriage_return(self) -> None:
+        from report_renderers import _csv_escape
+        self.assertEqual(_csv_escape("a\rb"), '"a\rb"')
+
+    def test_csv_escape_plain_string_unchanged(self) -> None:
+        from report_renderers import _csv_escape
+        self.assertEqual(_csv_escape("simple"), "simple")
+
+    def test_csv_finding_with_special_chars_in_current(self) -> None:
+        finding = _make_finding()
+        finding["current"] = '<img src="photo.jpg">'
+        report = _make_report(findings=[finding])
+        output = render_csv([report])
+        # The double-quote in the HTML should be escaped per RFC 4180
+        self.assertIn('""photo.jpg""', output)
+
+    def test_csv_finding_with_newline_in_changed_target(self) -> None:
+        finding = _make_finding()
+        finding["changed_target"] = "line1\nline2"
+        report = _make_report(findings=[finding])
+        output = render_csv([report])
+        # Newline must be quoted
+        self.assertIn('"line1\nline2"', output)
+
+
+class TestHtmlEscapeEdgeCases(unittest.TestCase):
+    """Edge cases for _html_escape and render_html XSS prevention."""
+
+    def test_html_escape_script_tag(self) -> None:
+        from report_renderers import _html_escape
+        self.assertEqual(
+            _html_escape('<script>alert("xss")</script>'),
+            '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;',
+        )
+
+    def test_html_escape_ampersand(self) -> None:
+        from report_renderers import _html_escape
+        self.assertEqual(_html_escape("a & b"), "a &amp; b")
+
+    def test_html_escape_double_ampersand_not_double_escaped(self) -> None:
+        from report_renderers import _html_escape
+        # &amp; should become &amp;amp; (each & gets escaped)
+        self.assertEqual(_html_escape("&amp;"), "&amp;amp;")
+
+    def test_render_html_xss_in_target_name(self) -> None:
+        finding = _make_finding()
+        report = _make_report(target='<script>alert(1)</script>', findings=[finding])
+        agg = build_aggregate_report([report])
+        output = render_html(agg)
+        # Raw script tag must not appear in output
+        self.assertNotIn("<script>alert(1)</script>", output)
+        self.assertIn("&lt;script&gt;", output)
+
+    def test_render_html_xss_in_finding_current(self) -> None:
+        finding = _make_finding()
+        finding["current"] = '<img onerror="alert(1)">'
+        report = _make_report(findings=[finding])
+        agg = build_aggregate_report([report])
+        output = render_html(agg)
+        self.assertNotIn('onerror="alert(1)"', output)
+
+
 if __name__ == "__main__":
     unittest.main()
