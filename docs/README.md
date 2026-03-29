@@ -5,20 +5,11 @@ This directory is organized by operational purpose so the project is easier to r
 ## Start Here
 
 - `../README.md`: product overview, install, usage, validation, and release links
-- `../TESTING-PLAN.md`: test matrix and coverage mapping
+- `testing/test-matrix.md`: test matrix and coverage mapping
 - `../CONTRIBUTING.md`: contribution workflow, contract guardrails, and review expectations
 - `../SECURITY.md`: vulnerability reporting and security scope
 
 ## Sections
-
-### `automations/`
-
-Automation specs, review policies, and generated todo inventories used by Codex-driven repository maintenance.
-
-- `automations/todo.md`: rolling backlog for automation-assisted repository work
-- `automations/20260328_todo.md`: point-in-time automation worklist with resolved false-positive tracking
-- `automations/test-plan-automation.md`: automation design for test planning
-- `automations/test-plan-review-policy.md`: review rules for automation-generated plans
 
 ### `policy-bundles/`
 
@@ -70,3 +61,4 @@ Historical records retained for traceability.
 
 - `archive/testing/`: historical test plans and manual checklists
 - `archive/decisions/`: superseded design decisions and packaging notes
+- `archive/decisions/markdown-cleanup-20260329.md`: markdown cleanup and GitHub Pages source-boundary decision record

@@ -201,6 +201,47 @@ class InstallAgentTests(unittest.TestCase):
         self.assertIn('libro-wcag', payload['mcpServers'])
         self.assertIn('mcp-server/server.py', payload['mcpServers']['libro-wcag']['args'][0])
 
+    def test_installer_materializes_codex_workspace_extras_from_templates(self) -> None:
+        workspace_root = self._workspace('codex-workspace-root')
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'scripts/install-agent.py',
+                '--agent',
+                'codex',
+                '--workspace-root',
+                str(workspace_root),
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        self.assertTrue((workspace_root / '.codex' / 'skills' / 'libro-wcag' / 'SKILL.md').exists())
+        self.assertTrue((workspace_root / '.codex' / 'environments' / 'environment.toml').exists())
+
+    def test_installer_uses_templates_even_when_source_checkout_has_no_root_workspace_assets(self) -> None:
+        self.assertFalse((self.repo_root / '.claude' / 'skills' / 'libro-wcag' / 'SKILL.md').exists())
+        destination = self._workspace('template-backed-claude-install') / 'claude-skill'
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'scripts/install-agent.py',
+                '--agent',
+                'claude',
+                '--dest',
+                str(destination),
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        content = (destination / 'SKILL.md').read_text(encoding='utf-8')
+        self.assertIn('Claude-specific note', content)
+
     def test_emit_mcp_config_requires_workspace_root(self) -> None:
         completed = subprocess.run(
             [
@@ -394,6 +435,7 @@ class InstallAgentTests(unittest.TestCase):
         ]
         directories_to_copy = [
             'skills/libro-wcag/adapters',
+            'packaging/templates/workspace',
         ]
         for relative in files_to_copy:
             source = self.repo_root / relative

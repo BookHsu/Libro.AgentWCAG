@@ -37,6 +37,7 @@ Clean-environment scripted smoke:
 Success criteria for clean release smoke:
 
 - starts from the packaged release asset directory, not repo-relative skill sources
+- treats repo-open workspace assets as packaged materialized outputs, not source-checkout root dot-directories
 - verifies the selected bundle hash against both `sha256sums.txt` and the release manifest
 - installs from the extracted bundle with release provenance exported through environment variables
 - runs `doctor-agent.py --verify-manifest-integrity`

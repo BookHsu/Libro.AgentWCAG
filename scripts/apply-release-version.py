@@ -40,12 +40,12 @@ def update_package_json(version: str) -> None:
 
 
 def update_claude_plugin(version: str) -> None:
-    plugin_path = REPO_ROOT / ".claude-plugin" / "plugin.json"
+    plugin_path = REPO_ROOT / "packaging" / "templates" / "claude-plugin" / "plugin.json"
     plugin = json.loads(plugin_path.read_text(encoding="utf-8"))
     plugin["version"] = version
     plugin_path.write_text(json.dumps(plugin, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
-    marketplace_path = REPO_ROOT / ".claude-plugin" / "marketplace.json"
+    marketplace_path = REPO_ROOT / "packaging" / "templates" / "claude-plugin" / "marketplace.json"
     marketplace = json.loads(marketplace_path.read_text(encoding="utf-8"))
     metadata = marketplace.setdefault("metadata", {})
     metadata["version"] = version

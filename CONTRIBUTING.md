@@ -1,26 +1,26 @@
-# Contributing
+# 貢獻指南
 
-Thank you for contributing to Libro.AgentWCAG.
+感謝你為 Libro.AgentWCAG 做出貢獻。
 
-This repository maintains a vendor-neutral WCAG skill contract shared across Codex, Claude, Gemini, and Copilot. Changes should preserve contract stability first, then improve adapters, tooling, and documentation around that contract.
+這個 repository 維護的是一份可被 Codex、Claude、Gemini、Copilot 共用的 vendor-neutral WCAG skill contract。所有變更都應先維持合約穩定，再改善 adapter、工具鏈與周邊文件。
 
-## Ground Rules
+## 基本原則
 
-- Keep adapters thin. Files under `skills/libro-wcag/adapters/` may change prompt phrasing, but must not change contract field names, field ordering, status vocabulary, or JSON keys.
-- Keep the vendor-neutral contract authoritative. Update `skills/libro-wcag/SKILL.md`, `skills/libro-wcag/references/core-spec.md`, and schemas/tests together when the contract changes.
-- Prefer safe auto-fixes only. Any new `apply-fixes` behavior must be demonstrably safe, narrowly scoped, and covered by regression tests.
-- Use official W3C citations. Material findings and documentation examples should point to official WCAG / Understanding URLs.
-- Keep versions in sync. Release-facing version strings in `pyproject.toml` and `package.json` must match.
+- 保持 adapter 輕薄。`skills/libro-wcag/adapters/` 底下的檔案可以調整 prompt 表達方式，但不得改變合約欄位名稱、欄位順序、狀態詞彙或 JSON keys。
+- 維持 vendor-neutral contract 為唯一權威來源。當合約變更時，請同步更新 `skills/libro-wcag/SKILL.md`、`skills/libro-wcag/references/core-spec.md`、schema 與測試。
+- 自動修正必須安全。任何新的 `apply-fixes` 行為，都必須可證明安全、範圍明確，並具備回歸測試。
+- 使用官方 W3C 引用。重大發現與文件範例應指向正式的 WCAG / Understanding URL。
+- 版本資訊保持同步。`pyproject.toml` 與 `package.json` 中面向 release 的版本字串必須一致。
 
-## Development Setup
+## 開發環境
 
-Requirements:
+需求：
 
 - Python 3.12+
 - `pyyaml`
-- Node.js only when you need scanner/runtime or packaging workflows
+- 只有在需要 scanner/runtime 或 packaging 流程時才需要 Node.js
 
-Common commands:
+常用指令：
 
 ```bash
 python -m unittest discover -s skills/libro-wcag/scripts/tests -p "test_*.py"
@@ -28,53 +28,53 @@ python scripts/validate_skill.py skills/libro-wcag
 python scripts/libro.py doctor codex
 ```
 
-## Change Types
+## 變更類型
 
-### Contract or Schema Changes
+### 合約或 Schema 變更
 
-When changing report fields, status vocabularies, defaults, or schema behavior:
+當你要修改報告欄位、狀態詞彙、預設值或 schema 行為時：
 
-1. Update the contract source in `skills/libro-wcag/SKILL.md` and related references.
-2. Update the JSON schema in `skills/libro-wcag/schemas/`.
-3. Add or adjust regression coverage in `skills/libro-wcag/scripts/tests/`.
-4. Update adapter examples if the user-visible output shape changes.
-5. Record the change in `CHANGELOG.md`.
+1. 更新 `skills/libro-wcag/SKILL.md` 與相關 reference 中的合約內容。
+2. 更新 `skills/libro-wcag/schemas/` 中的 JSON Schema。
+3. 在 `skills/libro-wcag/scripts/tests/` 補上或調整回歸測試。
+4. 若使用者可見輸出形狀有變化，更新 adapter examples。
+5. 在 `CHANGELOG.md` 記錄這次變更。
 
-### Adapter Changes
+### Adapter 變更
 
-When changing adapter docs or prompt templates:
+當你調整 adapter 文件或 prompt templates 時：
 
-1. Keep the output contract semantically identical across adapters.
-2. Update the affected adapter's `prompt-template.md`, `usage-example.md`, `failure-guide.md`, and `e2e-example.md` together when needed.
-3. Re-run `python scripts/validate_skill.py skills/libro-wcag`.
+1. 保持各 adapter 的輸出合約語意一致。
+2. 必要時同步更新該 adapter 的 `prompt-template.md`、`usage-example.md`、`failure-guide.md`、`e2e-example.md`。
+3. 重新執行 `python scripts/validate_skill.py skills/libro-wcag`。
 
-### Auto-Fix Changes
+### Auto-Fix 變更
 
-When changing `skills/libro-wcag/scripts/auto_fix.py` or related rewrite helpers:
+當你調整 `skills/libro-wcag/scripts/auto_fix.py` 或相關 rewrite helpers 時：
 
-1. Limit changes to patterns that are safe to rewrite automatically.
-2. Add targeted fixture or unit coverage for both successful rewrites and guarded non-rewrites.
-3. Verify unified diff output remains reviewable.
+1. 只擴充可以安全自動重寫的模式。
+2. 為成功重寫與受保護不重寫兩種情境都補上 fixture 或單元測試。
+3. 確保 unified diff 仍然可讀、可審查。
 
-## Pull Request Expectations
+## Pull Request 要求
 
-- Keep PRs focused and small enough to review coherently.
-- Describe user-visible contract changes explicitly.
-- Call out any backward compatibility risk.
-- Include the validation commands you ran.
-- Update `CHANGELOG.md` for behavior, contract, packaging, or operator-facing documentation changes.
+- 保持 PR 聚焦，大小要能被清楚審查。
+- 明確描述任何使用者可見的合約變更。
+- 標出是否有相容性風險。
+- 列出你實際執行的驗證指令。
+- 若變更影響行為、合約、打包或 operator-facing 文件，請更新 `CHANGELOG.md`。
 
-## Documentation Expectations
+## 文件要求
 
-- Prefer updating the primary source of truth instead of adding duplicate guidance.
-- Put operational docs under `docs/release/`, testing docs under `docs/testing/`, and examples under `docs/examples/`.
-- Archive superseded material under `docs/archive/` rather than deleting useful history.
+- 優先更新既有權威來源，不要額外增加重複說明。
+- 維運文件放在 `docs/release/`，測試文件放在 `docs/testing/`，範例放在 `docs/examples/`。
+- 已被取代但仍有保存價值的內容，請移到 `docs/archive/`，不要直接刪掉有用歷史。
 
-## Review Checklist
+## Review 檢查清單
 
-Before requesting review, confirm:
+在送出 review 前，請確認：
 
-- Tests or validation relevant to the change have been run.
-- Contract, schema, adapters, and examples remain aligned.
-- New files are placed in the correct docs section.
-- No unrelated generated artifacts are included.
+- 已執行與此次變更相關的測試或驗證
+- 合約、schema、adapters 與 examples 仍然一致
+- 新檔案被放在正確的文件區段
+- 沒有把不相關的產生物一起提交

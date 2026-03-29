@@ -8,6 +8,8 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ### Added
 
+- `docs/archive/decisions/markdown-cleanup-20260329.md` now records the markdown convergence decisions and the first-pass GitHub Pages source set after temporary planning files were removed.
+- `docs/testing/test-matrix.md` now holds the detailed coverage matrix that previously lived at the repo root in `TESTING-PLAN.md`.
 - `libro audit` subcommand forwards all arguments to `run_accessibility_audit.py`, providing a short CLI entry point for WCAG audits (e.g. `libro audit https://example.com`).
 - `libro doctor --check-scanners` verifies scanner toolchain availability (Node.js, npx, axe, lighthouse) alongside the existing skill file checks.
 - README.md and README.en.md now include a "CLI Quick Start" section with copy-paste CLI examples for audit, suggest, apply-fixes, and preflight checks.
@@ -30,6 +32,9 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ### Fixed
 
+- Removed redundant `CLAUDE.md`, which only repeated the repository-wide `AGENTS.md` instruction without adding any Claude-specific contract or workflow behavior.
+- Removed the completed root backlog file `SKILL-TODO.md` after its remaining cleanup decisions were captured elsewhere, and moved `TESTING-PLAN.md` into `docs/testing/test-matrix.md` so root docs stay focused on durable entry points.
+- Removed the temporary `docs/automations/` planning directory after converging its durable decisions into formal docs, tests, changelog, and archive notes.
 - `_report_to_sarif()` now generates RFC 3986 compliant `file:///` URIs for local targets on Windows, instead of bare `C:/path` style strings that some SARIF consumers cannot parse.
 - SARIF output now includes `helpUri` (W3C Understanding URL), `help` text, `ruleIndex`, and `invocations` object per SARIF 2.1.0 spec, improving tool interoperability.
 - SARIF results now include `contextRegion` (±1 line around the finding) and `snippet` (CSS selector) for better IDE and analysis tool integration.

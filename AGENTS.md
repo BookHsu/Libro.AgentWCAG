@@ -42,6 +42,7 @@ python scripts/libro.py doctor codex
 - **skills/libro-wcag/adapters/{claude,copilot,gemini,openai-codex}/** — 各平台 prompt 模板。每個包含 `prompt-template.md`、`usage-example.md`、`failure-guide.md`、`e2e-example.md`。Adapter 不得改變核心輸出語意。
 - **skills/libro-wcag/references/** — 共用規格：`core-spec.md`（欄位定義）、`wcag-citations.md`（W3C 官方 URL）、`adapter-mapping.md`（跨平台對應規則）、`framework-patterns-*.md`（React/Vue/Next.js 指引）。
 - **skills/libro-wcag/schemas/** — 報告驗證用 JSON Schema（`wcag-report-1.0.0.schema.json`）。
+- **packaging/templates/** — agent workspace 與 plugin 模板來源。source checkout 不直接攜帶 root-level `.<agent>/...`，而是由安裝/打包流程 materialize 真正的工作區結構。
 - **mcp-server/** — FastMCP 伺服器，公開 `libro_wcag_audit`、`libro_wcag_suggest`、`libro_wcag_normalize` 工具。
 - **scripts/** — CLI 安裝器（`libro.py`、`install-agent.py`）、驗證（`doctor-agent.py`）、移除、發佈腳本。
 - **bin/libro.js** — Node CLI 進入點（npm 套件名稱：`librowcag-cli`）。
@@ -77,8 +78,8 @@ python scripts/libro.py doctor codex
 ### 1. 文件分層
 
 - **正式文件（human-facing docs）**：僅限 `README.md`、`CONTRIBUTING.md`、`SECURITY.md`、`docs/README.md`、`docs/release/`、`docs/testing/`。
-- **AI 控制文件（agent-facing docs）**：`docs/automations/`。此目錄用於安排 AI agent 工作、決策記錄與執行追蹤，不視為正式對外文件。
-- **合約/執行文件（contract/runtime docs）**：`skills/`、workspace skill 複本（`.claude/`、`.codex/`、`.copilot/`、`.gemini/`）。這些文件直接影響 agent 行為與合約，不可視為一般說明文件處理。
+- **暫存規劃文件（temporary planning docs）**：如需為 agent 工作建立中繼規劃文件，必須視為暫存資產；完成收斂後要刪除，不得作為長期文件集合的一部分。
+- **合約/執行文件（contract/runtime docs）**：`skills/` 與 `packaging/templates/`。這些文件直接影響 agent 行為、工作區 materialization 與產品合約，不可視為一般說明文件處理。
 
 ### 2. 收斂優先，翻譯其次
 
@@ -90,13 +91,14 @@ python scripts/libro.py doctor codex
 
 - 專案最終**必須保留一組人類可直接閱讀且足以理解專案的正式文件集合**。
 - 正式文件至少要能讓人類讀者理解：專案用途、安裝/使用方式、限制、測試方式、維運/發布流程。
-- AI agent 不得把只有 `docs/automations/` 內存在的核心決策留在控制文件而不回寫到正式文件。
+- AI agent 不得把只存在於暫存規劃文件中的核心決策留在中繼文件而不回寫到正式文件、`CHANGELOG.md`，或 `docs/archive/decisions/`。
 
 ### 4. 翻譯範圍限制
 
-- `docs/automations/` **不得列為翻譯目標**。
+- 暫存規劃文件 **不得列為翻譯目標**。
 - `skills/`、workspace skill 複本、測試快照、sample output、報告樣本 **不得作為一般文件翻譯目標**。
-- 正式文件若要雙語化，採用 **繁體中文主檔 `.md` + 英文副本 `.en.md`** 的模式。
+- 正式 human-facing docs **必須**採用 **繁體中文主檔 `.md` + 英文副本 `.en.md`** 的模式。
+- 正式 human-facing docs 的語言策略 **固定為繁體中文為主、英文為輔**；agent **不得**反轉主副語言角色，也不得引入其他主副語言策略。
 - 翻譯只允許套用到最終保留的正式文件；不得為半成品、過渡文件、待刪文件建立雙語副本。
 
 ### 5. 執行方式限制
@@ -108,7 +110,7 @@ python scripts/libro.py doctor codex
 
 ### 6. 變更控制
 
-- 任何文件收斂、合併、刪除或翻譯決策，必須先更新 `docs/automations/20260328_todo.md` 中對應的工作項，讓後續 agent 能沿用相同決策。
+- 任何文件收斂、合併、刪除或翻譯決策，必須先把可保留的結果寫回正式文件、`CHANGELOG.md`，或 `docs/archive/decisions/`，不得只留在暫存規劃文件中。
 - Commit 時應優先提交「已人工確認、可獨立成立」的小範圍文件變更；不得把未收斂的半成品翻譯混入同一個 commit。
 - 若工作樹中同時存在已確認文件與未確認半成品，agent 必須主動縮小 commit 範圍，只提交安全子集。
 

@@ -27,6 +27,8 @@
     "scripts/*.py",
     "scripts/*.ps1",
     "scripts/*.sh",
+    "packaging/templates/workspace/",
+    "packaging/templates/claude-plugin/",
     "skills/libro-wcag/SKILL.md",
     "skills/libro-wcag/adapters/",
     "skills/libro-wcag/agents/",

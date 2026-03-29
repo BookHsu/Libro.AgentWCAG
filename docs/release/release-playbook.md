@@ -11,7 +11,7 @@ Use this playbook as the primary release-readiness document for `libro-wcag`.
 - Run `python scripts/apply-release-version.py --version X.Y.Z` when staging a local dry run from a tag candidate.
 - Run `python scripts/package-release.py --output-dir dist/release --overwrite` from the repo root to stage versioned release assets.
 - Confirm `skills/libro-wcag/agents/openai.yaml` and manifest references are valid.
-- Confirm `pyproject.toml`, `package.json`, and `.claude-plugin/*.json` were all updated by the tag-derived version injection step.
+- Confirm `pyproject.toml`, `package.json`, and `packaging/templates/claude-plugin/*.json` were all updated by the tag-derived version injection step.
 - Confirm release automation sets `LIBRO_AGENTWCAG_SOURCE_REVISION`; if not set, verify the build runs from a git checkout where `HEAD` resolves cleanly.
 - If release packaging needs a pinned timestamp, set `LIBRO_AGENTWCAG_BUILD_TIMESTAMP` as a UTC ISO-8601 value; invalid or missing required provenance must fail fast rather than writing partial metadata.
 - Confirm release asset names match the documented contract:
@@ -21,6 +21,7 @@ Use this playbook as the primary release-readiness document for `libro-wcag`.
   - `libro-wcag-<version>-sha256sums.txt`
   - `latest-release.json`
 - Confirm release bundles exclude `skills/libro-wcag/scripts/tests/`, `docs/testing/`, and `docs/archive/`.
+- Confirm release bundles materialize repo-open assets from `packaging/templates/workspace/` rather than relying on root-level `.<agent>/...` files in the source checkout.
 
 ## Validation Readiness
 
