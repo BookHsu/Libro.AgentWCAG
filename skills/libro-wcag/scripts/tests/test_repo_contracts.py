@@ -73,25 +73,13 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('skills/libro-wcag/scripts/tests/', content)
 
     def test_testing_plan_tracks_matrix_mapping_and_gaps(self) -> None:
-        content = self._read(self.repo_root / 'TESTING-PLAN.md')
+        content = self._read(self.repo_root / 'docs' / 'testing' / 'test-matrix.md')
         for heading in ['## Test Matrix', '## Repo Mapping', '## Already Implemented', '## Still Worth Adding']:
             self.assertIn(heading, content)
         self.assertIn('Automation Target', content)
         self.assertIn('Coverage Mode', content)
         self.assertIn('Scripted Manual', content)
         self.assertIn('Automated', content)
-
-    def test_agent_installation_expansion_todo_tracks_unified_cli_and_workspace_paths(self) -> None:
-        content = self._read(self.repo_root / 'docs' / 'automations' / 'agent-installation-expansion-todo.md')
-        self.assertIn('scripts/libro.py', content)
-        self.assertIn('scripts/libro.ps1', content)
-        self.assertIn('scripts/libro.sh', content)
-        self.assertIn('.claude/skills/libro-wcag/SKILL.md', content)
-        self.assertIn('.gemini/skills/libro-wcag/SKILL.md', content)
-        self.assertIn('.claude-plugin/plugin.json', content)
-        self.assertIn('.claude-plugin/marketplace.json', content)
-        self.assertIn('mcp-server/server.py', content)
-        self.assertIn('.github/workflows/install-skill.yml', content)
 
     def test_claude_workspace_skill_exists_and_tracks_core_contract(self) -> None:
         core_skill = self._read(self.skill_root / 'SKILL.md')
@@ -428,11 +416,8 @@ class RepoContractTests(unittest.TestCase):
             'bin/libro.js',
             'LICENSE',
             'README.md',
-            'SKILL-TODO.md',
-            'TESTING-PLAN.md',
-            'docs/automations/test-plan-automation.md',
-            'docs/automations/test-plan-review-policy.md',
-            'docs/automations/agent-installation-expansion-todo.md',
+            'docs/testing/test-matrix.md',
+            'docs/archive/decisions/markdown-cleanup-20260329.md',
             'docs/examples/claude/mcp.sample.json',
             'docs/examples/claude/settings.add-dir.sample.json',
             'docs/examples/ci/install-skill-consumer-sample.yml',

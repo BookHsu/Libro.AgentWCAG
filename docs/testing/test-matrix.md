@@ -1,4 +1,4 @@
-# Testing Plan
+# Testing Matrix
 
 This document defines the applicable test matrix for `Libro.AgentWCAG`, maps each test type to the relevant repo area, and tracks how each applicable item is covered.
 

@@ -4,7 +4,7 @@ This run re-validated post-M20 behavior for deterministic smoke and real-scanner
 
 ## Completed TODO Items
 
-- Marked `Current Execution Order` items as complete in `SKILL-TODO.md`.
+- Marked the legacy root skill backlog document as complete before it was removed during markdown cleanup.
 - Added Windows `npx.cmd` fallback for scanner subprocess execution.
 - Added robust subprocess decoding (`utf-8` with replacement) and `stderr/stdout` null guards.
 
