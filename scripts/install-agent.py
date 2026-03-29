@@ -20,10 +20,33 @@ SKILL_NAME = "libro-wcag"
 SUPPORTED_AGENTS = ("codex", "claude", "gemini", "copilot")
 ALL_AGENTS = SUPPORTED_AGENTS + ("all",)
 MCP_CLIENTS = ("claude", "copilot", "gemini")
+REPO_ROOT = Path(__file__).resolve().parents[1]
+WORKSPACE_TEMPLATE_ROOT = REPO_ROOT / "packaging" / "templates" / "workspace"
+TEMP_FILE_SUFFIXES = {".tmp", ".bak"}
 
 
 def source_directory() -> Path:
-    return Path(__file__).resolve().parents[1] / "skills" / SKILL_NAME
+    return REPO_ROOT / "skills" / SKILL_NAME
+
+
+def workspace_template_root(agent: str) -> Path:
+    return WORKSPACE_TEMPLATE_ROOT / agent
+
+
+def workspace_template_skill_source(agent: str) -> Path:
+    return workspace_template_root(agent) / "skills" / SKILL_NAME / "SKILL.md"
+
+
+def workspace_template_extras(agent: str) -> list[tuple[Path, Path]]:
+    extras: list[tuple[Path, Path]] = []
+    if agent == "codex":
+        extras.append(
+            (
+                workspace_template_root(agent) / "environments" / "environment.toml",
+                Path(".codex/environments/environment.toml"),
+            )
+        )
+    return extras
 
 
 def default_destination(agent: str) -> Path:
@@ -114,6 +137,37 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(8192), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _copytree_ignore(dirpath: str, names: list[str]) -> set[str]:
+    ignored: set[str] = set()
+    for name in names:
+        path = Path(dirpath) / name
+        if path.name == "__pycache__":
+            ignored.add(name)
+            continue
+        if path.is_file() and (path.suffix.lower() in TEMP_FILE_SUFFIXES or path.name.endswith("~")):
+            ignored.add(name)
+    return ignored
+
+
+def _copy_template_skill(agent: str, destination: Path) -> None:
+    template_skill = workspace_template_skill_source(agent)
+    if not template_skill.exists():
+        raise FileNotFoundError(f"Missing workspace template skill: {template_skill}")
+    shutil.copyfile(template_skill, destination / "SKILL.md")
+
+
+def materialize_workspace_extras(agent: str, workspace_root: Path) -> list[Path]:
+    written: list[Path] = []
+    for source_path, relative_destination in workspace_template_extras(agent):
+        if not source_path.exists():
+            raise FileNotFoundError(f"Missing workspace template extra: {source_path}")
+        destination = workspace_root / relative_destination
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source_path, destination)
+        written.append(destination)
+    return written
 
 
 def write_manifest(destination: Path, agent: str) -> None:
@@ -227,7 +281,8 @@ def install(agent: str, destination: Path, force: bool) -> Path:
 
     try:
         destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(source, destination)
+        shutil.copytree(source, destination, ignore=_copytree_ignore)
+        _copy_template_skill(agent, destination)
         write_manifest(destination, agent)
     except (PermissionError, OSError) as exc:
         _rollback(destination, backup_path)
@@ -254,6 +309,8 @@ def install_all(
         else:
             destination = (base_destination / agent / SKILL_NAME) if base_destination else default_destination(agent)
         installed.append(install(agent, destination, force))
+        if workspace_root:
+            materialize_workspace_extras(agent, workspace_root)
     return installed
 
 
@@ -288,6 +345,7 @@ def main() -> int:
     )
     installed = install(args.agent, destination, args.force)
     if workspace_root:
+        materialize_workspace_extras(args.agent, workspace_root)
         written_mcp_configs = [write_mcp_config(client, workspace_root) for client in args.emit_mcp_config]
     print(
         f"Installed {SKILL_NAME} for {args.agent} at: {installed} "

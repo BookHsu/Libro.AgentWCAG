@@ -42,6 +42,7 @@ python scripts/libro.py doctor codex
 - **skills/libro-wcag/adapters/{claude,copilot,gemini,openai-codex}/** — 各平台 prompt 模板。每個包含 `prompt-template.md`、`usage-example.md`、`failure-guide.md`、`e2e-example.md`。Adapter 不得改變核心輸出語意。
 - **skills/libro-wcag/references/** — 共用規格：`core-spec.md`（欄位定義）、`wcag-citations.md`（W3C 官方 URL）、`adapter-mapping.md`（跨平台對應規則）、`framework-patterns-*.md`（React/Vue/Next.js 指引）。
 - **skills/libro-wcag/schemas/** — 報告驗證用 JSON Schema（`wcag-report-1.0.0.schema.json`）。
+- **packaging/templates/** — agent workspace 與 plugin 模板來源。source checkout 不直接攜帶 root-level `.<agent>/...`，而是由安裝/打包流程 materialize 真正的工作區結構。
 - **mcp-server/** — FastMCP 伺服器，公開 `libro_wcag_audit`、`libro_wcag_suggest`、`libro_wcag_normalize` 工具。
 - **scripts/** — CLI 安裝器（`libro.py`、`install-agent.py`）、驗證（`doctor-agent.py`）、移除、發佈腳本。
 - **bin/libro.js** — Node CLI 進入點（npm 套件名稱：`librowcag-cli`）。
@@ -78,7 +79,7 @@ python scripts/libro.py doctor codex
 
 - **正式文件（human-facing docs）**：僅限 `README.md`、`CONTRIBUTING.md`、`SECURITY.md`、`docs/README.md`、`docs/release/`、`docs/testing/`。
 - **暫存規劃文件（temporary planning docs）**：如需為 agent 工作建立中繼規劃文件，必須視為暫存資產；完成收斂後要刪除，不得作為長期文件集合的一部分。
-- **合約/執行文件（contract/runtime docs）**：`skills/`、workspace skill 複本（`.claude/`、`.codex/`、`.copilot/`、`.gemini/`）。這些文件直接影響 agent 行為與合約，不可視為一般說明文件處理。
+- **合約/執行文件（contract/runtime docs）**：`skills/` 與 `packaging/templates/`。這些文件直接影響 agent 行為、工作區 materialization 與產品合約，不可視為一般說明文件處理。
 
 ### 2. 收斂優先，翻譯其次
 

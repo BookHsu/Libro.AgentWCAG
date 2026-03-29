@@ -176,7 +176,9 @@ class RepoScriptTests(unittest.TestCase):
         script = (self.repo_root / 'scripts' / 'apply-release-version.py').read_text(encoding='utf-8')
         self.assertIn('pyproject.toml', script)
         self.assertIn('package.json', script)
-        self.assertIn('.claude-plugin', script)
+        self.assertIn('packaging', script)
+        self.assertIn('templates', script)
+        self.assertIn('claude-plugin', script)
         self.assertIn('marketplace.json', script)
         self.assertIn('Semantic version', script)
 

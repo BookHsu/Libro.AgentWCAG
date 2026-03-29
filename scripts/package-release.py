@@ -8,6 +8,7 @@ import hashlib
 import json
 import shutil
 import sys
+import tempfile
 import zipfile
 from pathlib import Path
 
@@ -41,6 +42,8 @@ OPTIONAL_RELEASE_ASSETS = (
     ("smoke-runner", Path("scripts/run-release-adoption-smoke.py"), "{slug}-{version}-run-release-adoption-smoke.py"),
 )
 REQUIRED_ADAPTER_DOCS = ("prompt-template.md", "usage-example.md", "failure-guide.md", "e2e-example.md")
+WORKSPACE_TEMPLATE_ROOT = REPO_ROOT / "packaging" / "templates" / "workspace"
+CLAUDE_PLUGIN_TEMPLATE_ROOT = REPO_ROOT / "packaging" / "templates" / "claude-plugin"
 AGENT_MANIFESTS = {
     "codex": "openai.yaml",
     "claude": "claude.yaml",
@@ -124,6 +127,24 @@ def _validate_release_inputs(agent: str | None) -> None:
             if not doc_path.is_file():
                 missing.append(doc_path.relative_to(REPO_ROOT).as_posix())
 
+        template_root = WORKSPACE_TEMPLATE_ROOT / validated_agent
+        template_skill = template_root / "skills" / PRODUCT_SLUG / "SKILL.md"
+        if not template_skill.is_file():
+            missing.append(template_skill.relative_to(REPO_ROOT).as_posix())
+        if validated_agent == "codex":
+            env_template = template_root / "environments" / "environment.toml"
+            if not env_template.is_file():
+                missing.append(env_template.relative_to(REPO_ROOT).as_posix())
+
+    plugin_required = agent in (None, "claude")
+    if plugin_required:
+        for relative in (
+            CLAUDE_PLUGIN_TEMPLATE_ROOT / "plugin.json",
+            CLAUDE_PLUGIN_TEMPLATE_ROOT / "marketplace.json",
+        ):
+            if not relative.is_file():
+                missing.append(relative.relative_to(REPO_ROOT).as_posix())
+
     if missing:
         raise FileNotFoundError(
             "Release packaging input validation failed; missing required files:\n- "
@@ -155,10 +176,25 @@ def _iter_policy_bundle_files() -> list[Path]:
     return sorted((REPO_ROOT / "docs" / "policy-bundles").glob("*.json"))
 
 
+def _iter_template_files(agent: str | None) -> list[Path]:
+    files: list[Path] = []
+    agents = _iter_validated_agents(agent)
+    for validated_agent in agents:
+        for path in sorted((WORKSPACE_TEMPLATE_ROOT / validated_agent).rglob("*")):
+            if path.is_file():
+                files.append(path)
+    if agent in (None, "claude"):
+        for path in sorted(CLAUDE_PLUGIN_TEMPLATE_ROOT.rglob("*")):
+            if path.is_file():
+                files.append(path)
+    return files
+
+
 def _bundle_input_files(agent: str | None) -> list[Path]:
     input_files = [REPO_ROOT / relative for relative in BASE_RELEASE_FILES]
     input_files.extend(_iter_policy_bundle_files())
     input_files.extend(_iter_release_skill_files(agent))
+    input_files.extend(_iter_template_files(agent))
     return sorted({path.resolve(): path for path in input_files}.values(), key=lambda path: str(path.relative_to(REPO_ROOT)).replace("\\", "/"))
 
 
@@ -170,14 +206,46 @@ def _write_zip_entry(archive: zipfile.ZipFile, source_path: Path, archive_path: 
     archive.writestr(info, source_path.read_bytes())
 
 
+def _materialize_workspace_templates(staging_root: Path, agent: str | None) -> None:
+    agents = _iter_validated_agents(agent)
+    for validated_agent in agents:
+        source_root = WORKSPACE_TEMPLATE_ROOT / validated_agent
+        destination_root = staging_root / f".{validated_agent}"
+        shutil.copytree(source_root, destination_root, dirs_exist_ok=True)
+
+
+def _materialize_claude_plugin(staging_root: Path) -> None:
+    shutil.copytree(CLAUDE_PLUGIN_TEMPLATE_ROOT, staging_root / ".claude-plugin", dirs_exist_ok=True)
+
+
+def _build_staging_tree(agent: str | None) -> Path:
+    staging_parent = Path(tempfile.mkdtemp(prefix="libro-wcag-release-"))
+    staging_root = staging_parent / "bundle"
+    staging_root.mkdir(parents=True, exist_ok=True)
+    for source_path in _bundle_input_files(agent):
+        relative = source_path.relative_to(REPO_ROOT)
+        destination = staging_root / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source_path, destination)
+    _materialize_workspace_templates(staging_root, agent)
+    if agent in (None, "claude"):
+        _materialize_claude_plugin(staging_root)
+    return staging_parent
+
+
 def build_bundle(bundle_path: Path, version: str, label: str, agent: str | None) -> dict[str, object]:
     bundle_root = f"{PRODUCT_SLUG}-{version}-{label}"
     _validate_release_inputs(agent)
-    input_files = _bundle_input_files(agent)
-    with zipfile.ZipFile(bundle_path, "w") as archive:
-        for source_path in input_files:
-            relative = source_path.relative_to(REPO_ROOT).as_posix()
-            _write_zip_entry(archive, source_path, f"{bundle_root}/{relative}")
+    staging_parent = _build_staging_tree(agent)
+    staging_root = staging_parent / "bundle"
+    try:
+        input_files = sorted(path for path in staging_root.rglob("*") if path.is_file())
+        with zipfile.ZipFile(bundle_path, "w") as archive:
+            for source_path in input_files:
+                relative = source_path.relative_to(staging_root).as_posix()
+                _write_zip_entry(archive, source_path, f"{bundle_root}/{relative}")
+    finally:
+        shutil.rmtree(staging_parent, ignore_errors=True)
     return {
         "filename": bundle_path.name,
         "kind": "bundle",

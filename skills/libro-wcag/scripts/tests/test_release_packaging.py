@@ -82,7 +82,10 @@ class ReleasePackagingTests(unittest.TestCase):
             names = set(archive.namelist())
             self.assertIn(f"libro-wcag-{self.product_version}-codex/CHANGELOG.md", names)
             self.assertIn(f"libro-wcag-{self.product_version}-codex/scripts/install-agent.py", names)
+            self.assertIn(f"libro-wcag-{self.product_version}-codex/packaging/templates/workspace/codex/skills/libro-wcag/SKILL.md", names)
             self.assertIn(f"libro-wcag-{self.product_version}-codex/skills/libro-wcag/scripts/py.typed", names)
+            self.assertIn(f"libro-wcag-{self.product_version}-codex/.codex/skills/libro-wcag/SKILL.md", names)
+            self.assertIn(f"libro-wcag-{self.product_version}-codex/.codex/environments/environment.toml", names)
             self.assertIn(
                 f"libro-wcag-{self.product_version}-codex/skills/libro-wcag/adapters/openai-codex/prompt-template.md",
                 names,
@@ -94,6 +97,12 @@ class ReleasePackagingTests(unittest.TestCase):
             self.assertFalse(any("/scripts/tests/" in name for name in names))
             self.assertFalse(any(name.startswith(f"libro-wcag-{self.product_version}-codex/docs/testing/") for name in names))
             self.assertFalse(any(name.startswith(f"libro-wcag-{self.product_version}-codex/docs/archive/") for name in names))
+
+        with zipfile.ZipFile(output_dir / f"libro-wcag-{self.product_version}-claude.zip") as archive:
+            names = set(archive.namelist())
+            self.assertIn(f"libro-wcag-{self.product_version}-claude/.claude/skills/libro-wcag/SKILL.md", names)
+            self.assertIn(f"libro-wcag-{self.product_version}-claude/.claude-plugin/plugin.json", names)
+            self.assertIn(f"libro-wcag-{self.product_version}-claude/packaging/templates/claude-plugin/plugin.json", names)
 
         checksums = checksum_path.read_text(encoding="utf-8")
         self.assertIn(f"*libro-wcag-{self.product_version}-release-manifest.json", checksums)

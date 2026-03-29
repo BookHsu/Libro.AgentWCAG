@@ -63,6 +63,8 @@ class RepoContractTests(unittest.TestCase):
         self.assertNotIn('provenance', payload['publishConfig'])
         self.assertIn('scripts/*.py', payload['files'])
         self.assertIn('scripts/*.ps1', payload['files'])
+        self.assertIn('packaging/templates/workspace/', payload['files'])
+        self.assertIn('packaging/templates/claude-plugin/', payload['files'])
         self.assertIn('skills/libro-wcag/scripts/*.py', payload['files'])
         self.assertIn('skills/libro-wcag/scripts/py.typed', payload['files'])
 
@@ -71,6 +73,9 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('**/__pycache__/', content)
         self.assertIn('**/*.pyc', content)
         self.assertIn('skills/libro-wcag/scripts/tests/', content)
+        self.assertNotIn('.codex/', content)
+        self.assertNotIn('.claude/', content)
+        self.assertNotIn('.gemini/', content)
 
     def test_testing_plan_tracks_matrix_mapping_and_gaps(self) -> None:
         content = self._read(self.repo_root / 'docs' / 'testing' / 'test-matrix.md')
@@ -81,9 +86,9 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('Scripted Manual', content)
         self.assertIn('Automated', content)
 
-    def test_claude_workspace_skill_exists_and_tracks_core_contract(self) -> None:
+    def test_claude_workspace_template_exists_and_tracks_core_contract(self) -> None:
         core_skill = self._read(self.skill_root / 'SKILL.md')
-        workspace_skill = self._read(self.repo_root / '.claude' / 'skills' / 'libro-wcag' / 'SKILL.md')
+        workspace_skill = self._read(self.repo_root / 'packaging' / 'templates' / 'workspace' / 'claude' / 'skills' / 'libro-wcag' / 'SKILL.md')
         self.assertIn('name: libro-wcag', workspace_skill)
         self.assertIn('Claude-specific note', workspace_skill)
         self.assertIn('execution_mode', workspace_skill)
@@ -92,9 +97,9 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('JSON top-level keys', workspace_skill)
         self.assertIn('JSON top-level keys', core_skill)
 
-    def test_gemini_workspace_skill_exists_and_tracks_core_contract(self) -> None:
+    def test_gemini_workspace_template_exists_and_tracks_core_contract(self) -> None:
         core_skill = self._read(self.skill_root / 'SKILL.md')
-        workspace_skill = self._read(self.repo_root / '.gemini' / 'skills' / 'libro-wcag' / 'SKILL.md')
+        workspace_skill = self._read(self.repo_root / 'packaging' / 'templates' / 'workspace' / 'gemini' / 'skills' / 'libro-wcag' / 'SKILL.md')
         self.assertIn('name: libro-wcag', workspace_skill)
         self.assertIn('Gemini-specific note', workspace_skill)
         self.assertIn('execution_mode', workspace_skill)
@@ -154,7 +159,7 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('apply-release-version.py', content)
 
     def test_claude_plugin_json_exists_and_has_required_fields(self) -> None:
-        payload = json.loads((self.repo_root / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))
+        payload = json.loads((self.repo_root / 'packaging' / 'templates' / 'claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))
         self.assertEqual(payload['name'], 'libro-wcag')
         self.assertEqual(payload['license'], 'MIT')
         self.assertIn('version', payload)
@@ -164,21 +169,30 @@ class RepoContractTests(unittest.TestCase):
         self.assertIn('libro-wcag', payload['mcpServers'])
 
     def test_claude_marketplace_json_exists_and_references_plugin(self) -> None:
-        payload = json.loads((self.repo_root / '.claude-plugin' / 'marketplace.json').read_text(encoding='utf-8'))
+        payload = json.loads((self.repo_root / 'packaging' / 'templates' / 'claude-plugin' / 'marketplace.json').read_text(encoding='utf-8'))
         self.assertEqual(payload['name'], 'libro-wcag-marketplace')
         self.assertEqual(len(payload['plugins']), 1)
         self.assertEqual(payload['plugins'][0]['name'], 'libro-wcag')
         self.assertEqual(payload['plugins'][0]['source'], './')
 
     def test_claude_plugin_version_matches_pyproject(self) -> None:
-        plugin = json.loads((self.repo_root / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))
+        plugin = json.loads((self.repo_root / 'packaging' / 'templates' / 'claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))
         pyproject = tomllib.loads((self.repo_root / 'pyproject.toml').read_text(encoding='utf-8'))
         self.assertEqual(plugin['version'], pyproject['project']['version'])
 
     def test_claude_marketplace_version_matches_plugin(self) -> None:
-        plugin = json.loads((self.repo_root / '.claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))
-        marketplace = json.loads((self.repo_root / '.claude-plugin' / 'marketplace.json').read_text(encoding='utf-8'))
+        plugin = json.loads((self.repo_root / 'packaging' / 'templates' / 'claude-plugin' / 'plugin.json').read_text(encoding='utf-8'))
+        marketplace = json.loads((self.repo_root / 'packaging' / 'templates' / 'claude-plugin' / 'marketplace.json').read_text(encoding='utf-8'))
         self.assertEqual(marketplace['plugins'][0]['version'], plugin['version'])
+
+    def test_source_checkout_does_not_ship_workspace_product_assets_at_root(self) -> None:
+        self.assertFalse((self.repo_root / '.claude' / 'skills' / 'libro-wcag' / 'SKILL.md').exists())
+        self.assertFalse((self.repo_root / '.codex' / 'skills' / 'libro-wcag' / 'SKILL.md').exists())
+        self.assertFalse((self.repo_root / '.copilot' / 'skills' / 'libro-wcag' / 'SKILL.md').exists())
+        self.assertFalse((self.repo_root / '.gemini' / 'skills' / 'libro-wcag' / 'SKILL.md').exists())
+        self.assertFalse((self.repo_root / '.codex' / 'environments' / 'environment.toml').exists())
+        self.assertFalse((self.repo_root / '.claude-plugin' / 'plugin.json').exists())
+        self.assertFalse((self.repo_root / '.claude-plugin' / 'marketplace.json').exists())
 
     def test_manual_testing_assets_exist_for_non_automated_matrix_types(self) -> None:
         playbook = self._read(self.repo_root / 'docs' / 'testing' / 'testing-playbook.md')
@@ -402,12 +416,13 @@ class RepoContractTests(unittest.TestCase):
             '.github/workflows/install-skill.yml',
             '.github/workflows/publish-npm.yml',
             '.gitignore',
-            '.claude/skills/libro-wcag/SKILL.md',
-            '.claude-plugin/plugin.json',
-            '.claude-plugin/marketplace.json',
-            '.codex/skills/libro-wcag/SKILL.md',
-            '.copilot/skills/libro-wcag/SKILL.md',
-            '.gemini/skills/libro-wcag/SKILL.md',
+            'packaging/templates/workspace/claude/skills/libro-wcag/SKILL.md',
+            'packaging/templates/workspace/codex/skills/libro-wcag/SKILL.md',
+            'packaging/templates/workspace/codex/environments/environment.toml',
+            'packaging/templates/workspace/copilot/skills/libro-wcag/SKILL.md',
+            'packaging/templates/workspace/gemini/skills/libro-wcag/SKILL.md',
+            'packaging/templates/claude-plugin/plugin.json',
+            'packaging/templates/claude-plugin/marketplace.json',
             'mcp-server/server.py',
             'mcp-server/requirements.txt',
             'mcp-server/tools/audit_page.py',
@@ -472,7 +487,6 @@ class RepoContractTests(unittest.TestCase):
             'skills/libro-wcag/scripts/remediation_library.py',
             'skills/libro-wcag/scripts/run_accessibility_audit.py',
             'skills/libro-wcag/scripts/wcag_workflow.py',
-            '.codex/environments/environment.toml',
         }
         actual = {
             str(path.relative_to(self.repo_root)).replace('\\', '/')
