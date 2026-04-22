@@ -345,14 +345,14 @@ def _resolve_scan_targets(args: argparse.Namespace) -> list[str]:
 
 
 def _scan_target_label(target: str) -> str:
+    if "\\" in target or re.match(r"^[A-Za-z]:[\\/]", target):
+        windows_stem = Path(ntpath.basename(target)).stem
+        return windows_stem or "target"
     parsed = urlparse(target)
     if parsed.scheme and parsed.scheme not in {"", "file"}:
         path_name = Path(parsed.path).stem if parsed.path else ""
         host_name = parsed.netloc.replace(".", "-")
         return "-".join(part for part in [host_name, path_name] if part) or "target"
-    if "\\" in target or re.match(r"^[A-Za-z]:[\\/]", target):
-        windows_stem = Path(ntpath.basename(target)).stem
-        return windows_stem or "target"
     return Path(target).stem or "target"
 
 
