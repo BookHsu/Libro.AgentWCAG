@@ -42,6 +42,8 @@ class ReleaseWorkflowTests(unittest.TestCase):
         self.assertIn('actions/download-artifact@v4', content)
         self.assertIn('retention-days: ${{ env.LIBRO_RELEASE_RETENTION_DAYS }}', content)
         self.assertIn('softprops/action-gh-release@v2', content)
+        self.assertIn('is_prerelease=${is_prerelease}', content)
+        self.assertIn("prerelease: ${{ needs.package-release.outputs.is_prerelease == 'true' }}", content)
         self.assertIn('fail_on_unmatched_files: true', content)
         self.assertIn('${{ env.LIBRO_RELEASE_ARTIFACT_DIR }}/*', content)
         self.assertIn('generate_release_notes: true', content)
@@ -64,6 +66,9 @@ class ReleaseWorkflowTests(unittest.TestCase):
         self.assertIn('python -m pip install pyyaml', content)
         self.assertIn('npm pack', content)
         self.assertIn('npm publish --access public', content)
+        self.assertIn('npm_dist_tag=${npm_dist_tag}', content)
+        self.assertIn("if: steps.release-meta.outputs.is_prerelease == 'true'", content)
+        self.assertIn('npm publish --access public --tag', content)
 
     def test_publish_npm_workflow_exports_provenance_after_tests(self) -> None:
         content = self.publish_npm_workflow_path.read_text(encoding='utf-8')

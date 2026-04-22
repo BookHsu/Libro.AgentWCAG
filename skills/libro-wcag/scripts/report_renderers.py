@@ -9,7 +9,10 @@ Implements TODO items B2, B3, and B5 from 20260328_report_todo.md:
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import Any
+
+from report_artifacts import _extract_report_context, _normalize_baseline_diff
 
 SEVERITY_ICONS = {
     "critical": "\U0001f534",   # 🔴
@@ -23,6 +26,18 @@ TARGET_STATUS_ICONS = {
     "clean": "\u2713",      # ✓
     "issues": "\u26a0",     # ⚠
     "critical": "\u2717",   # ✗
+}
+PLAIN_SEVERITY_MARKERS = {
+    "critical": "[critical]",
+    "serious": "[serious]",
+    "moderate": "[moderate]",
+    "minor": "[minor]",
+    "info": "[info]",
+}
+PLAIN_TARGET_STATUS_MARKERS = {
+    "clean": "OK",
+    "issues": "WARN",
+    "critical": "FAIL",
 }
 
 LABELS = {
@@ -104,6 +119,12 @@ VERDICT_LABELS = {
 _BAR_WIDTH = 30
 _SEVERITY_ORDER = ("critical", "serious", "moderate", "minor", "info")
 _FIXABILITY_ORDER = ("auto-fix", "assisted", "manual")
+_WCAG_PRINCIPLE_PREFIXES = {
+    "perceivable": "1.",
+    "operable": "2.",
+    "understandable": "3.",
+    "robust": "4.",
+}
 
 
 def _resolve_language(language: str | None) -> str:
@@ -112,24 +133,197 @@ def _resolve_language(language: str | None) -> str:
     return "zh-TW"
 
 
+def _percentage(count: int, total: int) -> float:
+    if total == 0:
+        return 0.0
+    return round(count / total * 100, 1)
+
+
+def _report_verdict(findings: list[dict[str, Any]]) -> str:
+    if not findings:
+        return "pass"
+    if any(finding.get("severity") == "critical" for finding in findings):
+        return "fail"
+    return "needs-review"
+
+
+def _target_status(findings: list[dict[str, Any]]) -> str:
+    if not findings:
+        return "clean"
+    if any(finding.get("severity") == "critical" for finding in findings):
+        return "critical"
+    return "issues"
+
+
+def _build_breakdown(
+    findings: list[dict[str, Any]],
+    *,
+    key: str,
+    levels: tuple[str, ...],
+    default: str,
+) -> dict[str, dict[str, int | float]]:
+    total = len(findings)
+    counts = Counter(finding.get(key, default) for finding in findings)
+    return {
+        level: {
+            "count": counts.get(level, 0),
+            "percentage": _percentage(counts.get(level, 0), total),
+        }
+        for level in levels
+    }
+
+
+def _build_target_summary(target_value: str, findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    severity_counts = {
+        level: count
+        for level in _SEVERITY_ORDER
+        if (count := sum(1 for finding in findings if finding.get("severity") == level)) > 0
+    }
+    return [
+        {
+            "target": target_value or "unknown",
+            "total_findings": len(findings),
+            "severity": severity_counts,
+            "auto_fixable": sum(1 for finding in findings if finding.get("fixability") == "auto-fix"),
+            "status": _target_status(findings),
+        }
+    ]
+
+
+def _build_wcag_principles(findings: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    principle_sc: dict[str, set[str]] = {
+        principle: set()
+        for principle in _WCAG_PRINCIPLE_PREFIXES
+    }
+    principle_counts: dict[str, int] = {
+        principle: 0
+        for principle in _WCAG_PRINCIPLE_PREFIXES
+    }
+
+    for finding in findings:
+        for sc in finding.get("sc", []):
+            for principle, prefix in _WCAG_PRINCIPLE_PREFIXES.items():
+                if sc.startswith(prefix):
+                    principle_sc[principle].add(sc)
+                    principle_counts[principle] += 1
+                    break
+
+    return {
+        principle: {
+            "count": principle_counts[principle],
+            "sc": sorted(principle_sc[principle]),
+        }
+        for principle in _WCAG_PRINCIPLE_PREFIXES
+    }
+
+
+def _build_top_rules(findings: list[dict[str, Any]], limit: int = 10) -> list[dict[str, Any]]:
+    rule_counter: Counter[str] = Counter()
+    rule_fixability: dict[str, str] = {}
+    rule_sc: dict[str, set[str]] = {}
+
+    for finding in findings:
+        rule_id = finding.get("rule_id", "unknown")
+        rule_counter[rule_id] += 1
+        rule_fixability.setdefault(rule_id, finding.get("fixability", "manual"))
+        rule_sc.setdefault(rule_id, set()).update(finding.get("sc", []))
+
+    return [
+        {
+            "rule_id": rule_id,
+            "count": count,
+            "fixability": rule_fixability.get(rule_id, "manual"),
+            "sc": sorted(rule_sc.get(rule_id, set())),
+        }
+        for rule_id, count in rule_counter.most_common(limit)
+    ]
+
+
+def _build_auto_fix_opportunity(findings: list[dict[str, Any]]) -> dict[str, Any]:
+    fixable_count = sum(1 for finding in findings if finding.get("fixability") == "auto-fix")
+    return {
+        "fixable_count": fixable_count,
+        "estimated_residual": len(findings) - fixable_count,
+        "command": "libro scan <directory> --execution-mode apply-fixes",
+    }
+
+
+def _aggregate_like_sections_from_single_report(report: dict[str, Any]) -> dict[str, Any]:
+    context = _extract_report_context(report)
+    findings = context["findings"]
+    summary = context["summary"]
+    target = context["target"]
+    total_findings = int(summary.get("total_findings", len(findings)))
+    scope = {
+        "total_targets": 1,
+        "targets_with_issues": 0 if total_findings == 0 else 1,
+        "clean_targets": 1 if total_findings == 0 else 0,
+        "total_findings": total_findings,
+        "compliance_rate": 1.0 if total_findings == 0 else 0.0,
+        "verdict": _report_verdict(findings),
+    }
+    return {
+        "scope": scope,
+        "severity": _build_breakdown(
+            findings,
+            key="severity",
+            levels=_SEVERITY_ORDER,
+            default="info",
+        ),
+        "fixability": _build_breakdown(
+            findings,
+            key="fixability",
+            levels=_FIXABILITY_ORDER,
+            default="manual",
+        ),
+        "targets": _build_target_summary(target.get("value", "unknown"), findings),
+        "standard": context["standard"],
+        "wcag_principles": _build_wcag_principles(findings),
+        "top_rules": _build_top_rules(findings),
+        "remediation": summary.get("remediation_lifecycle", {}),
+        "auto_fix": _build_auto_fix_opportunity(findings),
+        "baseline_diff": context["baseline_diff"],
+        "generated_at": context["generated_at"],
+    }
+
+
+def _breakdown_rows(
+    section: dict[str, Any],
+    levels: tuple[str, ...],
+) -> list[dict[str, int | float | str]]:
+    rows: list[dict[str, int | float | str]] = []
+    for level in levels:
+        data = section.get(level, {})
+        rows.append(
+            {
+                "level": level,
+                "count": int(data.get("count", 0)),
+                "percentage": float(data.get("percentage", 0.0)),
+            }
+        )
+    return rows
+
+
 def _extract_report_sections(report: dict[str, Any]) -> dict[str, Any]:
-    """Extract common sections from an aggregate report dict.
+    """Extract common sections from aggregate or single-target reports.
 
     Centralises the .get() fallback pattern so each renderer does not
     repeat it.  The returned dict has guaranteed keys with safe defaults.
     """
+    synthesized = _aggregate_like_sections_from_single_report(report)
+    baseline_diff = _normalize_baseline_diff(report.get("baseline_diff"))
     return {
-        "scope": report.get("scope", {}),
-        "severity": report.get("severity", {}),
-        "fixability": report.get("fixability", {}),
-        "targets": report.get("targets", []),
-        "standard": report.get("standard", {}),
-        "wcag_principles": report.get("wcag_principles", {}),
-        "top_rules": report.get("top_rules", []),
-        "remediation": report.get("remediation_lifecycle", {}),
-        "auto_fix": report.get("auto_fix_opportunity", {}),
-        "baseline_diff": report.get("baseline_diff"),
-        "generated_at": report.get("generated_at", "N/A"),
+        "scope": report.get("scope", synthesized["scope"]),
+        "severity": report.get("severity", synthesized["severity"]),
+        "fixability": report.get("fixability", synthesized["fixability"]),
+        "targets": report.get("targets", synthesized["targets"]),
+        "standard": report.get("standard", synthesized["standard"]),
+        "wcag_principles": report.get("wcag_principles", synthesized["wcag_principles"]),
+        "top_rules": report.get("top_rules", synthesized["top_rules"]),
+        "remediation": report.get("remediation_lifecycle", synthesized["remediation"]),
+        "auto_fix": report.get("auto_fix_opportunity", synthesized["auto_fix"]),
+        "baseline_diff": baseline_diff or synthesized["baseline_diff"],
+        "generated_at": report.get("generated_at", synthesized["generated_at"]),
     }
 
 
@@ -160,13 +354,36 @@ def _bar(count: int, total: int, width: int = _BAR_WIDTH) -> str:
     return "\u2588" * filled + "\u2591" * (width - filled)
 
 
-def _colored(text: str, color_key: str) -> str:
+def _render_bar(count: int, total: int, *, use_color: bool, width: int = _BAR_WIDTH) -> str:
+    if use_color:
+        return _bar(count, total, width)
+    if total == 0:
+        return " " * width
+    filled = round(count / total * width)
+    return "#" * filled + "-" * (width - filled)
+
+
+def _severity_marker(level: str, *, use_color: bool) -> str:
+    if use_color:
+        return SEVERITY_ICONS.get(level, " ")
+    return PLAIN_SEVERITY_MARKERS.get(level, f"[{level}]")
+
+
+def _target_status_marker(status: str, *, use_color: bool) -> str:
+    if use_color:
+        return TARGET_STATUS_ICONS.get(status, "?")
+    return PLAIN_TARGET_STATUS_MARKERS.get(status, status.upper())
+
+
+def _colored(text: str, color_key: str, *, use_color: bool = True) -> str:
+    if not use_color:
+        return text
     color = _ANSI_COLORS.get(color_key, "")
     reset = _ANSI_COLORS["reset"]
     return f"{color}{text}{reset}" if color else text
 
 
-def render_terminal(report: dict[str, Any], language: str | None = None) -> str:
+def render_terminal(report: dict[str, Any], language: str | None = None, *, use_color: bool = True) -> str:
     """Render aggregate report for terminal display with ANSI colours."""
     lang = _resolve_language(language)
     lbl = LABELS[lang]
@@ -179,17 +396,19 @@ def render_terminal(report: dict[str, Any], language: str | None = None) -> str:
     fixability = sec["fixability"]
     targets = sec["targets"]
     standard = sec["standard"]
+    severity_rows = _breakdown_rows(severity, _SEVERITY_ORDER)
+    fixability_rows = _breakdown_rows(fixability, _FIXABILITY_ORDER)
 
     # Title
     title = f"  {lbl['title']}  "
     lines.append("")
-    lines.append(_colored(f"{'=' * len(title)}", "header"))
-    lines.append(_colored(title, "header"))
-    lines.append(_colored(f"{'=' * len(title)}", "header"))
+    lines.append(_colored(f"{'=' * len(title)}", "header", use_color=use_color))
+    lines.append(_colored(title, "header", use_color=use_color))
+    lines.append(_colored(f"{'=' * len(title)}", "header", use_color=use_color))
     lines.append("")
 
     # A1: Scope / Executive Summary
-    lines.append(_colored(f"## {lbl['scope']}", "bold"))
+    lines.append(_colored(f"## {lbl['scope']}", "bold", use_color=use_color))
     lines.append(f"  {lbl['wcag_standard']}: WCAG {standard.get('wcag_version', '2.1')} {standard.get('conformance_level', 'AA')}")
     lines.append(f"  {lbl['total_targets']}: {scope.get('total_targets', 0)}")
     lines.append(f"  {lbl['clean_targets']}: {scope.get('clean_targets', 0)}")
@@ -199,29 +418,29 @@ def render_terminal(report: dict[str, Any], language: str | None = None) -> str:
     lines.append(f"  {lbl['compliance_rate']}: {rate:.0%}")
     verdict = scope.get("verdict", "needs-review")
     verdict_text = verdict_lbl.get(verdict, verdict)
-    lines.append(f"  {lbl['verdict']}: {_colored(verdict_text, verdict)}")
+    lines.append(f"  {lbl['verdict']}: {_colored(verdict_text, verdict, use_color=use_color)}")
     lines.append("")
 
     # A2: Severity Breakdown
     total_findings = scope.get("total_findings", 0)
-    lines.append(_colored(f"## {lbl['severity_breakdown']}", "bold"))
-    for level in _SEVERITY_ORDER:
-        data = severity.get(level, {})
-        count = data.get("count", 0)
-        pct = data.get("percentage", 0.0)
-        bar = _bar(count, total_findings)
+    lines.append(_colored(f"## {lbl['severity_breakdown']}", "bold", use_color=use_color))
+    for row in severity_rows:
+        level = str(row["level"])
+        count = int(row["count"])
+        pct = float(row["percentage"])
+        bar = _render_bar(count, total_findings, use_color=use_color)
         lines.append(
-            f"  {SEVERITY_ICONS.get(level, ' ')} {level:10s} {_colored(bar, level)} {count:4d} ({pct:5.1f}%)"
+            f"  {_severity_marker(level, use_color=use_color)} {level:10s} {_colored(bar, level, use_color=use_color)} {count:4d} ({pct:5.1f}%)"
         )
     lines.append("")
 
     # A3: Fixability Analysis
-    lines.append(_colored(f"## {lbl['fixability_analysis']}", "bold"))
-    for level in _FIXABILITY_ORDER:
-        data = fixability.get(level, {})
-        count = data.get("count", 0)
-        pct = data.get("percentage", 0.0)
-        bar = _bar(count, total_findings)
+    lines.append(_colored(f"## {lbl['fixability_analysis']}", "bold", use_color=use_color))
+    for row in fixability_rows:
+        level = str(row["level"])
+        count = int(row["count"])
+        pct = float(row["percentage"])
+        bar = _render_bar(count, total_findings, use_color=use_color)
         lines.append(f"  {level:10s} {bar} {count:4d} ({pct:5.1f}%)")
     auto_fix_pct = fixability.get("auto-fix", {}).get("percentage", 0.0)
     lines.append(f"  {lbl['fix_coverage']}: {auto_fix_pct / 100:.0%}")
@@ -230,18 +449,18 @@ def render_terminal(report: dict[str, Any], language: str | None = None) -> str:
     # A5: WCAG Principle Coverage
     wcag_principles = sec["wcag_principles"]
     if wcag_principles:
-        lines.append(_colored(f"## {lbl['wcag_principles']}", "bold"))
+        lines.append(_colored(f"## {lbl['wcag_principles']}", "bold", use_color=use_color))
         for principle, data in wcag_principles.items():
             count = data.get("count", 0)
             sc_list = ", ".join(data.get("sc", []))
-            bar = _bar(count, total_findings)
+            bar = _render_bar(count, total_findings, use_color=use_color)
             lines.append(f"  {principle:15s} {bar} {count:4d}  SC: {sc_list or '-'}")
         lines.append("")
 
     # A6: Top Issues
     top_rules = sec["top_rules"]
     if top_rules:
-        lines.append(_colored(f"## {lbl['top_issues']}", "bold"))
+        lines.append(_colored(f"## {lbl['top_issues']}", "bold", use_color=use_color))
         lines.append(f"  {lbl['rule_id']:25s} {lbl['count']:>6s}  {lbl['sc']}")
         lines.append(f"  {'-' * 25} {'-' * 6}  {'-' * 20}")
         for rule in top_rules:
@@ -250,14 +469,14 @@ def render_terminal(report: dict[str, Any], language: str | None = None) -> str:
         lines.append("")
 
     # A4: Per-Target Breakdown
-    lines.append(_colored(f"## {lbl['per_target']}", "bold"))
+    lines.append(_colored(f"## {lbl['per_target']}", "bold", use_color=use_color))
     if targets:
         # Header
         lines.append(f"  {'':2s} {lbl['target']:40s} {lbl['findings']:>8s} {lbl['auto_fixable']:>12s} {lbl['status']:>8s}")
         lines.append(f"  {'':2s} {'-' * 40} {'-' * 8} {'-' * 12} {'-' * 8}")
         for t in targets:
             status = t.get("status", "issues")
-            icon = TARGET_STATUS_ICONS.get(status, "?")
+            icon = _target_status_marker(status, use_color=use_color)
             target_name = t.get("target", "?")
             if len(target_name) > 40:
                 target_name = "..." + target_name[-37:]
@@ -288,6 +507,8 @@ def render_markdown(report: dict[str, Any], language: str | None = None) -> str:
     standard = sec["standard"]
     remediation = sec["remediation"]
     auto_fix = sec["auto_fix"]
+    severity_rows = _breakdown_rows(severity, _SEVERITY_ORDER)
+    fixability_rows = _breakdown_rows(fixability, _FIXABILITY_ORDER)
 
     # Title
     lines.append(f"# {lbl['title']}")
@@ -317,11 +538,11 @@ def render_markdown(report: dict[str, Any], language: str | None = None) -> str:
     lines.append("")
     lines.append(f"| | Level | Count | % |")
     lines.append(f"|---|---|---:|---:|")
-    for level in _SEVERITY_ORDER:
-        data = severity.get(level, {})
+    for row in severity_rows:
+        level = str(row["level"])
         icon = SEVERITY_ICONS.get(level, "")
         lines.append(
-            f"| {icon} | {level} | {data.get('count', 0)} | {data.get('percentage', 0.0):.1f}% |"
+            f"| {icon} | {level} | {int(row['count'])} | {float(row['percentage']):.1f}% |"
         )
     lines.append("")
 
@@ -330,10 +551,10 @@ def render_markdown(report: dict[str, Any], language: str | None = None) -> str:
     lines.append("")
     lines.append(f"| Level | Count | % |")
     lines.append(f"|---|---:|---:|")
-    for level in _FIXABILITY_ORDER:
-        data = fixability.get(level, {})
+    for row in fixability_rows:
+        level = str(row["level"])
         lines.append(
-            f"| {level} | {data.get('count', 0)} | {data.get('percentage', 0.0):.1f}% |"
+            f"| {level} | {int(row['count'])} | {float(row['percentage']):.1f}% |"
         )
     auto_fix_pct = fixability.get("auto-fix", {}).get("percentage", 0.0)
     lines.append("")
@@ -497,7 +718,7 @@ def render_badge(report: dict[str, Any]) -> str:
     """
     import json as json_mod
 
-    scope = report.get("scope", {})
+    scope = _extract_report_sections(report)["scope"]
     rate = scope.get("compliance_rate", 0)
     total = scope.get("total_findings", 0)
 
@@ -597,6 +818,8 @@ def render_html(report: dict[str, Any], language: str | None = None) -> str:
     remediation = sec["remediation"]
     auto_fix = sec["auto_fix"]
     baseline_diff = sec["baseline_diff"]
+    severity_rows = _breakdown_rows(severity, _SEVERITY_ORDER)
+    fixability_rows = _breakdown_rows(fixability, _FIXABILITY_ORDER)
 
     rate = scope.get("compliance_rate", 0)
     verdict = scope.get("verdict", "needs-review")
@@ -604,11 +827,11 @@ def render_html(report: dict[str, Any], language: str | None = None) -> str:
     verdict_color = _VERDICT_COLORS_HEX.get(verdict, "#718096")
 
     # Severity bar chart data
-    sev_data = {level: severity.get(level, {}).get("count", 0) for level in _SEVERITY_ORDER}
+    sev_data = {str(row["level"]): int(row["count"]) for row in severity_rows}
     sev_chart = _svg_bar_chart(sev_data, _SEVERITY_COLORS_HEX)
 
     # Fixability bar chart data
-    fix_data = {level: fixability.get(level, {}).get("count", 0) for level in _FIXABILITY_ORDER}
+    fix_data = {str(row["level"]): int(row["count"]) for row in fixability_rows}
     fix_chart = _svg_bar_chart(fix_data, _FIXABILITY_COLORS_HEX)
 
     # Build target rows

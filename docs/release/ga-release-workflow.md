@@ -11,10 +11,11 @@ Use this workflow when publishing a formal GitHub release for `Libro.AgentWCAG`.
 ## Version Bump Flow
 
 1. Validate release assets and clean smoke locally when needed.
-2. Create and push tag `vX.Y.Z`.
-3. Let `release.yml` derive `X.Y.Z` from the tag, run `scripts/apply-release-version.py`, then perform validate -> package -> smoke -> GitHub Release publish.
-4. Let `publish-npm.yml` derive the same `X.Y.Z` from the tag, run `scripts/apply-release-version.py`, and publish `librowcag-cli` to npm using OIDC trusted publishing.
+2. Create and push tag `vX.Y.Z` for a stable release or `vX.Y.Z-rc.N` / `vX.Y.Z-beta.N` for a pre-release.
+3. Let `release.yml` derive the tag version, run `scripts/apply-release-version.py`, then perform validate -> package -> smoke -> GitHub Release publish.
+4. Let `publish-npm.yml` derive the same version from the tag, run `scripts/apply-release-version.py`, and publish `librowcag-cli` to npm using OIDC trusted publishing.
 5. GitHub release notes are auto-generated at publish time and do not drive the version number.
+6. Pre-release tags publish a GitHub pre-release and use an npm dist-tag derived from the pre-release channel (for example `rc`, `beta`, `alpha`, or `next`).
 
 ## Pipeline Stages
 
@@ -23,6 +24,7 @@ Use this workflow when publishing a formal GitHub release for `Libro.AgentWCAG`.
    - runs `python scripts/validate_skill.py skills/libro-wcag --validate-policy-bundles`
 2. `package-release`
    - resolves `release_version=${GITHUB_REF_NAME#v}`
+   - resolves `is_prerelease=true|false` from the tag suffix
    - runs `python scripts/apply-release-version.py --version <release_version>`
    - exports `LIBRO_AGENTWCAG_SOURCE_REVISION=${GITHUB_SHA}`
    - exports `LIBRO_AGENTWCAG_BUILD_TIMESTAMP=<UTC ISO-8601>`
@@ -35,9 +37,12 @@ Use this workflow when publishing a formal GitHub release for `Libro.AgentWCAG`.
 4. `publish-release`
    - runs only after `package-release` and `clean-release-smoke` succeed
    - publishes all staged release assets as the GitHub Release payload
+   - marks the release as a GitHub pre-release when the tag includes a semver pre-release suffix
 5. `publish-npm.yml`
    - resolves `release_version=${GITHUB_REF_NAME#v}`
    - runs `python scripts/apply-release-version.py --version <release_version>`
+   - publishes stable tags to npm `latest`
+   - publishes pre-release tags to a matching npm dist-tag instead of `latest`
    - uses GitHub Actions OIDC / npm trusted publishing rather than a stored `NPM_TOKEN`
    - publishes `librowcag-cli` to npm with `npm publish --access public`
 

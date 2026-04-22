@@ -116,6 +116,121 @@ class RunnerTests(unittest.TestCase):
         self.assertTrue(args.dry_run)
         self.assertTrue(args.preflight_only)
 
+    def test_validate_runtime_args_allows_preflight_without_target(self) -> None:
+        args = runner.argparse.Namespace(
+            target=None,
+            preflight_only=True,
+            skip_axe=False,
+            mock_axe_json=None,
+            skip_lighthouse=False,
+            mock_lighthouse_json=None,
+            dry_run=False,
+            execution_mode='suggest-only',
+            scanner_retry_attempts=1,
+            scanner_retry_backoff_seconds=0,
+            max_findings=None,
+            debt_trend_window=1,
+            fail_on_new_only=False,
+            fail_on=None,
+            baseline_report=None,
+            replay_verify_from=None,
+            stability_baseline=None,
+            strict_rule_overlap=False,
+        )
+
+        runner._validate_runtime_args(
+            args,
+            {
+                'config_report_format': None,
+                'config_fail_on': None,
+                'overlapping_rules': [],
+            },
+        )
+
+    def test_build_preflight_payload_skips_runtime_checks_when_scanners_are_not_needed(self) -> None:
+        args = runner.argparse.Namespace(
+            skip_axe=True,
+            mock_axe_json=None,
+            skip_lighthouse=False,
+            mock_lighthouse_json='lighthouse.json',
+            timeout=DEFAULT_TIMEOUT_SECONDS,
+        )
+
+        with patch.object(runner, 'run_preflight_checks') as mock_preflight:
+            payload = runner._build_preflight_payload(args)
+
+        mock_preflight.assert_not_called()
+        self.assertTrue(payload['ok'])
+        self.assertEqual(payload['tools']['runtime']['status'], 'skipped')
+
+    def test_run_scanners_for_target_create_mode_returns_guidance_only_errors(self) -> None:
+        workspace = self._workspace('m41-create-mode-scanner-skip')
+        args = runner.argparse.Namespace(
+            skip_axe=False,
+            mock_axe_json=None,
+            skip_lighthouse=False,
+            mock_lighthouse_json=None,
+            timeout=DEFAULT_TIMEOUT_SECONDS,
+            scanner_retry_attempts=1,
+            scanner_retry_backoff_seconds=0,
+        )
+
+        axe_data, axe_error, lighthouse_data, lighthouse_error, scanner_retry_runs = runner._run_scanners_for_target(
+            args,
+            'missing-target.html',
+            workspace,
+            create_mode_no_target=True,
+        )
+
+        self.assertIsNone(axe_data)
+        self.assertIsNone(lighthouse_data)
+        self.assertEqual(axe_error, 'Skipped: target does not exist (create mode — guidance only)')
+        self.assertEqual(lighthouse_error, 'Skipped: target does not exist (create mode — guidance only)')
+        self.assertEqual(scanner_retry_runs, [])
+
+    def test_build_policy_runtime_context_resolves_effective_policy_output(self) -> None:
+        workspace = self._workspace('m41-policy-runtime-context')
+        output_dir = workspace / 'out'
+        policy_config = workspace / 'policy.json'
+        policy_config.write_text(
+            json.dumps(
+                {
+                    'report_format': 'sarif',
+                    'ignore_rules': ['color-contrast'],
+                }
+            ),
+            encoding='utf-8',
+        )
+        args = runner.argparse.Namespace(
+            policy_config=str(policy_config),
+            baseline_report=None,
+            policy_bundle=None,
+            policy_preset=None,
+            report_format=None,
+            fail_on=None,
+            include_rule=['image-alt'],
+            ignore_rule=[],
+            write_effective_policy='AUTO',
+            fail_on_new_only=False,
+            baseline_evidence_mode='none',
+            waiver_expiry_mode='warn',
+            risk_calibration_mode='off',
+            risk_calibration_source=None,
+            stability_mode='off',
+            stability_baseline=None,
+            baseline_include_target=False,
+            baseline_target_normalization='none',
+            baseline_selector_canonicalization='none',
+        )
+
+        context = runner._build_policy_runtime_context(args, output_dir)
+
+        self.assertEqual(context['report_format'], 'sarif')
+        self.assertEqual(context['ignore_rules'], ['color-contrast'])
+        self.assertEqual(context['include_rules'], ['image-alt'])
+        self.assertEqual(context['effective_policy_output'], output_dir / 'wcag-effective-policy.json')
+        self.assertEqual(context['effective_policy']['sources']['report_format'], 'policy-config')
+
     def test_cli_accepts_baseline_diff_flags(self) -> None:
         original = sys.argv
         sys.argv = [
@@ -824,6 +939,158 @@ class RunnerPolicyTests(unittest.TestCase):
         self.assertEqual(after_count, 1)
         self.assertEqual(report['findings'][0]['rule_id'], 'image-alt')
         self.assertEqual(report['summary']['total_findings'], 1)
+
+    def test_handle_apply_fixes_flow_skips_non_local_target_and_cleans_stale_artifacts(self) -> None:
+        workspace = self._workspace('m42-apply-fixes-non-local')
+        diff_path = workspace / 'wcag-fixes.diff'
+        snapshot_path = workspace / 'wcag-fixed-report.snapshot.json'
+        diff_path.write_text('stale diff', encoding='utf-8')
+        snapshot_path.write_text('{}', encoding='utf-8')
+
+        report = {
+            'run_meta': {
+                'notes': [],
+            }
+        }
+
+        updated_report, returned_diff, returned_snapshot = runner._handle_apply_fixes_flow(
+            report=report,
+            args=runner.argparse.Namespace(dry_run=False),
+            execution_mode='apply-fixes',
+            local_target=None,
+            output_dir=workspace,
+        )
+
+        self.assertIs(updated_report, report)
+        self.assertEqual(returned_diff, diff_path)
+        self.assertEqual(returned_snapshot, snapshot_path)
+        self.assertFalse(diff_path.exists())
+        self.assertFalse(snapshot_path.exists())
+        self.assertIn('apply-fixes skipped: target is not a local file path.', report['run_meta']['notes'])
+
+    def test_enrich_report_with_baseline_context_updates_run_meta_summary_and_notes(self) -> None:
+        report = {
+            'target': {'value': 'https://example.com'},
+            'findings': [
+                {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'status': 'open'},
+                {'rule_id': 'button-name', 'changed_target': 'button.icon', 'status': 'open'},
+            ],
+            'summary': {},
+            'run_meta': {
+                'notes': [],
+            },
+        }
+        baseline_report = {
+            'findings': [
+                {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'status': 'open'},
+            ],
+            'debt_waivers': [
+                {
+                    'signature': 'image-alt|img.hero',
+                    'owner': 'team-a',
+                    'approved_at': '2026-01-10T09:00:00Z',
+                    'expires_at': '2099-01-01T00:00:00Z',
+                    'reason': 'legacy queue',
+                }
+            ],
+        }
+        signature_config = {
+            'include_target_in_signature': False,
+            'target_normalization': 'none',
+            'selector_canonicalization': 'none',
+        }
+
+        context = runner._enrich_report_with_baseline_context(
+            report=report,
+            args=runner.argparse.Namespace(
+                baseline_report='baseline.json',
+                baseline_evidence_mode='hash',
+            ),
+            baseline_report=baseline_report,
+            baseline_signature_config=signature_config,
+        )
+
+        self.assertEqual(context['baseline_diff']['introduced_count'], 1)
+        self.assertEqual(context['baseline_diff']['persistent_count'], 1)
+        self.assertEqual(report['run_meta']['baseline_diff']['baseline_report_path'], 'baseline.json')
+        self.assertEqual(report['summary']['debt_transitions']['new']['count'], 1)
+        self.assertEqual(report['summary']['waiver_review']['valid_count'], 1)
+        self.assertEqual(report['summary']['baseline_evidence']['mode'], 'hash')
+        self.assertFalse(report['summary']['baseline_evidence']['baseline_verification']['declared'])
+        self.assertTrue(report['summary']['baseline_evidence']['baseline_verification']['verified'])
+        notes = ' '.join(report['run_meta']['notes'])
+        self.assertIn('Baseline diff: introduced=1, resolved=0, persistent=1.', notes)
+        self.assertIn('Baseline evidence verification: passed (mode=hash).', notes)
+        findings = {item['rule_id']: item for item in report['findings']}
+        self.assertEqual(findings['image-alt']['debt_state'], 'accepted')
+        self.assertEqual(findings['button-name']['debt_state'], 'new')
+
+    def test_evaluate_policy_waiver_and_advanced_gates_preserves_waiver_precedence(self) -> None:
+        report = {
+            'target': {'value': 'https://example.com'},
+            'run_meta': {
+                'notes': [],
+                'scanner_stability': {'gate': {'failed': False}},
+            },
+        }
+        gate_findings = [
+            {
+                'rule_id': 'button-name',
+                'changed_target': 'button.icon',
+                'severity': 'serious',
+                'status': 'open',
+            }
+        ]
+
+        should_fail, exit_code = runner._evaluate_policy_waiver_and_advanced_gates(
+            report=report,
+            args=runner.argparse.Namespace(
+                fail_on_new_only=False,
+                waiver_expiry_mode='fail',
+            ),
+            fail_on='moderate',
+            gate_findings=gate_findings,
+            baseline_diff=None,
+            baseline_signature_config={},
+            waiver_review={
+                'accepted_count': 1,
+                'expired_count': 1,
+            },
+            risk_calibration={
+                'gate': {'failed': True},
+                'unstable_high_severity_rules': ['image-alt'],
+            },
+            replay_verification={
+                'gate': {'failed': True},
+            },
+        )
+
+        self.assertTrue(should_fail)
+        self.assertEqual(exit_code, 45)
+        self.assertTrue(report['run_meta']['policy_gate']['failed'])
+        self.assertEqual(report['run_meta']['policy_gate']['exit_code'], 44)
+        self.assertTrue(report['run_meta']['waiver_gate']['failed'])
+        notes = ' '.join(report['run_meta']['notes'])
+        self.assertIn('Waiver expiry gate failed', notes)
+        self.assertIn('Risk calibration gate failed', notes)
+        self.assertIn('Replay verification gate failed', notes)
+
+    def test_failure_stdout_message_prefers_more_specific_gate_over_policy_threshold(self) -> None:
+        report = {
+            'run_meta': {
+                'waiver_gate': {'failed': False},
+                'risk_calibration': {'gate': {'failed': True}},
+                'replay_verification': {'gate': {'failed': True}},
+                'scanner_stability': {'gate': {'failed': True}},
+            }
+        }
+
+        message = runner._failure_stdout_message(report, 'moderate')
+
+        self.assertEqual(
+            message,
+            'Risk calibration gate failed: unstable high-severity rule outcomes detected.',
+        )
 
     def test_sort_and_cap_report_findings_are_deterministic(self) -> None:
         report = {

@@ -1,29 +1,28 @@
 # Libro.AgentWCAG
 
-Libro.AgentWCAG is a cross-agent WCAG web accessibility skill repository. It uses one vendor-neutral contract so Codex, Claude, Gemini, and Copilot can audit accessibility, propose fixes, and apply safe first-pass fixes in a consistent way when explicitly authorized.
+Libro.AgentWCAG is a cross-agent WCAG web accessibility skill repository. It keeps one vendor-neutral contract so Codex, Claude, Gemini, and Copilot can perform consistent audits, remediation guidance, and explicitly authorized safe first-pass fixes.
 
-## Purpose
+## What This Project Is For
 
-The hard part of web accessibility work is usually not finding a tool. It is keeping workflows, outputs, and remediation expectations consistent across different agents and teams. Libro.AgentWCAG turns that into an installable, verifiable, releasable workflow.
+The goal is not to add one more isolated checker. The goal is to package accessibility audit, guidance, selected auto-fixes, report output, installation, and verification into one installable and testable workflow.
 
-- One shared contract across multiple AI agents
-- One consistent task model for audit, suggestion, and partial remediation
-- One release path for installation, verification, and versioned delivery
-
-## What It Helps You Do
-
-- Quickly identify WCAG accessibility issues on pages and components
-- Produce issue summaries and remediation guidance in a consistent format
-- Apply safe first-pass fixes to supported local files when modification is explicitly requested
-- Keep cross-agent accessibility work aligned across teams
+- One contract across multiple AI agents
+- One execution model covering audit, suggest, and apply-fixes
+- One CLI for single-target audits, batch scans, and aggregate reports
+- One stable Markdown + JSON report contract
 
 ## Prerequisites
 
-Python 3 is required.
+- Python 3.12+
+- For real scanner runs: Node.js 18+, `npx`, `@axe-core/cli`, and `lighthouse`
+
+Check Python:
 
 ```powershell
 python --version
 ```
+
+Install Python:
 
 ```sh
 brew install python3                         # macOS
@@ -31,11 +30,18 @@ sudo apt update && sudo apt install python3 # Ubuntu / Debian
 winget install Python.Python.3.12           # Windows
 ```
 
-## Install
+Check scanner toolchain:
 
-### Claude Marketplace (Claude Code)
+```powershell
+python .\scripts\libro.py audit --preflight-only
+python .\scripts\doctor-agent.py --agent codex --check-scanners
+```
 
-Coming soon - pending marketplace availability.
+## Installation
+
+### Claude Marketplace
+
+Coming soon. Placeholder commands are kept here for future availability:
 
 ```text
 /plugin marketplace add BookHsu/Libro.AgentWCAG
@@ -45,12 +51,12 @@ Coming soon - pending marketplace availability.
 ### npm CLI
 
 ```powershell
- npm install -g librowcag-cli
-libro install claude   # Claude Code
-libro install gemini   # Gemini CLI
-libro install copilot  # Copilot
-libro install codex    # Codex
-libro doctor claude    # verify Claude installation
+npm install -g librowcag-cli
+libro install claude
+libro install gemini
+libro install copilot
+libro install codex
+libro doctor codex
 ```
 
 ### Clone + CLI
@@ -58,76 +64,116 @@ libro doctor claude    # verify Claude installation
 ```powershell
 git clone https://github.com/BookHsu/Libro.AgentWCAG.git
 cd Libro.AgentWCAG
-python .\scripts\libro.py install claude
-python .\scripts\libro.py doctor claude
+python .\scripts\libro.py install codex
+python .\scripts\libro.py doctor codex
 ```
 
-Verification and removal:
+Verify and remove:
 
 ```powershell
-python .\scripts\libro.py doctor claude --verify-manifest-integrity
-python .\scripts\libro.py doctor claude --check-scanners   # verify Node.js/npx/axe/lighthouse
-python .\scripts\libro.py remove claude
+python .\scripts\libro.py doctor codex --verify-manifest-integrity
+python .\scripts\libro.py doctor codex --check-scanners
+python .\scripts\libro.py remove codex
 ```
 
 ## CLI Quick Start
 
-After installation, you can run audits directly from the CLI without going through an AI agent:
+### Audit a single HTML file or URL
 
 ```powershell
-# Audit a URL
+python .\scripts\libro.py audit .\src\index.html
 python .\scripts\libro.py audit https://example.com
-
-# Audit a local file with custom output directory
-python .\scripts\libro.py audit ./src/index.html --output-dir out/wcag
-
-# Audit with remediation suggestions (suggest-only mode)
-python .\scripts\libro.py audit ./src/index.html --execution-mode suggest-only
-
-# Auto-fix supported issues
-python .\scripts\libro.py audit ./src/index.html --execution-mode apply-fixes
-
-# Check scanner toolchain availability
-python .\scripts\libro.py audit --preflight-only
+python .\scripts\libro.py audit .\src\index.html --execution-mode audit-only
+python .\scripts\libro.py audit .\src\index.html --execution-mode apply-fixes --dry-run
+python .\scripts\libro.py audit --print-examples
 ```
 
-After a run completes, outputs appear in `out/`:
+### Batch scan
 
-- `wcag-report.json` — structured JSON report
-- `wcag-report.md` — Markdown summary table
+```powershell
+python .\scripts\libro.py scan .\src\pages --parallel 4
+python .\scripts\libro.py scan .\src\pages --execution-mode audit-only --output-dir .\wcag-reports
+python .\scripts\libro.py scan --print-examples
+```
 
-## Use
+During batch scans, each target gets its own output directory; if one target fails, the CLI now prints a short failure summary and the `scan-output.log` path.
 
-Libro.AgentWCAG is not just a single command. It is a shared skill contract that different AI agents can follow. In practice, you choose whether you want to audit only, get suggestions, or apply fixes.
+### Aggregate reports
 
-Three working modes:
+```powershell
+python .\scripts\libro.py report .\wcag-reports --format terminal
+python .\scripts\libro.py report .\wcag-reports --format html --output .\out\wcag-summary.html
+python .\scripts\libro.py report .\wcag-reports --format terminal --no-color
+python .\scripts\libro.py report --print-examples
+```
 
-| Mode | Finds issues | Gives fix suggestions | Edits files |
-|---|---|---|---|
+If the current terminal cannot encode Unicode safely, terminal reports now fall back to plain ASCII automatically, even without `--no-color`.
+
+### Call the core audit runner directly
+
+```powershell
+python .\skills\libro-wcag\scripts\run_accessibility_audit.py --target .\src\index.html
+python .\skills\libro-wcag\scripts\run_accessibility_audit.py --target .\src\index.html --summary-only --artifacts minimal
+python .\skills\libro-wcag\scripts\run_accessibility_audit.py --print-examples
+```
+
+## Execution Modes and Defaults
+
+Default contract values:
+
+- `execution_mode=suggest-only`
+- `wcag_version=2.1`
+- `conformance_level=AA`
+- `output_language=zh-TW`
+
+Execution modes:
+
+| Mode | Finds issues | Proposes fixes | Writes files |
+| --- | --- | --- | --- |
 | `audit-only` | Yes | No | No |
 | `suggest-only` | Yes | Yes | No |
-| `apply-fixes` | Yes | Yes | Yes, only for supported local files |
+| `apply-fixes` | Yes | Yes | Yes, for supported local files only |
 
-Usage examples:
+`apply-fixes` currently supports safe first-pass rewrites on local `.html`, `.htm`, `.xhtml`, `.jsx`, `.tsx`, and `.vue` targets.
 
-```text
-Audit only
-Use audit-only mode to review https://example.com for WCAG 2.1 AA.
+## Report Outputs
 
-Suggest only
-Use suggest-only mode to review src/page.html and provide fix suggestions without editing files.
+A normal audit run writes:
 
-Apply fixes
-Use apply-fixes mode to review src/page.html and apply safe fixes to supported local issues.
+- `wcag-report.json`
+- `wcag-report.md`
+- `artifact-manifest.json`
+- `schemas/wcag-report-<version>.schema.json`
+
+Additional files may appear when the related features are enabled:
+
+- `wcag-report.sarif`
+- `wcag-fixes.diff`
+- `wcag-fixed-report.snapshot.json`
+- `wcag-effective-policy.json`
+- `replay-summary.json`
+- `scanner-stability.json`
+- `debt-trend.json`
+- `scan-output.log` (for batch-scan targets that emitted stdout/stderr)
+
+To reduce sidecar artifacts:
+
+```powershell
+python .\skills\libro-wcag\scripts\run_accessibility_audit.py --target .\src\index.html --artifacts minimal
 ```
 
-- Start with `audit-only` when you want a clean accessibility review
-- Use `suggest-only` when you want remediation ideas before changing files
-- Move to `apply-fixes` only when you want the changes carried out
+## Documentation Entry Points
 
-This keeps review and modification separate, which makes the workflow easier to control.
+- [docs/README.md](docs/README.md): documentation index
+- [docs/testing/testing-playbook.md](docs/testing/testing-playbook.md): testing and smoke guidance
+- [docs/testing/test-matrix.md](docs/testing/test-matrix.md): test matrix
+- [skills/libro-wcag/references/cli-reference.md](skills/libro-wcag/references/cli-reference.md): complete CLI reference
 
-> **MCP note**: The MCP server provides read-only audit (`audit-only`) and suggestions (`suggest-only`) only; `apply-fixes` is not exposed via MCP. Use the CLI directly for auto-fix. Production deployments can use `mcp-server/requirements.lock` for hash-pinned dependencies.
+## Constraints
+
+- The MCP server supports read-only audit and guidance, not `apply-fixes`
+- `apply-fixes` only covers reviewed safe rewrite classes
+- Real scans depend on local scanner tooling; use `--preflight-only` first if needed
 
 ## License
 

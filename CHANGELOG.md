@@ -8,6 +8,13 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ### Added
 
+- `README.en.md`, `docs/README.en.md`, `docs/testing/testing-playbook.en.md`, and `docs/testing/test-matrix.en.md` now provide English companion files for the primary zh-TW public documentation set.
+- Release automation now accepts semver pre-release tags such as `v1.3.2-rc.1`, marks GitHub Releases as pre-releases, and publishes npm packages with a non-`latest` dist-tag derived from the pre-release channel.
+- `run_accessibility_audit.py --print-examples` and `libro audit|scan|report --print-examples` now print copy-paste examples for the most common workflows.
+- `libro report --no-color` now provides an ANSI-free, emoji-free terminal mode suitable for plain Windows consoles and CI logs.
+- `run_accessibility_audit.py --artifacts minimal` now keeps core reports while skipping optional sidecar artifacts such as `debt-trend.json` and `scanner-stability.json`.
+- `libro scan` now de-duplicates repeated targets, creates collision-resistant per-target output directories, and writes `scan-output.log` when a target emits stdout/stderr.
+- `libro report` now auto-falls back to plain ASCII terminal output when stdout cannot encode Unicode safely.
 - `docs/archive/decisions/markdown-cleanup-20260329.md` now records the markdown convergence decisions and the first-pass GitHub Pages source set after temporary planning files were removed.
 - `docs/testing/test-matrix.md` now holds the detailed coverage matrix that previously lived at the repo root in `TESTING-PLAN.md`.
 - `libro audit` subcommand forwards all arguments to `run_accessibility_audit.py`, providing a short CLI entry point for WCAG audits (e.g. `libro audit https://example.com`).
@@ -32,6 +39,8 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ### Fixed
 
+- `run_accessibility_audit.py` no longer rewrites the primary report outputs multiple times during a single run; the main report artifacts are now written once after the final report shape is assembled.
+- `libro.ps1` and `libro.sh` now advertise `scan` and `report` alongside `install`, `doctor`, `remove`, and `audit`, so wrapper help matches the actual unified CLI surface.
 - Removed redundant `CLAUDE.md`, which only repeated the repository-wide `AGENTS.md` instruction without adding any Claude-specific contract or workflow behavior.
 - Removed the completed root backlog file `SKILL-TODO.md` after its remaining cleanup decisions were captured elsewhere, and moved `TESTING-PLAN.md` into `docs/testing/test-matrix.md` so root docs stay focused on durable entry points.
 - Removed the temporary `docs/automations/` planning directory after converging its durable decisions into formal docs, tests, changelog, and archive notes.
@@ -41,6 +50,9 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ### Changed
 
+- `run_accessibility_audit.py` now routes policy resolution, runtime validation, preflight payload construction, scanner execution, and auxiliary artifact emission through focused internal helpers, reducing `main()` duplication while preserving CLI behavior.
+- `scripts/libro.py` now routes scan execution, progress reporting, report runtime loading, and aggregate output dispatch through focused helpers while keeping the public CLI surface unchanged.
+- `report_renderers.py` and `report_artifacts.py` now normalize single-report context and baseline diff aliases consistently, so compact summaries and aggregate-oriented renderers share the same fallback semantics.
 - `release.yml` `clean-release-smoke` now uses a matrix strategy to smoke-test all four agents (codex, claude, gemini, copilot) in parallel instead of only codex.
 - `run_accessibility_audit.py` now runs axe and Lighthouse scanners in parallel using `concurrent.futures.ThreadPoolExecutor` when both are active, reducing total audit wall-clock time.
 - `run_accessibility_audit.py` now gracefully handles `task_mode=create` with non-existent targets by skipping scanners and producing guidance-only manual-review findings instead of crashing.

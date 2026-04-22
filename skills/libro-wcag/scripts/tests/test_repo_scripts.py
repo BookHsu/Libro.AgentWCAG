@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import importlib.util
+import io
 import os
 import shutil
 import subprocess
@@ -57,6 +59,15 @@ class RepoScriptTests(unittest.TestCase):
         )
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         return completed.stdout.strip()
+
+    def _load_apply_release_version_module(self):
+        module_path = self.repo_root / 'scripts' / 'apply-release-version.py'
+        spec = importlib.util.spec_from_file_location('apply_release_version', module_path)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
 
     def test_validate_skill_cli_accepts_skill_directory(self) -> None:
         completed = subprocess.run(
@@ -182,6 +193,28 @@ class RepoScriptTests(unittest.TestCase):
         self.assertIn('marketplace.json', script)
         self.assertIn('Semantic version', script)
 
+    def test_apply_release_version_parser_accepts_stable_and_prerelease_semver(self) -> None:
+        module = self._load_apply_release_version_module()
+
+        stable = module._parse_release_version('1.3.2')
+        prerelease = module._parse_release_version('1.3.2-rc.1')
+
+        self.assertEqual(stable['version'], '1.3.2')
+        self.assertFalse(stable['is_prerelease'])
+        self.assertEqual(stable['npm_dist_tag'], 'latest')
+        self.assertEqual(prerelease['version'], '1.3.2-rc.1')
+        self.assertTrue(prerelease['is_prerelease'])
+        self.assertEqual(prerelease['prerelease_channel'], 'rc')
+        self.assertEqual(prerelease['npm_dist_tag'], 'rc')
+
+    def test_apply_release_version_parser_rejects_non_semver_release_versions(self) -> None:
+        module = self._load_apply_release_version_module()
+
+        with self.assertRaises(RuntimeError):
+            module._parse_release_version('1.3')
+        with self.assertRaises(RuntimeError):
+            module._parse_release_version('v1.3.2')
+
     def test_doctor_all_reports_each_supported_agent(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             install = subprocess.run(
@@ -283,6 +316,208 @@ class RepoScriptTests(unittest.TestCase):
         self.assertIn('ok', payload)
         self.assertIn('checks', payload)
 
+    def test_libro_audit_print_examples_returns_examples(self) -> None:
+        result = subprocess.run(
+            [sys.executable, 'scripts/libro.py', 'audit', '--print-examples'],
+            cwd=self.repo_root, capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('libro audit https://example.com', result.stdout)
+
+    def test_libro_report_no_color_omits_ansi_sequences(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            report_path = Path(tmp) / 'wcag-report.json'
+            report_path.write_text(
+                json.dumps(
+                    {
+                        'target': {'value': 'sample.html'},
+                        'standard': {'wcag_version': '2.1', 'conformance_level': 'AA'},
+                        'findings': [
+                            {'rule_id': 'image-alt', 'severity': 'serious', 'fixability': 'manual', 'status': 'open', 'sc': ['1.1.1']}
+                        ],
+                        'summary': {'remediation_lifecycle': {'planned': 1, 'implemented': 0, 'verified': 0, 'manual_review_required': 1}},
+                    }
+                ),
+                encoding='utf-8',
+            )
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    'scripts/libro.py',
+                    'report',
+                    str(report_path),
+                    '--format',
+                    'terminal',
+                    '--no-color',
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertNotIn('\x1b[', result.stdout)
+            self.assertIn('WCAG', result.stdout)
+
+    def test_libro_scan_target_dir_names_are_stable_for_same_stem(self) -> None:
+        libro = self._load_libro_module()
+        first = libro._scan_target_dir_name(r'C:\repo\pages\index.html', 0)
+        second = libro._scan_target_dir_name(r'C:\repo\docs\index.html', 1)
+        self.assertNotEqual(first, second)
+        self.assertTrue(first.startswith('index-'))
+        self.assertTrue(second.startswith('index-'))
+
+    def test_libro_resolve_scan_targets_dedupes_repeated_inputs(self) -> None:
+        libro = self._load_libro_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            workspace = Path(tmp)
+            page = workspace / 'page.html'
+            page.write_text('<!doctype html><html></html>', encoding='utf-8')
+            args = type(
+                'Args',
+                (),
+                {
+                    'targets': None,
+                    'inputs': [str(page), str(page)],
+                },
+            )()
+            targets = libro._resolve_scan_targets(args)
+            self.assertEqual(targets, [str(page)])
+
+    def test_libro_stdout_supports_unicode_returns_false_for_cp950(self) -> None:
+        libro = self._load_libro_module()
+        original_stdout = libro.sys.stdout
+        libro.sys.stdout = type('Stdout', (), {'encoding': 'cp950'})()
+        try:
+            self.assertFalse(libro._stdout_supports_unicode())
+        finally:
+            libro.sys.stdout = original_stdout
+
+    def test_libro_summarize_scan_output_prefers_recent_nonempty_lines(self) -> None:
+        libro = self._load_libro_module()
+        summary = libro._summarize_scan_output(
+            stdout='line one\nline two\n',
+            stderr='error one\n\nerror two\n',
+            max_lines=2,
+        )
+        self.assertEqual(summary, 'error one | error two')
+
+    def test_libro_run_scan_target_collects_log_and_summary(self) -> None:
+        libro = self._load_libro_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            output_dir = Path(tmp)
+            completed = subprocess.CompletedProcess(
+                args=['python', 'run_accessibility_audit.py'],
+                returncode=2,
+                stdout='stdout line\n',
+                stderr='stderr line\n',
+            )
+            with mock.patch.object(libro.subprocess, 'run', return_value=completed) as run_mock:
+                result = libro._run_scan_target(
+                    'https://example.com/page.html',
+                    0,
+                    output_dir=output_dir,
+                    execution_mode='suggest-only',
+                )
+
+            self.assertEqual(result.target, 'https://example.com/page.html')
+            self.assertEqual(result.returncode, 2)
+            self.assertEqual(result.summary, 'stderr line')
+            self.assertIsNotNone(result.log_path)
+            self.assertTrue(result.target_dir.exists())
+            self.assertTrue(result.log_path.exists())
+            self.assertIn('=== STDOUT ===', result.log_path.read_text(encoding='utf-8'))
+            self.assertIn('=== STDERR ===', result.log_path.read_text(encoding='utf-8'))
+            command = run_mock.call_args.args[0]
+            self.assertEqual(command[0], sys.executable)
+            self.assertIn('--execution-mode', command)
+            self.assertIn('--output-dir', command)
+
+    def test_libro_print_scan_summary_reports_failures(self) -> None:
+        libro = self._load_libro_module()
+        log_path = Path('wcag-reports') / 'broken' / libro.SCAN_LOG_NAME
+        failure = libro.ScanExecutionResult(
+            target='broken.html',
+            returncode=2,
+            target_dir=Path('wcag-reports') / 'broken',
+            log_path=log_path,
+            summary='scanner crashed',
+        )
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            returncode = libro._print_scan_summary(Path('wcag-reports'), 3, [failure])
+
+        self.assertEqual(returncode, 1)
+        rendered = stdout.getvalue()
+        self.assertIn('Completed: 2/3 succeeded', rendered)
+        self.assertIn('Failed: 1 target(s)', rendered)
+        self.assertIn('  - broken.html (exit code 2)', rendered)
+        self.assertIn(f'    log: {log_path}', rendered)
+        self.assertIn('    summary: scanner crashed', rendered)
+
+    def test_libro_write_output_creates_parent_and_announces_destination(self) -> None:
+        libro = self._load_libro_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            output_path = Path(tmp) / 'nested' / 'report.md'
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                libro._write_output('aggregate body', str(output_path))
+
+            self.assertEqual(output_path.read_text(encoding='utf-8'), 'aggregate body')
+            self.assertIn(f'Aggregate report written to {output_path}', stdout.getvalue())
+
+    def test_libro_write_json_output_prints_stdout_when_no_destination(self) -> None:
+        libro = self._load_libro_module()
+        writer = mock.Mock()
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            libro._write_json_output({'message': '測試'}, None, writer)
+
+        writer.assert_not_called()
+        self.assertIn('"message": "測試"', stdout.getvalue())
+
+    def test_libro_should_use_terminal_color_respects_output_and_unicode(self) -> None:
+        libro = self._load_libro_module()
+        with mock.patch.object(libro, '_stdout_supports_unicode', return_value=False):
+            self.assertFalse(libro._should_use_terminal_color(output_path=None, no_color=False))
+            self.assertTrue(libro._should_use_terminal_color(output_path='report.txt', no_color=False))
+        self.assertFalse(libro._should_use_terminal_color(output_path='report.txt', no_color=True))
+
+    def test_libro_render_report_output_dispatches_selected_renderer(self) -> None:
+        libro = self._load_libro_module()
+        runtime = {
+            'render_terminal': lambda aggregate, language, use_color: f"terminal:{language}:{use_color}:{aggregate['count']}",
+            'render_markdown': lambda aggregate, language: f"markdown:{language}:{aggregate['count']}",
+            'render_html': lambda aggregate, language: f"html:{language}:{aggregate['count']}",
+            'render_csv': lambda reports, aggregate: f"csv:{len(reports)}:{aggregate['count']}",
+            'render_badge': lambda aggregate: f"badge:{aggregate['count']}",
+        }
+        aggregate = {'count': 2}
+        reports = [{'id': 1}]
+
+        self.assertEqual(
+            libro._render_report_output(
+                'csv',
+                aggregate=aggregate,
+                reports=reports,
+                language='en',
+                use_color=False,
+                runtime=runtime,
+            ),
+            'csv:1:2',
+        )
+        self.assertEqual(
+            libro._render_report_output(
+                'unknown',
+                aggregate=aggregate,
+                reports=reports,
+                language='en',
+                use_color=False,
+                runtime=runtime,
+            ),
+            'terminal:en:False:2',
+        )
+
     def test_force_reinstall_replaces_existing_installation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             destination = Path(tmp) / 'codex-skill'
@@ -341,6 +576,15 @@ class RepoScriptTests(unittest.TestCase):
     def _load_uninstall_agent_module(self):
         module_path = self.repo_root / 'scripts' / 'uninstall-agent.py'
         spec = importlib.util.spec_from_file_location('uninstall_agent', module_path)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def _load_libro_module(self):
+        module_path = self.repo_root / 'scripts' / 'libro.py'
+        spec = importlib.util.spec_from_file_location('libro_cli', module_path)
         self.assertIsNotNone(spec)
         self.assertIsNotNone(spec.loader)
         module = importlib.util.module_from_spec(spec)
@@ -441,13 +685,13 @@ class RepoScriptTests(unittest.TestCase):
 
     def test_libro_ps1_wrapper_invokes_unified_cli(self) -> None:
         wrapper = (self.repo_root / 'scripts' / 'libro.ps1').read_text(encoding='utf-8')
-        self.assertIn("[ValidateSet('install','doctor','remove','audit')]", wrapper)
+        self.assertIn("[ValidateSet('install','doctor','remove','audit','scan','report')]", wrapper)
         self.assertIn("Join-Path $PSScriptRoot 'libro.py'", wrapper)
         self.assertIn('python $script @arguments', wrapper)
 
     def test_libro_sh_wrapper_invokes_unified_cli(self) -> None:
         wrapper = (self.repo_root / 'scripts' / 'libro.sh').read_text(encoding='utf-8')
-        self.assertIn('<install|doctor|remove|audit>', wrapper)
+        self.assertIn('<install|doctor|remove|audit|scan|report>', wrapper)
         self.assertIn('python "$SCRIPT_DIR/libro.py" "$COMMAND" "$@"', wrapper)
 
     def test_npm_cli_wrapper_invokes_bundled_python_entrypoint(self) -> None:

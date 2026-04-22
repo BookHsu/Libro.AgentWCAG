@@ -1339,6 +1339,54 @@ class CliFlowTests(unittest.TestCase):
         self.assertEqual(compact['product']['product_version'], self.product_version)
         self.assertRegex(compact['product']['source_revision'], r'^[0-9a-f]{40}$')
 
+    def test_run_accessibility_audit_print_examples_exits_without_target(self) -> None:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-wcag/scripts/run_accessibility_audit.py',
+                '--print-examples',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        self.assertIn('--target index.html', completed.stdout)
+        self.assertIn('--preflight-only', completed.stdout)
+
+    def test_run_accessibility_audit_artifacts_minimal_skips_auxiliary_sidecars(self) -> None:
+        test_dir = self._workspace('m23-artifacts-minimal-test')
+
+        html_path = test_dir / 'sample.html'
+        output_dir = test_dir / 'out'
+        html_path.write_text('<!doctype html><html><title>Fixture</title><body></body></html>', encoding='utf-8')
+        completed = subprocess.run(
+            [
+                sys.executable,
+                'skills/libro-wcag/scripts/run_accessibility_audit.py',
+                '--target',
+                str(html_path),
+                '--output-dir',
+                str(output_dir),
+                '--skip-axe',
+                '--skip-lighthouse',
+                '--summary-only',
+                '--artifacts',
+                'minimal',
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
+        self.assertTrue((output_dir / 'wcag-report.json').exists())
+        self.assertTrue((output_dir / 'wcag-report.md').exists())
+        self.assertTrue((output_dir / 'artifact-manifest.json').exists())
+        self.assertFalse((output_dir / 'debt-trend.json').exists())
+        self.assertFalse((output_dir / 'scanner-stability.json').exists())
+
     def test_run_accessibility_audit_lists_policy_presets_without_target(self) -> None:
         test_dir = self._workspace('m24-policy-presets-test')
 

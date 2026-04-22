@@ -1,21 +1,21 @@
-# 文件索引
+# Documentation Index
 
-此目錄依用途分區，讓公開專案的正式文件有清楚入口。
+This directory is organized by purpose so the public project has a clear documentation entry point.
 
-## 先看這些
+## Start Here
 
-- [../README.md](../README.md): 專案用途、安裝、CLI 快速開始
-- [../README.en.md](../README.en.md): README 英文副本
-- [testing/testing-playbook.md](testing/testing-playbook.md): 測試與 smoke 指引
-- [testing/test-matrix.md](testing/test-matrix.md): 測試矩陣與覆蓋對照
-- [../CONTRIBUTING.md](../CONTRIBUTING.md): contribution workflow 與契約守則
-- [../SECURITY.md](../SECURITY.md): 安全通報與範圍
+- [../README.md](../README.md): primary project overview, installation, and CLI quick start
+- [../README.en.md](../README.en.md): English README companion
+- [testing/testing-playbook.md](testing/testing-playbook.md): testing and smoke guidance
+- [testing/test-matrix.md](testing/test-matrix.md): test matrix and coverage mapping
+- [../CONTRIBUTING.md](../CONTRIBUTING.md): contribution workflow and contract guardrails
+- [../SECURITY.md](../SECURITY.md): security reporting and scope
 
-## 區段說明
+## Sections
 
 ### `testing/`
 
-測試指引、回歸流程與 realistic sample 資產。
+Testing guidance, regression workflows, and realistic sample assets.
 
 - `testing/testing-playbook.md`
 - `testing/testing-playbook.en.md`
@@ -25,7 +25,7 @@
 
 ### `release/`
 
-發版、CI、環境、治理與 operator 文件。
+Release, CI, environment, governance, and operator documentation.
 
 - `release/release-playbook.md`
 - `release/ga-release-workflow.md`
@@ -47,7 +47,7 @@
 
 ### `policy-bundles/`
 
-CLI / MCP / release validation 使用的 rule-policy bundles。
+Rule-policy bundles used by CLI, MCP, and release validation.
 
 - `policy-bundles/strict-web-app.json`
 - `policy-bundles/legacy-content.json`
@@ -55,7 +55,7 @@ CLI / MCP / release validation 使用的 rule-policy bundles。
 
 ### `examples/`
 
-整合範例，不作為唯一規格來源。
+Integration examples, not the only source of truth.
 
 - `examples/claude/`
 - `examples/copilot/`
@@ -64,7 +64,7 @@ CLI / MCP / release validation 使用的 rule-policy bundles。
 
 ### `archive/`
 
-保留歷史決策與舊測試記錄，供追溯使用。
+Historical records retained for traceability.
 
 - `archive/testing/`
 - `archive/decisions/`

@@ -1,158 +1,137 @@
 # Testing Playbook
 
-This playbook consolidates the repository's manual, scenario, system, end-to-end, and non-functional testing guidance.
+此文件整理公開專案最常用的測試、smoke、文件一致性驗證與人工檢查路徑。
 
-## Manual Testing Checklists
+## 最小回歸集合
 
-### Acceptance Test / UAT
+修改 CLI、報告輸出、README 或 wrappers 後，至少執行：
 
-- Install `libro-wcag` for the target agent.
-- Invoke the skill on one existing page in `audit-only`, `suggest-only`, and `apply-fixes` intent.
-- Confirm the result includes Markdown and JSON outputs with aligned issue IDs.
-- Confirm the result explains whether files were modified.
-- Confirm citations point to `w3.org`.
+```powershell
+python -m unittest skills.libro-wcag.scripts.tests.test_cli_flows
+python -m unittest skills.libro-wcag.scripts.tests.test_repo_scripts
+python scripts/validate_skill.py skills/libro-wcag
+```
 
-### Alpha Test
+若只改單一區塊，可先跑對應最小集合：
 
-- Run the skill internally on at least one local HTML file and one remote URL.
-- Record any missing contract fields, broken prompts, or malformed reports.
-- Verify the doctor command reports the installation as healthy before testing.
+```powershell
+python -m unittest skills.libro-wcag.scripts.tests.test_cli_flows.CliFlowTests.test_run_accessibility_audit_summary_only_prints_compact_json
+python -m unittest skills.libro-wcag.scripts.tests.test_repo_scripts.RepoScriptTests.test_libro_audit_preflight_only_returns_json
+```
 
-### Beta Test
+## CLI Smoke 路徑
 
-- Ask one external user to install via the documented installer path.
-- Have them verify install, invocation, and uninstall without local repo knowledge.
-- Record friction in installation, prompt loading, or report interpretation.
+### 1. Preflight
 
-### Usability Test
+確認 Python CLI 與 scanner toolchain 狀態可被讀取：
 
-- Validate the README gives enough guidance for first install without oral handoff.
-- Validate each agent's first-use guidance is sufficient to invoke the skill correctly.
-- Confirm the testing plan and runtime requirements are discoverable.
+```powershell
+python .\scripts\libro.py audit --preflight-only
+```
 
-### Exploratory Testing
+### 2. 單檔 HTML 稽核
 
-- Run the skill on pages with mixed issues: missing alt text, labels, link names, and language attributes.
-- Try unusual targets: local files, invalid schemes, and partially broken installs.
-- Record any confusing output wording or duplicated findings.
+```powershell
+python .\scripts\libro.py audit .\docs\testing\realistic-sample\mixed-findings.html --skip-axe --skip-lighthouse --summary-only --output-dir .\out\smoke
+```
 
-## Scenario, System, and End-to-End Assets
+預期：
 
-### System Test
+- stdout 為 compact JSON
+- `wcag-report.json` 與 `wcag-report.md` 會寫入 output dir
+- `run_meta.product` 與 `report_schema` 資訊存在
 
-- Validate the repo as a whole by running:
-  - unit test discovery
-  - skill validation
-  - install -> doctor -> audit -> artifact capture flow
-- Confirm all steps succeed from the repo root.
+### 3. Artifact 縮減模式
 
-### End-to-End Test
+```powershell
+python .\skills\libro-wcag\scripts\run_accessibility_audit.py --target .\docs\testing\realistic-sample\mixed-findings.html --skip-axe --skip-lighthouse --summary-only --artifacts minimal --output-dir .\out\minimal
+```
 
-- Install the skill to a temporary destination.
-- Run `run_accessibility_audit.py` against `docs/testing/realistic-sample/mixed-findings.html`.
-- Verify the generated JSON, Markdown, diff, and snapshot outputs.
-- Run `doctor-agent.py` before and after uninstall.
+預期：
 
-### Scenario A: Create Mode Guidance
+- 核心報告仍存在
+- `debt-trend.json`、`scanner-stability.json` 等 sidecar 不應被寫出
 
-- Use `task_mode=create` with no real scanner output.
-- Confirm the report avoids fake scan claims and keeps guidance/manual-review semantics.
+### 4. 彙總報告
 
-### Scenario B: Modify Mode Audit
+```powershell
+python .\scripts\libro.py report .\out\smoke\wcag-report.json --format terminal --no-color
+python .\scripts\libro.py report .\out\smoke\wcag-report.json --format html --output .\out\wcag-summary.html
+```
 
-- Use `task_mode=modify` with scanner findings.
-- Confirm the report includes findings, fixes, and citations.
+預期：
 
-### Scenario C: Apply-Fixes Intent
+- `--no-color` 不應輸出 ANSI escape
+- terminal 模式可在 Windows CP950 終端顯示
+- HTML 模式可成功輸出彙總報告
 
-- Use `execution_mode=apply-fixes`.
-- Confirm the report marks intent and applies only safe deterministic rewrites.
+## 使用體驗檢查
 
-### Scenario D: Realistic Mixed Validation Lane
+CLI / README 改動後，人工確認：
 
-- Run `python .\scripts\run-realistic-validation-smoke.py --agent codex`.
-- Confirm `docs/testing/realistic-sample/artifacts/smoke-summary.json` reports both:
-  - `auto_fixed_count > 0`
-  - `manual_required_count > 0`
-- Confirm artifacts include JSON, Markdown, unified diff, and fixed-report snapshot outputs.
+- `python .\scripts\libro.py audit --print-examples`
+- `python .\scripts\libro.py scan --print-examples`
+- `python .\scripts\libro.py report --print-examples`
+- `python .\skills\libro-wcag\scripts\run_accessibility_audit.py --print-examples`
 
-## Decision Table
+檢查項目：
 
-| task_mode | execution_mode | target state | expected behavior |
-| --- | --- | --- | --- |
-| create | audit-only | draft/no scan | guidance or manual review only |
-| create | suggest-only | draft/no scan | guidance plus suggested fixes |
-| create | apply-fixes | draft/no scan | allow agent rewrite intent while preserving manual-review boundaries |
-| modify | audit-only | existing target | findings only |
-| modify | suggest-only | existing target | findings plus planned fixes |
-| modify | apply-fixes | existing target | findings plus safe automatic rewrites and explicit unsupported boundaries |
+- 範例命令與實際支援旗標一致
+- README / docs 與 CLI help 沒有互相矛盾
+- wrapper (`libro.ps1`, `libro.sh`, `bin/libro.js`) 可覆蓋公開命令
 
-## State Transition Reference
+## 公開文件一致性
 
-- `open` -> `planned` when a finding is identified and a remediation is proposed.
-- `open` -> `needs-review` when a scanner fails or mapping requires manual review.
-- `planned` -> `implemented` when safe deterministic rewrites are applied.
-- `implemented` -> `verified` remains reserved for explicit post-fix verification gates.
+修改正式 human-facing docs 後，確認：
 
-## Non-Functional and Reliability Checks
+- `README.md` 與 `README.en.md` 結構一致
+- `docs/README.md` 與 `docs/README.en.md` 可作為文件入口
+- `docs/testing/testing-playbook.md` 與 `docs/testing/testing-playbook.en.md` 對齊
+- `docs/testing/test-matrix.md` 與 `docs/testing/test-matrix.en.md` 對齊
+- `CHANGELOG.md` 已記錄外部可見行為變更
 
-### Compatibility Test
+## 較完整驗證
 
-- Verify Python installer behavior for `codex`, `claude`, `gemini`, `copilot`, and `all`.
-- Verify PowerShell and POSIX wrapper scripts point to the Python installer.
+需要較高信心時，執行完整測試：
 
-### Performance Test
+```powershell
+python -m unittest discover -s skills/libro-wcag/scripts/tests -p "test_*.py"
+python scripts/validate_skill.py skills/libro-wcag
+```
 
-- Run normalization on a synthetic report with many findings.
-- Confirm completion stays within an acceptable local threshold.
+若變更含 release / packaging / docs 相關內容，另外執行：
 
-### Stress Test
+```powershell
+python -m unittest skills.libro-wcag.scripts.tests.test_release_docs
+python -m unittest skills.libro-wcag.scripts.tests.test_release_packaging
+python -m unittest skills.libro-wcag.scripts.tests.test_release_workflow
+```
 
-- Run normalization with repeated or large finding sets.
-- Confirm report generation still succeeds without malformed output.
+## 人工檢查場景
 
-### Endurance / Soak Test
+### Acceptance / UAT
 
-- Execute repeated normalization loops and repeated install/doctor/uninstall cycles.
-- Confirm no progressive failures occur.
+- 安裝 skill 到目標 agent
+- 實際跑一次 `audit-only`、`suggest-only`、`apply-fixes`
+- 確認報告欄位、狀態、引用與修改說明可理解
 
-### Volume / Capacity Test
+### Exploratory
 
-- Generate a report with a larger set of findings and citations.
-- Confirm JSON and Markdown files are written correctly.
+- 嘗試本機 HTML、URL、錯誤 scheme、缺 scanner 的情況
+- 確認錯誤訊息可指向下一步，而非只丟 traceback
 
-### Scalability Test
+### Documentation
 
-- Compare small and larger synthetic inputs.
-- Confirm growth remains operationally linear enough for local CLI usage.
+- 從 README 開始，不依賴口頭說明完成一次 install -> audit -> report
+- 確認新使用者能看懂單檔稽核、批次掃描、報告彙總三條路徑
 
-### Security Test
+## Legacy Matrix Labels
 
-- Verify invalid target schemes are rejected.
-- Verify nonexistent local files are rejected before scanner execution.
-- Verify install destinations are not silently overwritten without `--force`.
+下列名稱保留在正式文件中，讓既有 contract / repo 測試能持續對應：
 
-### Vulnerability Scan
-
-- Automated baseline: `test_repo_invocation.py` runs `python -m pip check`.
-- Keep dependency and script review before release.
-- Current minimum command set:
-  - `python -m pip check`
-  - `python -m unittest discover -s skills/libro-wcag/scripts/tests -p "test_*.py"`
-- If additional dependencies are added later, attach a dedicated dependency scanner.
-
-### Recovery Test
-
-- Break an installed bundle by removing the adapter prompt.
-- Confirm `doctor-agent.py` reports the installation as unhealthy.
-- Reinstall with `--force` and confirm health returns.
-
-### Interrupt Test
-
-- Simulate partial or broken installations by removing expected files.
-- Confirm doctor and reinstall flows can detect and recover from the interruption.
-
-### Concurrency Test
-
-- Install to independent destinations in parallel.
-- Confirm both installations complete successfully and generate valid manifests.
+- Acceptance Test / UAT
+- End-to-End Test
+- Decision Table
+- Performance Test
+- Concurrency Test
+- Beta Test

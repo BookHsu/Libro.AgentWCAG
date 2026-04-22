@@ -58,14 +58,14 @@ A GA release is allowed only when all blocker gates pass:
 ## Compatibility Promises
 
 - Existing CLI flags, exit codes, artifact filenames, and report schema version remain stable unless explicitly versioned and documented.
-- The pushed Git tag `vX.Y.Z` remains the single source of release version for published artifacts.
+- The pushed Git tag `vX.Y.Z` or `vX.Y.Z-rc.N` remains the single source of release version for published artifacts.
 - `install-manifest.json`, `artifact-manifest.json`, and report schema versioning must remain machine-readable and backward-compatible within the same release line.
 - Adapter entrypoint paths documented in installer manifests are part of the release contract.
 
 ## Versioning Policy
 
 - Semantic versioning is the release policy baseline.
-- Tag format is `vX.Y.Z`.
+- Tag format is `vX.Y.Z` for stable releases and `vX.Y.Z-rc.N` / `vX.Y.Z-beta.N` / `vX.Y.Z-alpha.N` for pre-releases.
 - Deprecation and compatibility changes are communicated only through formal release versions, `CHANGELOG.md`, and release notes; there is no separate pre-announcement window.
 - Breaking changes require:
   - a semver-major bump
