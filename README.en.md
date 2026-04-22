@@ -96,6 +96,8 @@ python .\scripts\libro.py scan .\src\pages --execution-mode audit-only --output-
 python .\scripts\libro.py scan --print-examples
 ```
 
+During batch scans, each target gets its own output directory; if one target fails, the CLI now prints a short failure summary and the `scan-output.log` path.
+
 ### Aggregate reports
 
 ```powershell
@@ -104,6 +106,8 @@ python .\scripts\libro.py report .\wcag-reports --format html --output .\out\wca
 python .\scripts\libro.py report .\wcag-reports --format terminal --no-color
 python .\scripts\libro.py report --print-examples
 ```
+
+If the current terminal cannot encode Unicode safely, terminal reports now fall back to plain ASCII automatically, even without `--no-color`.
 
 ### Call the core audit runner directly
 
@@ -150,6 +154,7 @@ Additional files may appear when the related features are enabled:
 - `replay-summary.json`
 - `scanner-stability.json`
 - `debt-trend.json`
+- `scan-output.log` (for batch-scan targets that emitted stdout/stderr)
 
 To reduce sidecar artifacts:
 

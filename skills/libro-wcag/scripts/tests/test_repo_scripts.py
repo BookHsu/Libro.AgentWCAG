@@ -326,6 +326,49 @@ class RepoScriptTests(unittest.TestCase):
             self.assertNotIn('\x1b[', result.stdout)
             self.assertIn('WCAG', result.stdout)
 
+    def test_libro_scan_target_dir_names_are_stable_for_same_stem(self) -> None:
+        libro = self._load_libro_module()
+        first = libro._scan_target_dir_name(r'C:\repo\pages\index.html', 0)
+        second = libro._scan_target_dir_name(r'C:\repo\docs\index.html', 1)
+        self.assertNotEqual(first, second)
+        self.assertTrue(first.startswith('index-'))
+        self.assertTrue(second.startswith('index-'))
+
+    def test_libro_resolve_scan_targets_dedupes_repeated_inputs(self) -> None:
+        libro = self._load_libro_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            workspace = Path(tmp)
+            page = workspace / 'page.html'
+            page.write_text('<!doctype html><html></html>', encoding='utf-8')
+            args = type(
+                'Args',
+                (),
+                {
+                    'targets': None,
+                    'inputs': [str(page), str(page)],
+                },
+            )()
+            targets = libro._resolve_scan_targets(args)
+            self.assertEqual(targets, [str(page)])
+
+    def test_libro_stdout_supports_unicode_returns_false_for_cp950(self) -> None:
+        libro = self._load_libro_module()
+        original_stdout = libro.sys.stdout
+        libro.sys.stdout = type('Stdout', (), {'encoding': 'cp950'})()
+        try:
+            self.assertFalse(libro._stdout_supports_unicode())
+        finally:
+            libro.sys.stdout = original_stdout
+
+    def test_libro_summarize_scan_output_prefers_recent_nonempty_lines(self) -> None:
+        libro = self._load_libro_module()
+        summary = libro._summarize_scan_output(
+            stdout='line one\nline two\n',
+            stderr='error one\n\nerror two\n',
+            max_lines=2,
+        )
+        self.assertEqual(summary, 'error one | error two')
+
     def test_force_reinstall_replaces_existing_installation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             destination = Path(tmp) / 'codex-skill'
@@ -384,6 +427,15 @@ class RepoScriptTests(unittest.TestCase):
     def _load_uninstall_agent_module(self):
         module_path = self.repo_root / 'scripts' / 'uninstall-agent.py'
         spec = importlib.util.spec_from_file_location('uninstall_agent', module_path)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def _load_libro_module(self):
+        module_path = self.repo_root / 'scripts' / 'libro.py'
+        spec = importlib.util.spec_from_file_location('libro_cli', module_path)
         self.assertIsNotNone(spec)
         self.assertIsNotNone(spec.loader)
         module = importlib.util.module_from_spec(spec)

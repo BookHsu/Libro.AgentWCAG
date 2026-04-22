@@ -4,9 +4,13 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import os
+import re
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 SKILL_NAME = "libro-wcag"
 SUPPORTED_AGENTS = ("codex", "claude", "gemini", "copilot")
@@ -30,6 +34,7 @@ REPORT_EXAMPLES = """Examples:
   libro report .\\wcag-reports --format html --output .\\out\\wcag-summary.html
   libro report .\\wcag-reports --format terminal --no-color
 """
+SCAN_LOG_NAME = "scan-output.log"
 
 
 def workspace_destination(agent: str, workspace_root: Path) -> Path:
@@ -305,7 +310,62 @@ def _resolve_scan_targets(args: argparse.Namespace) -> list[str]:
         dir_patterns=("*.html", "*.htm", "*.xhtml"),
     )
     targets.extend(str(p) for p in found)
-    return targets
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for target in targets:
+        normalized = os.path.normcase(target) if os.name == "nt" else target
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        deduped.append(target)
+    return deduped
+
+
+def _scan_target_label(target: str) -> str:
+    parsed = urlparse(target)
+    if parsed.scheme and parsed.scheme not in {"", "file"}:
+        path_name = Path(parsed.path).stem if parsed.path else ""
+        host_name = parsed.netloc.replace(".", "-")
+        return "-".join(part for part in [host_name, path_name] if part) or "target"
+    return Path(target).stem or "target"
+
+
+def _scan_target_dir_name(target: str, index: int) -> str:
+    label = _scan_target_label(target)
+    slug = re.sub(r"[^A-Za-z0-9._-]+", "-", label).strip("-._") or f"target-{index}"
+    stable_suffix = hashlib.sha1(target.encode("utf-8")).hexdigest()[:8]
+    return f"{slug}-{stable_suffix}"
+
+
+def _write_scan_log(target_dir: Path, stdout: str, stderr: str) -> Path | None:
+    content_parts = []
+    if stdout.strip():
+        content_parts.append("=== STDOUT ===\n" + stdout.rstrip())
+    if stderr.strip():
+        content_parts.append("=== STDERR ===\n" + stderr.rstrip())
+    if not content_parts:
+        return None
+    log_path = target_dir / SCAN_LOG_NAME
+    log_path.write_text("\n\n".join(content_parts) + "\n", encoding="utf-8")
+    return log_path
+
+
+def _summarize_scan_output(stdout: str, stderr: str, *, max_lines: int = 3) -> str:
+    source = stderr if stderr.strip() else stdout
+    lines = [line.strip() for line in source.splitlines() if line.strip()]
+    if not lines:
+        return "No stderr/stdout captured."
+    tail = lines[-max_lines:]
+    return " | ".join(tail)
+
+
+def _stdout_supports_unicode() -> bool:
+    encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
+    try:
+        "🔴░".encode(encoding)
+    except (LookupError, UnicodeEncodeError):
+        return False
+    return True
 
 
 def handle_scan(args: argparse.Namespace) -> int:
@@ -325,12 +385,12 @@ def handle_scan(args: argparse.Namespace) -> int:
     execution_mode = args.execution_mode
     parallel = max(1, args.parallel)
 
-    errors: list[tuple[str, int]] = []
+    errors: list[dict[str, str | int]] = []
     completed_count = 0
 
-    def _run_single_audit(target: str, index: int) -> tuple[str, int]:
+    def _run_single_audit(target: str, index: int) -> tuple[str, int, Path, Path | None, str]:
         # Compute per-target output directory
-        safe_name = Path(target).stem or f"target_{index}"
+        safe_name = _scan_target_dir_name(target, index)
         target_dir = output_dir / safe_name
         target_dir.mkdir(parents=True, exist_ok=True)
         cmd = [
@@ -339,8 +399,18 @@ def handle_scan(args: argparse.Namespace) -> int:
             "--execution-mode", execution_mode,
             "--output-dir", str(target_dir),
         ]
-        result = subprocess.run(cmd, cwd=REPO_ROOT, check=False, capture_output=True)
-        return target, result.returncode
+        result = subprocess.run(
+            cmd,
+            cwd=REPO_ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        log_path = _write_scan_log(target_dir, result.stdout, result.stderr)
+        summary = _summarize_scan_output(result.stdout, result.stderr)
+        return target, result.returncode, target_dir, log_path, summary
 
     print(f"Scanning {len(targets)} target(s) with parallelism={parallel}...")
     with ThreadPoolExecutor(max_workers=parallel) as executor:
@@ -349,19 +419,33 @@ def handle_scan(args: argparse.Namespace) -> int:
             for i, target in enumerate(targets)
         }
         for future in as_completed(futures):
-            target, returncode = future.result()
+            target, returncode, target_dir, log_path, summary = future.result()
             completed_count += 1
             if returncode != 0:
-                errors.append((target, returncode))
+                errors.append(
+                    {
+                        "target": target,
+                        "returncode": returncode,
+                        "log_path": str(log_path) if log_path is not None else "",
+                        "summary": summary,
+                    }
+                )
                 print(f"  [{completed_count}/{len(targets)}] FAIL ({returncode}): {target}")
+                if log_path is not None:
+                    print(f"     log: {log_path}")
+                print(f"     summary: {summary}")
             else:
                 print(f"  [{completed_count}/{len(targets)}] OK: {target}")
+                print(f"     output: {target_dir}")
 
     print(f"\nCompleted: {len(targets) - len(errors)}/{len(targets)} succeeded")
     if errors:
         print(f"Failed: {len(errors)} target(s)")
-        for target, code in errors:
-            print(f"  - {target} (exit code {code})")
+        for item in errors:
+            print(f"  - {item['target']} (exit code {item['returncode']})")
+            if item["log_path"]:
+                print(f"    log: {item['log_path']}")
+            print(f"    summary: {item['summary']}")
         return 1
     print(f"Reports written to: {output_dir}/")
     return 0
@@ -411,11 +495,14 @@ def handle_report(args: argparse.Namespace) -> int:
             baseline_reports = load_reports(baseline_paths)
 
     aggregate = build_aggregate_report(reports, baseline_reports=baseline_reports)
+    use_color = not args.no_color
+    if not args.output and use_color and not _stdout_supports_unicode():
+        use_color = False
 
     # Dispatch table: format -> renderer callable
     # Each entry returns the output text given (aggregate, reports, language).
     format_renderers = {
-        "terminal": lambda: render_terminal(aggregate, language=args.language, use_color=not args.no_color),
+        "terminal": lambda: render_terminal(aggregate, language=args.language, use_color=use_color),
         "markdown": lambda: render_markdown(aggregate, language=args.language),
         "html": lambda: render_html(aggregate, language=args.language),
         "csv": lambda: render_csv(reports, aggregate=aggregate),

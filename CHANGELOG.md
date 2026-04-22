@@ -12,6 +12,8 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 - `run_accessibility_audit.py --print-examples` and `libro audit|scan|report --print-examples` now print copy-paste examples for the most common workflows.
 - `libro report --no-color` now provides an ANSI-free, emoji-free terminal mode suitable for plain Windows consoles and CI logs.
 - `run_accessibility_audit.py --artifacts minimal` now keeps core reports while skipping optional sidecar artifacts such as `debt-trend.json` and `scanner-stability.json`.
+- `libro scan` now de-duplicates repeated targets, creates collision-resistant per-target output directories, and writes `scan-output.log` when a target emits stdout/stderr.
+- `libro report` now auto-falls back to plain ASCII terminal output when stdout cannot encode Unicode safely.
 - `docs/archive/decisions/markdown-cleanup-20260329.md` now records the markdown convergence decisions and the first-pass GitHub Pages source set after temporary planning files were removed.
 - `docs/testing/test-matrix.md` now holds the detailed coverage matrix that previously lived at the repo root in `TESTING-PLAN.md`.
 - `libro audit` subcommand forwards all arguments to `run_accessibility_audit.py`, providing a short CLI entry point for WCAG audits (e.g. `libro audit https://example.com`).

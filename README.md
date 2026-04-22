@@ -117,6 +117,8 @@ python .\scripts\libro.py scan .\src\pages --execution-mode audit-only --output-
 python .\scripts\libro.py scan --print-examples
 ```
 
+批次掃描時，每個 target 都會有獨立 output 目錄；若某個 target 失敗，CLI 會直接列出摘要與 `scan-output.log` 路徑。
+
 ### 彙總報告
 
 ```powershell
@@ -125,6 +127,8 @@ python .\scripts\libro.py report .\wcag-reports --format html --output .\out\wca
 python .\scripts\libro.py report .\wcag-reports --format terminal --no-color
 python .\scripts\libro.py report --print-examples
 ```
+
+若目前終端不支援 Unicode，terminal report 也會自動退化成純 ASCII 輸出，不一定要手動加 `--no-color`。
 
 ### 直接呼叫核心 audit runner
 
@@ -188,6 +192,7 @@ Apply fixes
 - `replay-summary.json`
 - `scanner-stability.json`
 - `debt-trend.json`
+- `scan-output.log`（批次掃描且該 target 有 stdout/stderr 時）
 
 若要減少 sidecar artifacts，可使用：
 
