@@ -24,6 +24,18 @@ TARGET_STATUS_ICONS = {
     "issues": "\u26a0",     # ⚠
     "critical": "\u2717",   # ✗
 }
+PLAIN_SEVERITY_MARKERS = {
+    "critical": "[critical]",
+    "serious": "[serious]",
+    "moderate": "[moderate]",
+    "minor": "[minor]",
+    "info": "[info]",
+}
+PLAIN_TARGET_STATUS_MARKERS = {
+    "clean": "OK",
+    "issues": "WARN",
+    "critical": "FAIL",
+}
 
 LABELS = {
     "en": {
@@ -160,13 +172,36 @@ def _bar(count: int, total: int, width: int = _BAR_WIDTH) -> str:
     return "\u2588" * filled + "\u2591" * (width - filled)
 
 
-def _colored(text: str, color_key: str) -> str:
+def _render_bar(count: int, total: int, *, use_color: bool, width: int = _BAR_WIDTH) -> str:
+    if use_color:
+        return _bar(count, total, width)
+    if total == 0:
+        return " " * width
+    filled = round(count / total * width)
+    return "#" * filled + "-" * (width - filled)
+
+
+def _severity_marker(level: str, *, use_color: bool) -> str:
+    if use_color:
+        return SEVERITY_ICONS.get(level, " ")
+    return PLAIN_SEVERITY_MARKERS.get(level, f"[{level}]")
+
+
+def _target_status_marker(status: str, *, use_color: bool) -> str:
+    if use_color:
+        return TARGET_STATUS_ICONS.get(status, "?")
+    return PLAIN_TARGET_STATUS_MARKERS.get(status, status.upper())
+
+
+def _colored(text: str, color_key: str, *, use_color: bool = True) -> str:
+    if not use_color:
+        return text
     color = _ANSI_COLORS.get(color_key, "")
     reset = _ANSI_COLORS["reset"]
     return f"{color}{text}{reset}" if color else text
 
 
-def render_terminal(report: dict[str, Any], language: str | None = None) -> str:
+def render_terminal(report: dict[str, Any], language: str | None = None, *, use_color: bool = True) -> str:
     """Render aggregate report for terminal display with ANSI colours."""
     lang = _resolve_language(language)
     lbl = LABELS[lang]
@@ -183,13 +218,13 @@ def render_terminal(report: dict[str, Any], language: str | None = None) -> str:
     # Title
     title = f"  {lbl['title']}  "
     lines.append("")
-    lines.append(_colored(f"{'=' * len(title)}", "header"))
-    lines.append(_colored(title, "header"))
-    lines.append(_colored(f"{'=' * len(title)}", "header"))
+    lines.append(_colored(f"{'=' * len(title)}", "header", use_color=use_color))
+    lines.append(_colored(title, "header", use_color=use_color))
+    lines.append(_colored(f"{'=' * len(title)}", "header", use_color=use_color))
     lines.append("")
 
     # A1: Scope / Executive Summary
-    lines.append(_colored(f"## {lbl['scope']}", "bold"))
+    lines.append(_colored(f"## {lbl['scope']}", "bold", use_color=use_color))
     lines.append(f"  {lbl['wcag_standard']}: WCAG {standard.get('wcag_version', '2.1')} {standard.get('conformance_level', 'AA')}")
     lines.append(f"  {lbl['total_targets']}: {scope.get('total_targets', 0)}")
     lines.append(f"  {lbl['clean_targets']}: {scope.get('clean_targets', 0)}")
@@ -199,29 +234,29 @@ def render_terminal(report: dict[str, Any], language: str | None = None) -> str:
     lines.append(f"  {lbl['compliance_rate']}: {rate:.0%}")
     verdict = scope.get("verdict", "needs-review")
     verdict_text = verdict_lbl.get(verdict, verdict)
-    lines.append(f"  {lbl['verdict']}: {_colored(verdict_text, verdict)}")
+    lines.append(f"  {lbl['verdict']}: {_colored(verdict_text, verdict, use_color=use_color)}")
     lines.append("")
 
     # A2: Severity Breakdown
     total_findings = scope.get("total_findings", 0)
-    lines.append(_colored(f"## {lbl['severity_breakdown']}", "bold"))
+    lines.append(_colored(f"## {lbl['severity_breakdown']}", "bold", use_color=use_color))
     for level in _SEVERITY_ORDER:
         data = severity.get(level, {})
         count = data.get("count", 0)
         pct = data.get("percentage", 0.0)
-        bar = _bar(count, total_findings)
+        bar = _render_bar(count, total_findings, use_color=use_color)
         lines.append(
-            f"  {SEVERITY_ICONS.get(level, ' ')} {level:10s} {_colored(bar, level)} {count:4d} ({pct:5.1f}%)"
+            f"  {_severity_marker(level, use_color=use_color)} {level:10s} {_colored(bar, level, use_color=use_color)} {count:4d} ({pct:5.1f}%)"
         )
     lines.append("")
 
     # A3: Fixability Analysis
-    lines.append(_colored(f"## {lbl['fixability_analysis']}", "bold"))
+    lines.append(_colored(f"## {lbl['fixability_analysis']}", "bold", use_color=use_color))
     for level in _FIXABILITY_ORDER:
         data = fixability.get(level, {})
         count = data.get("count", 0)
         pct = data.get("percentage", 0.0)
-        bar = _bar(count, total_findings)
+        bar = _render_bar(count, total_findings, use_color=use_color)
         lines.append(f"  {level:10s} {bar} {count:4d} ({pct:5.1f}%)")
     auto_fix_pct = fixability.get("auto-fix", {}).get("percentage", 0.0)
     lines.append(f"  {lbl['fix_coverage']}: {auto_fix_pct / 100:.0%}")
@@ -230,18 +265,18 @@ def render_terminal(report: dict[str, Any], language: str | None = None) -> str:
     # A5: WCAG Principle Coverage
     wcag_principles = sec["wcag_principles"]
     if wcag_principles:
-        lines.append(_colored(f"## {lbl['wcag_principles']}", "bold"))
+        lines.append(_colored(f"## {lbl['wcag_principles']}", "bold", use_color=use_color))
         for principle, data in wcag_principles.items():
             count = data.get("count", 0)
             sc_list = ", ".join(data.get("sc", []))
-            bar = _bar(count, total_findings)
+            bar = _render_bar(count, total_findings, use_color=use_color)
             lines.append(f"  {principle:15s} {bar} {count:4d}  SC: {sc_list or '-'}")
         lines.append("")
 
     # A6: Top Issues
     top_rules = sec["top_rules"]
     if top_rules:
-        lines.append(_colored(f"## {lbl['top_issues']}", "bold"))
+        lines.append(_colored(f"## {lbl['top_issues']}", "bold", use_color=use_color))
         lines.append(f"  {lbl['rule_id']:25s} {lbl['count']:>6s}  {lbl['sc']}")
         lines.append(f"  {'-' * 25} {'-' * 6}  {'-' * 20}")
         for rule in top_rules:
@@ -250,14 +285,14 @@ def render_terminal(report: dict[str, Any], language: str | None = None) -> str:
         lines.append("")
 
     # A4: Per-Target Breakdown
-    lines.append(_colored(f"## {lbl['per_target']}", "bold"))
+    lines.append(_colored(f"## {lbl['per_target']}", "bold", use_color=use_color))
     if targets:
         # Header
         lines.append(f"  {'':2s} {lbl['target']:40s} {lbl['findings']:>8s} {lbl['auto_fixable']:>12s} {lbl['status']:>8s}")
         lines.append(f"  {'':2s} {'-' * 40} {'-' * 8} {'-' * 12} {'-' * 8}")
         for t in targets:
             status = t.get("status", "issues")
-            icon = TARGET_STATUS_ICONS.get(status, "?")
+            icon = _target_status_marker(status, use_color=use_color)
             target_name = t.get("target", "?")
             if len(target_name) > 40:
                 target_name = "..." + target_name[-37:]

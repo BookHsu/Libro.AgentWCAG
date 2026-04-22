@@ -2,7 +2,7 @@
 set -eu
 
 if [ "$#" -lt 1 ]; then
-  echo "Usage: ./scripts/libro.sh <install|doctor|remove|audit> [args...]" >&2
+  echo "Usage: ./scripts/libro.sh <install|doctor|remove|audit|scan|report> [args...]" >&2
   exit 1
 fi
 

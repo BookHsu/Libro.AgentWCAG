@@ -283,6 +283,49 @@ class RepoScriptTests(unittest.TestCase):
         self.assertIn('ok', payload)
         self.assertIn('checks', payload)
 
+    def test_libro_audit_print_examples_returns_examples(self) -> None:
+        result = subprocess.run(
+            [sys.executable, 'scripts/libro.py', 'audit', '--print-examples'],
+            cwd=self.repo_root, capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('libro audit https://example.com', result.stdout)
+
+    def test_libro_report_no_color_omits_ansi_sequences(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            report_path = Path(tmp) / 'wcag-report.json'
+            report_path.write_text(
+                json.dumps(
+                    {
+                        'target': {'value': 'sample.html'},
+                        'standard': {'wcag_version': '2.1', 'conformance_level': 'AA'},
+                        'findings': [
+                            {'rule_id': 'image-alt', 'severity': 'serious', 'fixability': 'manual', 'status': 'open', 'sc': ['1.1.1']}
+                        ],
+                        'summary': {'remediation_lifecycle': {'planned': 1, 'implemented': 0, 'verified': 0, 'manual_review_required': 1}},
+                    }
+                ),
+                encoding='utf-8',
+            )
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    'scripts/libro.py',
+                    'report',
+                    str(report_path),
+                    '--format',
+                    'terminal',
+                    '--no-color',
+                ],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertNotIn('\x1b[', result.stdout)
+            self.assertIn('WCAG', result.stdout)
+
     def test_force_reinstall_replaces_existing_installation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             destination = Path(tmp) / 'codex-skill'
@@ -441,13 +484,13 @@ class RepoScriptTests(unittest.TestCase):
 
     def test_libro_ps1_wrapper_invokes_unified_cli(self) -> None:
         wrapper = (self.repo_root / 'scripts' / 'libro.ps1').read_text(encoding='utf-8')
-        self.assertIn("[ValidateSet('install','doctor','remove','audit')]", wrapper)
+        self.assertIn("[ValidateSet('install','doctor','remove','audit','scan','report')]", wrapper)
         self.assertIn("Join-Path $PSScriptRoot 'libro.py'", wrapper)
         self.assertIn('python $script @arguments', wrapper)
 
     def test_libro_sh_wrapper_invokes_unified_cli(self) -> None:
         wrapper = (self.repo_root / 'scripts' / 'libro.sh').read_text(encoding='utf-8')
-        self.assertIn('<install|doctor|remove|audit>', wrapper)
+        self.assertIn('<install|doctor|remove|audit|scan|report>', wrapper)
         self.assertIn('python "$SCRIPT_DIR/libro.py" "$COMMAND" "$@"', wrapper)
 
     def test_npm_cli_wrapper_invokes_bundled_python_entrypoint(self) -> None:

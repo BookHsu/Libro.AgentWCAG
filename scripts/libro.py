@@ -15,6 +15,21 @@ MCP_CLIENTS = ("claude", "copilot", "gemini")
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent
 AUDIT_SCRIPT = REPO_ROOT / "skills" / "libro-wcag" / "scripts" / "run_accessibility_audit.py"
+AUDIT_EXAMPLES = """Examples:
+  libro audit https://example.com
+  libro audit .\\src\\index.html --execution-mode suggest-only
+  libro audit .\\src\\index.html --execution-mode apply-fixes --dry-run
+  libro audit --preflight-only
+"""
+SCAN_EXAMPLES = """Examples:
+  libro scan .\\pages --parallel 4
+  libro scan .\\pages --execution-mode audit-only --output-dir .\\wcag-reports
+"""
+REPORT_EXAMPLES = """Examples:
+  libro report .\\out\\wcag-report.json --format terminal
+  libro report .\\wcag-reports --format html --output .\\out\\wcag-summary.html
+  libro report .\\wcag-reports --format terminal --no-color
+"""
 
 
 def workspace_destination(agent: str, workspace_root: Path) -> Path:
@@ -25,6 +40,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="libro",
         description="Unified CLI for installing and validating Libro.AgentWCAG across AI agents.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -73,13 +89,21 @@ def parse_args() -> argparse.Namespace:
     audit_parser = subparsers.add_parser(
         "audit",
         help="Run a WCAG accessibility audit on a target page or file.",
-        add_help=False,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=AUDIT_EXAMPLES,
     )
     audit_parser.add_argument("target", nargs="?", help="URL or local file path to audit.")
+    audit_parser.add_argument(
+        "--print-examples",
+        action="store_true",
+        help="Print common audit examples and exit.",
+    )
 
     scan_parser = subparsers.add_parser(
         "scan",
         help="Batch-scan multiple targets for WCAG accessibility issues.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=SCAN_EXAMPLES,
     )
     scan_parser.add_argument(
         "inputs",
@@ -107,10 +131,17 @@ def parse_args() -> argparse.Namespace:
         default="suggest-only",
         help="Execution mode for each audit (default: suggest-only).",
     )
+    scan_parser.add_argument(
+        "--print-examples",
+        action="store_true",
+        help="Print common batch-scan examples and exit.",
+    )
 
     report_parser = subparsers.add_parser(
         "report",
         help="Aggregate multiple wcag-report.json files into a summary report.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=REPORT_EXAMPLES,
     )
     report_parser.add_argument(
         "inputs",
@@ -135,6 +166,16 @@ def parse_args() -> argparse.Namespace:
     report_parser.add_argument(
         "--baseline",
         help="Path to a prior aggregate report JSON or directory for baseline comparison.",
+    )
+    report_parser.add_argument(
+        "--no-color",
+        action="store_true",
+        help="Disable ANSI color in terminal report output.",
+    )
+    report_parser.add_argument(
+        "--print-examples",
+        action="store_true",
+        help="Print common report examples and exit.",
     )
 
     args, remaining = parser.parse_known_args()
@@ -270,6 +311,10 @@ def _resolve_scan_targets(args: argparse.Namespace) -> list[str]:
 def handle_scan(args: argparse.Namespace) -> int:
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
+    if args.print_examples:
+        print(SCAN_EXAMPLES.rstrip())
+        return 0
+
     targets = _resolve_scan_targets(args)
     if not targets:
         print("Error: no scan targets found.", file=sys.stderr)
@@ -348,6 +393,10 @@ def handle_report(args: argparse.Namespace) -> int:
     from aggregate_report import build_aggregate_report, load_reports, write_aggregate_json
     from report_renderers import render_badge, render_csv, render_html, render_markdown, render_terminal
 
+    if args.print_examples:
+        print(REPORT_EXAMPLES.rstrip())
+        return 0
+
     report_paths = _resolve_report_paths(args.inputs)
     if not report_paths:
         print("Error: no report files found.", file=sys.stderr)
@@ -366,7 +415,7 @@ def handle_report(args: argparse.Namespace) -> int:
     # Dispatch table: format -> renderer callable
     # Each entry returns the output text given (aggregate, reports, language).
     format_renderers = {
-        "terminal": lambda: render_terminal(aggregate, language=args.language),
+        "terminal": lambda: render_terminal(aggregate, language=args.language, use_color=not args.no_color),
         "markdown": lambda: render_markdown(aggregate, language=args.language),
         "html": lambda: render_html(aggregate, language=args.language),
         "csv": lambda: render_csv(reports, aggregate=aggregate),
@@ -389,6 +438,10 @@ def handle_report(args: argparse.Namespace) -> int:
 
 
 def handle_audit(args: argparse.Namespace) -> int:
+    if args.print_examples:
+        print(AUDIT_EXAMPLES.rstrip())
+        return 0
+
     command = [sys.executable, str(AUDIT_SCRIPT)]
     if args.target:
         command.extend(["--target", args.target])

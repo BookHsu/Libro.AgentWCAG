@@ -109,6 +109,14 @@ SEVERITY_RANK = {"critical": 4, "serious": 3, "moderate": 2, "minor": 1, "info":
 FAIL_ON_EXIT_CODES = {"critical": 42, "serious": 43, "moderate": 44}
 FINDING_SORT_MODES = {"severity", "rule", "target"}
 DEFAULT_DEBT_TREND_WINDOW = 5
+ARTIFACT_MODES = {"full", "minimal"}
+AUDIT_EXAMPLES = """Examples:
+  python skills/libro-wcag/scripts/run_accessibility_audit.py --target index.html
+  python skills/libro-wcag/scripts/run_accessibility_audit.py --target https://example.com --execution-mode audit-only
+  python skills/libro-wcag/scripts/run_accessibility_audit.py --target index.html --execution-mode apply-fixes --dry-run
+  python skills/libro-wcag/scripts/run_accessibility_audit.py --target index.html --summary-only --artifacts minimal
+  python skills/libro-wcag/scripts/run_accessibility_audit.py --preflight-only
+"""
 def _remove_if_exists(path: Path) -> None:
     if path.exists():
         path.unlink()
@@ -428,193 +436,229 @@ def _write_machine_report_outputs(
     _append_markdown_report_metadata(output_md, product_metadata)
 
 
+def _write_json_artifact(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
+
+
+def _should_emit_auxiliary_artifacts(mode: str) -> bool:
+    return mode == 'full'
+
+
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run WCAG audit with axe+Lighthouse.")
-    parser.add_argument("--task-mode", default="modify", choices=["create", "modify"])
-    parser.add_argument(
+    parser = argparse.ArgumentParser(
+        description="Run WCAG audit with axe+Lighthouse.",
+        epilog=AUDIT_EXAMPLES,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    core_group = parser.add_argument_group("Core Audit")
+    core_group.add_argument("--task-mode", default="modify", choices=["create", "modify"])
+    core_group.add_argument(
         "--execution-mode",
         default="suggest-only",
         choices=["audit-only", "suggest-only", "apply-fixes"],
     )
-    parser.add_argument("--wcag-version", default="2.1", choices=["2.0", "2.1", "2.2"])
-    parser.add_argument("--conformance-level", default="AA", choices=["A", "AA", "AAA"])
-    parser.add_argument("--target")
-    parser.add_argument("--output-language", default="zh-TW")
-    parser.add_argument("--output-dir", default="out")
-    parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT_SECONDS)
-    parser.add_argument(
+    core_group.add_argument("--wcag-version", default="2.1", choices=["2.0", "2.1", "2.2"])
+    core_group.add_argument("--conformance-level", default="AA", choices=["A", "AA", "AAA"])
+    core_group.add_argument("--target", help="Local file path or URL to audit.")
+    core_group.add_argument("--output-language", default="zh-TW")
+    core_group.add_argument("--output-dir", default="out")
+    core_group.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT_SECONDS)
+    core_group.add_argument(
+        "--print-examples",
+        action="store_true",
+        help="Print common invocation examples and exit.",
+    )
+
+    policy_group = parser.add_argument_group("Policy & Rule Filtering")
+    policy_group.add_argument(
         "--report-format",
         choices=["json", "sarif"],
         default=None,
         help="Primary machine-readable output format.",
     )
-    parser.add_argument(
+    policy_group.add_argument(
         "--fail-on",
         choices=["critical", "serious", "moderate"],
         default=None,
         help="Fail with deterministic exit code when unresolved findings reach this severity.",
     )
-    parser.add_argument(
+    policy_group.add_argument(
         "--include-rule",
         action="append",
         default=[],
         help="Include only specific normalized rule ids (repeatable).",
     )
-    parser.add_argument(
+    policy_group.add_argument(
         "--ignore-rule",
         action="append",
         default=[],
         help="Ignore specific normalized rule ids (repeatable).",
     )
-    parser.add_argument(
+    policy_group.add_argument(
         "--policy-config",
         help="Optional JSON file with report_format/fail_on/include_rules/ignore_rules.",
     )
-    parser.add_argument(
+    policy_group.add_argument(
         "--policy-preset",
         choices=sorted(POLICY_PRESETS),
         default=None,
         help="Optional policy preset (strict|balanced|legacy) for deterministic fail-on and rule filters.",
     )
-    parser.add_argument(
+    policy_group.add_argument(
         "--policy-bundle",
         choices=sorted(POLICY_BUNDLES),
         default=None,
         help="Optional policy bundle template (strict-web-app|legacy-content|marketing-site).",
     )
-    parser.add_argument(
+    policy_group.add_argument(
         "--list-policy-presets",
         action="store_true",
         help="Print available policy presets and exit.",
     )
-    parser.add_argument(
+    policy_group.add_argument(
         "--list-policy-config-keys",
         action="store_true",
         help="Print supported --policy-config keys and exit.",
     )
-    parser.add_argument(
+    policy_group.add_argument(
         "--explain-policy",
         action="store_true",
         help="Include effective merged policy settings in run metadata and summary output.",
     )
-    parser.add_argument(
+    policy_group.add_argument(
         "--strict-rule-overlap",
         action="store_true",
         help="Fail when any rule id appears in both include and ignore policy lists.",
     )
-    parser.add_argument(
+    policy_group.add_argument(
         "--write-effective-policy",
         nargs="?",
         const="AUTO",
         default=None,
         help="Write effective merged policy JSON (optional path; defaults to <output-dir>/wcag-effective-policy.json).",
     )
-    parser.add_argument(
+
+    baseline_group = parser.add_argument_group("Baseline & Debt")
+    baseline_group.add_argument(
         "--baseline-report",
         help="Optional prior JSON report to compare unresolved debt and detect newly introduced findings.",
     )
-    parser.add_argument(
+    baseline_group.add_argument(
         "--baseline-include-target",
         action="store_true",
         help="Include normalized report target value in baseline signatures for stricter comparison.",
     )
-    parser.add_argument(
+    baseline_group.add_argument(
         "--baseline-target-normalization",
         choices=sorted(BASELINE_TARGET_NORMALIZATION_MODES),
         default="none",
         help="Normalization mode for report target when --baseline-include-target is enabled.",
     )
-    parser.add_argument(
+    baseline_group.add_argument(
         "--baseline-selector-canonicalization",
         choices=sorted(BASELINE_SELECTOR_CANONICALIZATION_MODES),
         default="none",
         help="Selector canonicalization mode used when building baseline signatures.",
     )
-    parser.add_argument(
+    baseline_group.add_argument(
         "--baseline-evidence-mode",
         choices=sorted(BASELINE_EVIDENCE_MODES),
         default="none",
         help="Baseline evidence integrity mode (none|hash|hash-chain) for tamper/staleness checks.",
     )
-    parser.add_argument(
+    baseline_group.add_argument(
         "--waiver-expiry-mode",
         choices=sorted(WAIVER_EXPIRY_MODES),
         default="warn",
         help="Expired baseline debt waiver handling: ignore, warn, or fail.",
     )
-    parser.add_argument(
+    baseline_group.add_argument(
         "--fail-on-new-only",
         action="store_true",
         help="When used with --fail-on and --baseline-report, fail only on newly introduced debt.",
     )
-    parser.add_argument(
+    baseline_group.add_argument(
         "--debt-trend-window",
         type=int,
         default=DEFAULT_DEBT_TREND_WINDOW,
         help="Number of historical baseline trend points to keep in debt-trend artifact output.",
     )
-    parser.add_argument(
+
+    advanced_group = parser.add_argument_group("Advanced Gates")
+    advanced_group.add_argument(
         "--risk-calibration-source",
         default=None,
         help="JSON report/artifact file or directory used to compute per-rule risk calibration precision.",
     )
-    parser.add_argument(
+    advanced_group.add_argument(
         "--risk-calibration-mode",
         choices=sorted(RISK_CALIBRATION_MODES),
         default="off",
         help="Risk calibration gate mode: off, warn, or strict.",
     )
-    parser.add_argument(
+    advanced_group.add_argument(
         "--replay-verify-from",
         default=None,
         help="Directory containing prior run artifacts (wcag-report.json) for replay verification.",
     )
-    parser.add_argument(
+    advanced_group.add_argument(
         "--stability-baseline",
         default=None,
         help="Path to prior scanner stability baseline report or scanner-stability.json artifact.",
     )
-    parser.add_argument(
+    advanced_group.add_argument(
         "--stability-mode",
         choices=sorted(SCANNER_STABILITY_MODES),
         default="off",
         help="Scanner stability gate mode: off, warn, or fail.",
     )
-    parser.add_argument(
+
+    scanner_group = parser.add_argument_group("Scanner Control")
+    scanner_group.add_argument(
         "--scanner-retry-attempts",
         type=int,
         default=DEFAULT_SCANNER_RETRY_ATTEMPTS,
         help="Retry attempts per scanner for transient runtime failures (minimum: 1).",
     )
-    parser.add_argument(
+    scanner_group.add_argument(
         "--scanner-retry-backoff-seconds",
         type=float,
         default=DEFAULT_SCANNER_RETRY_BACKOFF_SECONDS,
         help="Initial retry backoff in seconds for transient scanner failures.",
     )
-    parser.add_argument("--skip-axe", action="store_true")
-    parser.add_argument("--skip-lighthouse", action="store_true")
-    parser.add_argument("--mock-axe-json")
-    parser.add_argument("--mock-lighthouse-json")
-    parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument(
+    scanner_group.add_argument("--skip-axe", action="store_true")
+    scanner_group.add_argument("--skip-lighthouse", action="store_true")
+    scanner_group.add_argument("--mock-axe-json")
+    scanner_group.add_argument("--mock-lighthouse-json")
+    scanner_group.add_argument("--dry-run", action="store_true")
+
+    output_group = parser.add_argument_group("Output & Artifacts")
+    output_group.add_argument(
         "--max-findings",
         type=int,
         default=None,
         help="Limit findings included in output artifacts after deterministic sorting.",
     )
-    parser.add_argument(
+    output_group.add_argument(
         "--sort-findings",
         choices=sorted(FINDING_SORT_MODES),
         default="severity",
         help="Deterministic sort mode for report findings before optional truncation.",
     )
-    parser.add_argument(
+    output_group.add_argument(
+        "--artifacts",
+        choices=sorted(ARTIFACT_MODES),
+        default="full",
+        help="Artifact emission mode: full writes all sidecar files, minimal keeps only core outputs.",
+    )
+    output_group.add_argument(
         "--summary-only",
         action="store_true",
         help="Print compact JSON summary to stdout while still writing full report artifacts.",
     )
-    parser.add_argument(
+    output_group.add_argument(
         "--preflight-only",
         action="store_true",
         help="Check runtime tooling availability (npx, axe, lighthouse) and exit.",
@@ -624,6 +668,9 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    if args.print_examples:
+        print(AUDIT_EXAMPLES.rstrip())
+        return 0
     if args.list_policy_presets:
         print(json.dumps(_policy_presets_payload(), ensure_ascii=False, indent=2))
         return 0
@@ -713,6 +760,7 @@ def main() -> int:
         print(json.dumps(preflight, ensure_ascii=False, indent=2))
         return 0 if preflight["ok"] else 1
 
+    emit_auxiliary_artifacts = _should_emit_auxiliary_artifacts(args.artifacts)
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     effective_policy_output = _resolve_effective_policy_path(args.write_effective_policy, output_dir)
@@ -1119,16 +1167,18 @@ def main() -> int:
         )
         replay_summary_path = output_dir / 'replay-summary.json'
         replay_diff_path = output_dir / 'replay-diff.md'
-        replay_summary_path.write_text(json.dumps(replay_verification, ensure_ascii=False, indent=2), encoding='utf-8')
-        _build_replay_diff_markdown(replay_verification, replay_diff_path)
+        if emit_auxiliary_artifacts:
+            _write_json_artifact(replay_summary_path, replay_verification)
+            _build_replay_diff_markdown(replay_verification, replay_diff_path)
         report['run_meta']['replay_verification'] = {
             'source_report_dir': str(replay_dir),
-            'summary_path': str(replay_summary_path),
-            'diff_path': str(replay_diff_path),
             'status_counts': replay_verification.get('status_counts', {}),
             'non_deterministic_reasons': replay_verification.get('non_deterministic_reasons', []),
             'gate': replay_verification.get('gate', {}),
         }
+        if emit_auxiliary_artifacts:
+            report['run_meta']['replay_verification']['summary_path'] = str(replay_summary_path)
+            report['run_meta']['replay_verification']['diff_path'] = str(replay_diff_path)
         report.setdefault('summary', {})['replay_verification'] = {
             'status_counts': replay_verification.get('status_counts', {}),
             'non_deterministic_count': replay_verification.get('status_counts', {}).get('non-deterministic', 0),
@@ -1148,13 +1198,13 @@ def main() -> int:
         baseline_path=args.stability_baseline,
     )
     scanner_stability_path = output_dir / 'scanner-stability.json'
-    scanner_stability_path.write_text(json.dumps(scanner_stability, ensure_ascii=False, indent=2), encoding='utf-8')
+    if emit_auxiliary_artifacts:
+        _write_json_artifact(scanner_stability_path, scanner_stability)
     scanner_stability_comparison = scanner_stability.get('comparison', {})
     scanner_stability_gate = scanner_stability.get('gate', {})
     report['run_meta']['scanner_stability'] = {
         'schema_version': scanner_stability.get('schema_version'),
         'mode': scanner_stability.get('mode'),
-        'artifact_path': str(scanner_stability_path),
         'window': scanner_stability.get('window'),
         'baseline_source': scanner_stability.get('baseline_source'),
         'history_meta': scanner_stability.get('history_meta', {}),
@@ -1170,6 +1220,8 @@ def main() -> int:
         'gate': scanner_stability_gate,
         'points': scanner_stability.get('points', []),
     }
+    if emit_auxiliary_artifacts:
+        report['run_meta']['scanner_stability']['artifact_path'] = str(scanner_stability_path)
     report.setdefault('summary', {})['scanner_stability'] = {
         'mode': scanner_stability.get('mode'),
         'window': scanner_stability.get('window'),
@@ -1206,16 +1258,6 @@ def main() -> int:
     output_json = report_output_paths['output_json']
     output_md = report_output_paths['output_md']
     machine_output = report_output_paths['machine_output']
-    _write_machine_report_outputs(
-        report=report,
-        report_format=report_format,
-        output_json=output_json,
-        output_md=output_md,
-        machine_output=machine_output,
-        contract_target=contract.target,
-        local_target=local_target,
-        product_metadata=product_metadata,
-    )
 
     if fail_on:
         gate_report = {'findings': gate_findings}
@@ -1240,16 +1282,6 @@ def main() -> int:
             'scope': gate_scope,
             'evaluated_findings': len(gate_report.get('findings', [])),
         }
-        _write_machine_report_outputs(
-            report=report,
-            report_format=report_format,
-            output_json=output_json,
-            output_md=output_md,
-            machine_output=machine_output,
-            contract_target=contract.target,
-            local_target=local_target,
-            product_metadata=product_metadata,
-        )
     else:
         should_fail, exit_code = False, 0
 
@@ -1294,16 +1326,18 @@ def main() -> int:
         waiver_review=waiver_review,
     )
     debt_trend_path = output_dir / 'debt-trend.json'
-    debt_trend_path.write_text(json.dumps(debt_trend_payload, ensure_ascii=False, indent=2), encoding='utf-8')
+    if emit_auxiliary_artifacts:
+        _write_json_artifact(debt_trend_path, debt_trend_payload)
     trend_summary = debt_trend_payload.get('summary', {})
-    report['run_meta']['debt_trend'] = {
-        'schema_version': debt_trend_payload.get('schema_version'),
-        'window': debt_trend_payload.get('window'),
-        'artifact_path': str(debt_trend_path),
-        'latest_counts': trend_summary.get('latest_counts', _empty_debt_trend_counts()),
-        'delta_from_previous': trend_summary.get('delta_from_previous', _empty_debt_trend_counts()),
-        'history_meta': debt_trend_payload.get('history_meta', {}),
-    }
+    if emit_auxiliary_artifacts:
+        report['run_meta']['debt_trend'] = {
+            'schema_version': debt_trend_payload.get('schema_version'),
+            'window': debt_trend_payload.get('window'),
+            'artifact_path': str(debt_trend_path),
+            'latest_counts': trend_summary.get('latest_counts', _empty_debt_trend_counts()),
+            'delta_from_previous': trend_summary.get('delta_from_previous', _empty_debt_trend_counts()),
+            'history_meta': debt_trend_payload.get('history_meta', {}),
+        }
     report.setdefault('summary', {})['debt_trend'] = {
         'window': debt_trend_payload.get('window'),
         'latest_counts': trend_summary.get('latest_counts', _empty_debt_trend_counts()),

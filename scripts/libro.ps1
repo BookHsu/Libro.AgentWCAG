@@ -1,6 +1,6 @@
 param(
   [Parameter(Mandatory = $true, Position = 0)]
-  [ValidateSet('install','doctor','remove','audit')]
+  [ValidateSet('install','doctor','remove','audit','scan','report')]
   [string]$Command,
 
   [Parameter(Position = 1)]

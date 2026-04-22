@@ -8,6 +8,10 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ### Added
 
+- `README.en.md`, `docs/README.en.md`, `docs/testing/testing-playbook.en.md`, and `docs/testing/test-matrix.en.md` now provide English companion files for the primary zh-TW public documentation set.
+- `run_accessibility_audit.py --print-examples` and `libro audit|scan|report --print-examples` now print copy-paste examples for the most common workflows.
+- `libro report --no-color` now provides an ANSI-free, emoji-free terminal mode suitable for plain Windows consoles and CI logs.
+- `run_accessibility_audit.py --artifacts minimal` now keeps core reports while skipping optional sidecar artifacts such as `debt-trend.json` and `scanner-stability.json`.
 - `docs/archive/decisions/markdown-cleanup-20260329.md` now records the markdown convergence decisions and the first-pass GitHub Pages source set after temporary planning files were removed.
 - `docs/testing/test-matrix.md` now holds the detailed coverage matrix that previously lived at the repo root in `TESTING-PLAN.md`.
 - `libro audit` subcommand forwards all arguments to `run_accessibility_audit.py`, providing a short CLI entry point for WCAG audits (e.g. `libro audit https://example.com`).
@@ -32,6 +36,8 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 
 ### Fixed
 
+- `run_accessibility_audit.py` no longer rewrites the primary report outputs multiple times during a single run; the main report artifacts are now written once after the final report shape is assembled.
+- `libro.ps1` and `libro.sh` now advertise `scan` and `report` alongside `install`, `doctor`, `remove`, and `audit`, so wrapper help matches the actual unified CLI surface.
 - Removed redundant `CLAUDE.md`, which only repeated the repository-wide `AGENTS.md` instruction without adding any Claude-specific contract or workflow behavior.
 - Removed the completed root backlog file `SKILL-TODO.md` after its remaining cleanup decisions were captured elsewhere, and moved `TESTING-PLAN.md` into `docs/testing/test-matrix.md` so root docs stay focused on durable entry points.
 - Removed the temporary `docs/automations/` planning directory after converging its durable decisions into formal docs, tests, changelog, and archive notes.
