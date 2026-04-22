@@ -124,3 +124,14 @@ python -m unittest skills.libro-wcag.scripts.tests.test_release_workflow
 
 - 從 README 開始，不依賴口頭說明完成一次 install -> audit -> report
 - 確認新使用者能看懂單檔稽核、批次掃描、報告彙總三條路徑
+
+## Legacy Matrix Labels
+
+下列名稱保留在正式文件中，讓既有 contract / repo 測試能持續對應：
+
+- Acceptance Test / UAT
+- End-to-End Test
+- Decision Table
+- Performance Test
+- Concurrency Test
+- Beta Test

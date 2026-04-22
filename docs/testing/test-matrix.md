@@ -2,23 +2,23 @@
 
 此文件定義 `Libro.AgentWCAG` 目前公開維護的主要測試矩陣，特別聚焦在 CLI、報告輸出、安裝流程與文件一致性。
 
-## 核心矩陣
+## Test Matrix
 
-| 測試類型 | 適用 | 自動化 | 主要範圍 | 代表資產 |
-| --- | --- | --- | --- | --- |
-| Unit Test | 是 | 是 | workflow、remediation、helpers | `test_workflow.py`, `test_remediation_library.py`, `test_rewrite_helpers.py` |
-| Component Test | 是 | 是 | `run_accessibility_audit.py`, `scripts/libro.py`, installer scripts | `test_runner.py`, `test_cli_flows.py`, `test_repo_scripts.py` |
-| Integration Test | 是 | 是 | install -> doctor -> audit/report | `test_install_agent.py`, `test_repo_scripts.py`, `test_repo_invocation.py` |
-| System Test | 是 | 部分 | repo 作為可安裝 skill 產品 | `test_matrix_completion.py`, `docs/testing/testing-playbook.md` |
-| End-to-End Test | 是 | 部分 | install -> invoke -> output artifacts | `test_cli_flows.py`, `test_matrix_completion.py`, `docs/testing/testing-playbook.md` |
-| Regression Test | 是 | 是 | CLI、contract、release、reporting | 全量 `test_*.py` |
-| Static Contract Test | 是 | 是 | repo 結構、schema、文件、adapter contract | `test_repo_contracts.py`, `validate_skill.py` |
-| Documentation Consistency | 是 | 部分 | README、docs、公開命令 | `test_release_docs.py`, `docs/testing/testing-playbook.md` |
-| Compatibility Test | 是 | 是 | agents、wrappers、跨平台 entrypoints | `test_install_agent.py`, `test_repo_scripts.py` |
-| Security / Boundary Test | 是 | 是 | invalid target、overwrite、path handling | `test_runner.py`, `test_cli_flows.py`, install overwrite tests |
-| Performance / Scalability | 是 | 部分 | normalization、batch scan、artifact emission | `test_matrix_completion.py`, `docs/testing/testing-playbook.md` |
+| Test Type | Applies | Automation Target | Repo Areas | Current Status | Coverage Mode | Coverage Asset |
+| --- | --- | --- | --- | --- | --- | --- |
+| Unit Test | Yes | Yes | workflow、remediation、helpers | Implemented | Automated | `test_workflow.py`, `test_remediation_library.py`, `test_rewrite_helpers.py` |
+| Component Test | Yes | Yes | `run_accessibility_audit.py`, `scripts/libro.py`, installer scripts | Implemented | Automated | `test_runner.py`, `test_cli_flows.py`, `test_repo_scripts.py` |
+| Integration Test | Yes | Yes | install -> doctor -> audit/report | Implemented | Automated | `test_install_agent.py`, `test_repo_scripts.py`, `test_repo_invocation.py` |
+| System Test | Yes | Yes | repo as installable skill product | Implemented | Automated + Scripted Manual | `test_matrix_completion.py`, `docs/testing/testing-playbook.md` |
+| End-to-End Test | Yes | Yes | install -> invoke -> output artifacts | Implemented | Automated + Scripted Manual | `test_cli_flows.py`, `test_matrix_completion.py`, `docs/testing/testing-playbook.md` |
+| Regression Test | Yes | Yes | CLI、contract、release、reporting | Implemented | Automated | full `test_*.py` suite |
+| Static Contract Test | Yes | Yes | repo structure、schema、docs、adapter contract | Implemented | Automated | `test_repo_contracts.py`, `validate_skill.py` |
+| Documentation Consistency | Yes | No | README、docs、public commands | Implemented | Scripted Manual | `test_release_docs.py`, `docs/testing/testing-playbook.md` |
+| Compatibility Test | Yes | Yes | agents、wrappers、cross-platform entrypoints | Implemented | Automated + Scripted Manual | `test_install_agent.py`, `test_repo_scripts.py` |
+| Security / Boundary Test | Yes | Yes | invalid target、overwrite、path handling | Implemented | Automated | `test_runner.py`, `test_cli_flows.py`, install overwrite tests |
+| Performance / Scalability | Yes | No | normalization、batch scan、artifact emission | Implemented | Scripted Manual | `test_matrix_completion.py`, `docs/testing/testing-playbook.md` |
 
-## 目前最重要的覆蓋區
+## Repo Mapping
 
 ### CLI 與報告輸出
 
@@ -64,6 +64,18 @@
 - Markdown 固定欄序
 - schema version 對齊
 - adapter / repo contract 不漂移
+
+## Already Implemented
+
+- Automated CLI, report, installer, and contract coverage
+- Scripted Manual coverage for docs UX, broader smoke, and exploratory scenarios
+- Static validation through `validate_skill.py`
+
+## Still Worth Adding
+
+- More real-scanner CI assertions once scanner environments are stable
+- More doc contract coverage for bilingual companion files
+- Wider batch-scan and aggregate-report regression fixtures
 
 ## 最小驗證命令
 

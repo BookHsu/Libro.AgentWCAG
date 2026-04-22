@@ -2,7 +2,7 @@
 
 Libro.AgentWCAG 是一套跨代理的 WCAG 網頁無障礙 skill repository。它用同一份 vendor-neutral contract，讓 Codex、Claude、Gemini、Copilot 能以一致方式執行無障礙稽核、提出修正建議，並在明確授權下套用安全範圍內的自動修正。
 
-## 專案用途
+## 專案的用途與說明
 
 這個專案的目標不是再提供另一個零散工具，而是把「稽核、建議、部分自動修正、報告輸出、安裝驗證」整理成可安裝、可測試、可發佈的標準工作流。
 
@@ -39,7 +39,7 @@ python .\scripts\doctor-agent.py --agent codex --check-scanners
 
 ## 安裝方式
 
-### Claude Marketplace
+### Claude Marketplace (Claude Code)
 
 Coming soon. Marketplace 指令先保留占位：
 
@@ -59,6 +59,16 @@ libro install codex
 libro doctor codex
 ```
 
+相容性保留的既有範例：
+
+```powershell
+libro install claude   # Claude Code
+libro install gemini   # Gemini CLI
+libro install copilot  # Copilot
+libro install codex    # Codex
+libro doctor claude    # verify Claude installation
+```
+
 ### Clone + CLI
 
 ```powershell
@@ -68,12 +78,23 @@ python .\scripts\libro.py install codex
 python .\scripts\libro.py doctor codex
 ```
 
+既有 clone + CLI 範例：
+
+```powershell
+python .\scripts\libro.py install claude
+python .\scripts\libro.py doctor claude
+```
+
 驗證與移除：
 
 ```powershell
 python .\scripts\libro.py doctor codex --verify-manifest-integrity
 python .\scripts\libro.py doctor codex --check-scanners
 python .\scripts\libro.py remove codex
+```
+
+```powershell
+python .\scripts\libro.py remove claude
 ```
 
 ## CLI Quick Start
@@ -131,6 +152,23 @@ python .\skills\libro-wcag\scripts\run_accessibility_audit.py --print-examples
 | `apply-fixes` | 是 | 是 | 是，僅限支援的本機檔案 |
 
 `apply-fixes` 目前僅支援安全的一階重寫，包含 `.html`、`.htm`、`.xhtml`、`.jsx`、`.tsx`、`.vue` 等本機目標。
+
+## 使用方式
+
+Libro.AgentWCAG 的核心不是單一指令，而是一套可被不同 AI agent 共用的 skill contract。實際使用時，你可以依照目前任務選擇「只稽核」、「提出建議」或「直接修正」。
+
+使用範例：
+
+```text
+Audit only
+請用 audit-only 模式檢查 https://example.com，WCAG 2.1 AA。
+
+Suggest only
+請用 suggest-only 模式檢查 src/page.html，並提供修正建議，但不要改檔。
+
+Apply fixes
+請用 apply-fixes 模式檢查 src/page.html，並在安全範圍內直接修正可處理的問題。
+```
 
 ## 報告輸出
 
