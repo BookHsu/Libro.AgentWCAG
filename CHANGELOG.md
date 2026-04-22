@@ -9,6 +9,7 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 ### Added
 
 - `README.en.md`, `docs/README.en.md`, `docs/testing/testing-playbook.en.md`, and `docs/testing/test-matrix.en.md` now provide English companion files for the primary zh-TW public documentation set.
+- Release automation now accepts semver pre-release tags such as `v1.3.2-rc.1`, marks GitHub Releases as pre-releases, and publishes npm packages with a non-`latest` dist-tag derived from the pre-release channel.
 - `run_accessibility_audit.py --print-examples` and `libro audit|scan|report --print-examples` now print copy-paste examples for the most common workflows.
 - `libro report --no-color` now provides an ANSI-free, emoji-free terminal mode suitable for plain Windows consoles and CI logs.
 - `run_accessibility_audit.py --artifacts minimal` now keeps core reports while skipping optional sidecar artifacts such as `debt-trend.json` and `scanner-stability.json`.

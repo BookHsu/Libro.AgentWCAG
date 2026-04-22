@@ -9,13 +9,44 @@ import re
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SEMVER_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
+RELEASE_VERSION_PATTERN = re.compile(
+    r"^(?P<core>\d+\.\d+\.\d+)(?:-(?P<prerelease>[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$"
+)
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Apply a release version to versioned manifests.")
-    parser.add_argument("--version", required=True, help="Semantic version without the leading 'v'.")
+    parser.add_argument(
+        "--version",
+        required=True,
+        help="Semantic version without the leading 'v' (X.Y.Z or X.Y.Z-<channel>.<n>).",
+    )
     return parser.parse_args()
+
+
+def _parse_release_version(version: str) -> dict[str, str | bool | None]:
+    candidate = version.strip()
+    match = RELEASE_VERSION_PATTERN.fullmatch(candidate)
+    if not match:
+        raise RuntimeError(
+            "Release version must be semantic version X.Y.Z or prerelease X.Y.Z-<channel>.<n>, "
+            f"got: {version}"
+        )
+
+    prerelease = match.group("prerelease")
+    channel = None
+    npm_dist_tag = "latest"
+    if prerelease:
+        leading_identifier = prerelease.split(".", 1)[0].lower()
+        channel = leading_identifier if leading_identifier and not leading_identifier.isdigit() else "next"
+        npm_dist_tag = channel
+
+    return {
+        "version": candidate,
+        "is_prerelease": bool(prerelease),
+        "prerelease_channel": channel,
+        "npm_dist_tag": npm_dist_tag,
+    }
 
 
 def _replace_single(pattern: str, replacement: str, content: str, path: Path) -> str:
@@ -57,14 +88,13 @@ def update_claude_plugin(version: str) -> None:
 
 def main() -> int:
     args = parse_args()
-    version = args.version.strip()
-    if not SEMVER_PATTERN.fullmatch(version):
-        raise RuntimeError(f"Release version must be semantic version X.Y.Z, got: {args.version}")
+    release_meta = _parse_release_version(args.version)
+    version = str(release_meta["version"])
 
     update_pyproject(version)
     update_package_json(version)
     update_claude_plugin(version)
-    print(json.dumps({"applied_version": version}, ensure_ascii=False))
+    print(json.dumps({"applied_version": version, **release_meta}, ensure_ascii=False))
     return 0
 
 

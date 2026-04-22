@@ -7,13 +7,14 @@ Use this playbook as the primary release-readiness document for `libro-wcag`.
 - Confirm `README.md` install and usage sections reflect current repo behavior.
 - Confirm adapter prompt templates and usage examples are synchronized across supported agents.
 - Confirm `scripts/install-agent.py`, wrapper scripts, and uninstall flow remain aligned.
-- Confirm the release tag `vX.Y.Z` is the single version source for this publish.
-- Run `python scripts/apply-release-version.py --version X.Y.Z` when staging a local dry run from a tag candidate.
+- Confirm the release tag `vX.Y.Z` or `vX.Y.Z-rc.N` is the single version source for this publish.
+- Run `python scripts/apply-release-version.py --version X.Y.Z` or `python scripts/apply-release-version.py --version X.Y.Z-rc.N` when staging a local dry run from a tag candidate.
 - Run `python scripts/package-release.py --output-dir dist/release --overwrite` from the repo root to stage versioned release assets.
 - Confirm `skills/libro-wcag/agents/openai.yaml` and manifest references are valid.
 - Confirm `pyproject.toml`, `package.json`, and `packaging/templates/claude-plugin/*.json` were all updated by the tag-derived version injection step.
 - Confirm release automation sets `LIBRO_AGENTWCAG_SOURCE_REVISION`; if not set, verify the build runs from a git checkout where `HEAD` resolves cleanly.
 - If release packaging needs a pinned timestamp, set `LIBRO_AGENTWCAG_BUILD_TIMESTAMP` as a UTC ISO-8601 value; invalid or missing required provenance must fail fast rather than writing partial metadata.
+- Confirm pre-release tags publish a GitHub pre-release and use an npm non-latest dist-tag derived from the pre-release channel.
 - Confirm release asset names match the documented contract:
   - `libro-wcag-<version>-<agent>.zip` for `codex`, `claude`, `gemini`, and `copilot`
   - `libro-wcag-<version>-all-in-one.zip`
@@ -43,11 +44,12 @@ Use this playbook as the primary release-readiness document for `libro-wcag`.
 ## Publish Readiness
 
 - Confirm target version tag and release title are finalized.
-- Confirm the Git tag `vX.Y.Z` is ready to become the single release version source.
+- Confirm the Git tag `vX.Y.Z` or `vX.Y.Z-rc.N` is ready to become the single release version source.
 - Confirm all blocking defects are closed or explicitly listed as known limitations.
 - Confirm `.github/workflows/release.yml` still uses the documented validate -> package-release -> clean-release-smoke -> publish-release gate order.
 - Confirm `.github/workflows/publish-npm.yml` is the workflow filename configured in npm trusted publishing for `librowcag-cli`.
 - Confirm npm trusted publishing is configured for `librowcag-cli`; the publish workflow should not require a stored `NPM_TOKEN`.
+- Confirm pre-release publishes use a non-`latest` npm dist-tag and are marked as GitHub pre-releases before pushing the tag.
 - For significant remediation changes, attach baseline refresh evidence and approver context.
 - Run baseline governance checks described in `docs/release/baseline-governance.md`.
 - Run advanced CI gate reviews described in `docs/release/advanced-ci-gates.md`.

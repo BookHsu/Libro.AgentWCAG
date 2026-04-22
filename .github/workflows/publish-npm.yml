@@ -37,7 +37,20 @@ jobs:
           set -euo pipefail
           release_tag="${GITHUB_REF_NAME}"
           release_version="${release_tag#v}"
+          is_prerelease=false
+          npm_dist_tag="latest"
+          if [[ "${release_version}" == *-* ]]; then
+            is_prerelease=true
+            prerelease_suffix="${release_version#*-}"
+            npm_dist_tag="${prerelease_suffix%%.*}"
+            npm_dist_tag="${npm_dist_tag,,}"
+            if [[ -z "${npm_dist_tag}" || "${npm_dist_tag}" =~ ^[0-9]+$ ]]; then
+              npm_dist_tag="next"
+            fi
+          fi
           echo "release_version=${release_version}" >> "$GITHUB_OUTPUT"
+          echo "is_prerelease=${is_prerelease}" >> "$GITHUB_OUTPUT"
+          echo "npm_dist_tag=${npm_dist_tag}" >> "$GITHUB_OUTPUT"
 
       - name: Apply tag-derived release version
         run: python scripts/apply-release-version.py --version "${{ steps.release-meta.outputs.release_version }}"
@@ -66,5 +79,10 @@ jobs:
       - name: Pack npm tarball
         run: npm pack
 
-      - name: Publish to npm with OIDC
+      - name: Publish stable to npm with OIDC
+        if: steps.release-meta.outputs.is_prerelease != 'true'
         run: npm publish --access public
+
+      - name: Publish pre-release to npm with OIDC
+        if: steps.release-meta.outputs.is_prerelease == 'true'
+        run: npm publish --access public --tag "${{ steps.release-meta.outputs.npm_dist_tag }}"

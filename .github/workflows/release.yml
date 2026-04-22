@@ -53,6 +53,7 @@ jobs:
     outputs:
       release_tag: ${{ steps.release-meta.outputs.release_tag }}
       release_version: ${{ steps.release-meta.outputs.release_version }}
+      is_prerelease: ${{ steps.release-meta.outputs.is_prerelease }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -71,8 +72,13 @@ jobs:
           set -euo pipefail
           release_tag="${GITHUB_REF_NAME}"
           release_version="${release_tag#v}"
+          is_prerelease=false
+          if [[ "${release_version}" == *-* ]]; then
+            is_prerelease=true
+          fi
           echo "release_tag=${release_tag}" >> "$GITHUB_OUTPUT"
           echo "release_version=${release_version}" >> "$GITHUB_OUTPUT"
+          echo "is_prerelease=${is_prerelease}" >> "$GITHUB_OUTPUT"
 
       - name: Apply tag-derived release version
         run: python scripts/apply-release-version.py --version "${{ steps.release-meta.outputs.release_version }}"
@@ -153,6 +159,7 @@ jobs:
         with:
           tag_name: ${{ needs.package-release.outputs.release_tag }}
           name: Libro.AgentWCAG ${{ needs.package-release.outputs.release_version }}
+          prerelease: ${{ needs.package-release.outputs.is_prerelease == 'true' }}
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |

@@ -60,6 +60,15 @@ class RepoScriptTests(unittest.TestCase):
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         return completed.stdout.strip()
 
+    def _load_apply_release_version_module(self):
+        module_path = self.repo_root / 'scripts' / 'apply-release-version.py'
+        spec = importlib.util.spec_from_file_location('apply_release_version', module_path)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
     def test_validate_skill_cli_accepts_skill_directory(self) -> None:
         completed = subprocess.run(
             [
@@ -183,6 +192,28 @@ class RepoScriptTests(unittest.TestCase):
         self.assertIn('claude-plugin', script)
         self.assertIn('marketplace.json', script)
         self.assertIn('Semantic version', script)
+
+    def test_apply_release_version_parser_accepts_stable_and_prerelease_semver(self) -> None:
+        module = self._load_apply_release_version_module()
+
+        stable = module._parse_release_version('1.3.2')
+        prerelease = module._parse_release_version('1.3.2-rc.1')
+
+        self.assertEqual(stable['version'], '1.3.2')
+        self.assertFalse(stable['is_prerelease'])
+        self.assertEqual(stable['npm_dist_tag'], 'latest')
+        self.assertEqual(prerelease['version'], '1.3.2-rc.1')
+        self.assertTrue(prerelease['is_prerelease'])
+        self.assertEqual(prerelease['prerelease_channel'], 'rc')
+        self.assertEqual(prerelease['npm_dist_tag'], 'rc')
+
+    def test_apply_release_version_parser_rejects_non_semver_release_versions(self) -> None:
+        module = self._load_apply_release_version_module()
+
+        with self.assertRaises(RuntimeError):
+            module._parse_release_version('1.3')
+        with self.assertRaises(RuntimeError):
+            module._parse_release_version('v1.3.2')
 
     def test_doctor_all_reports_each_supported_agent(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
