@@ -445,6 +445,436 @@ def _should_emit_auxiliary_artifacts(mode: str) -> bool:
     return mode == 'full'
 
 
+def _build_policy_runtime_context(args: argparse.Namespace, output_dir: Path) -> dict[str, Any]:
+    policy_config = _load_policy_config(args.policy_config)
+    baseline_report = _load_baseline_report(args.baseline_report)
+    policy_bundle = _resolve_policy_bundle(args.policy_bundle)
+    policy_preset = _resolve_policy_preset(args.policy_preset)
+    config_report_format = policy_config.get('report_format')
+    config_fail_on = policy_config.get('fail_on')
+    config_include = _normalize_rule_list(policy_config.get('include_rules'), 'include_rules')
+    config_ignore = _normalize_rule_list(policy_config.get('ignore_rules'), 'ignore_rules')
+
+    bundle_fail_on = policy_bundle.get('fail_on')
+    bundle_include = _normalize_rule_list(policy_bundle.get('include_rules'), 'bundle.include_rules')
+    bundle_ignore = _normalize_rule_list(policy_bundle.get('ignore_rules'), 'bundle.ignore_rules')
+
+    preset_fail_on = policy_preset.get('fail_on')
+    preset_include = _normalize_rule_list(policy_preset.get('include_rules'), 'preset.include_rules')
+    preset_ignore = _normalize_rule_list(policy_preset.get('ignore_rules'), 'preset.ignore_rules')
+
+    cli_include_rules = [item.strip() for item in args.include_rule if item.strip()]
+    cli_ignore_rules = [item.strip() for item in args.ignore_rule if item.strip()]
+
+    report_format = args.report_format or config_report_format or 'json'
+    fail_on = args.fail_on or config_fail_on or preset_fail_on or bundle_fail_on
+    include_rules = _merge_rule_list(
+        bundle_include,
+        preset_include,
+        config_include,
+        cli_include_rules,
+    )
+    ignore_rules = _merge_rule_list(
+        bundle_ignore,
+        preset_ignore,
+        config_ignore,
+        cli_ignore_rules,
+    )
+    overlapping_rules = _find_rule_policy_overlaps(include_rules, ignore_rules)
+    policy_sources = {
+        'report_format': _policy_value_source(args.report_format, config_report_format, None, None, 'default'),
+        'fail_on': _policy_value_source(args.fail_on, config_fail_on, preset_fail_on, bundle_fail_on, 'unset'),
+        'include_rules': _build_rule_sources(bundle_include, preset_include, config_include, cli_include_rules),
+        'ignore_rules': _build_rule_sources(bundle_ignore, preset_ignore, config_ignore, cli_ignore_rules),
+    }
+    baseline_signature_config = _build_baseline_signature_config(args)
+    effective_policy_output = _resolve_effective_policy_path(args.write_effective_policy, output_dir)
+    effective_policy = _build_effective_policy(
+        report_format=report_format,
+        fail_on=fail_on,
+        include_rules=include_rules,
+        ignore_rules=ignore_rules,
+        policy_bundle=policy_bundle,
+        policy_preset=policy_preset,
+        policy_config_path=args.policy_config,
+        policy_sources=policy_sources,
+        fail_on_new_only=bool(args.fail_on_new_only),
+        baseline_report_path=args.baseline_report,
+        baseline_signature_config=baseline_signature_config,
+        baseline_evidence_mode=args.baseline_evidence_mode,
+        waiver_expiry_mode=args.waiver_expiry_mode,
+        risk_calibration_mode=args.risk_calibration_mode,
+        risk_calibration_source=args.risk_calibration_source,
+        stability_mode=args.stability_mode,
+        stability_baseline=args.stability_baseline,
+        overlapping_rules=overlapping_rules,
+    )
+    return {
+        'baseline_report': baseline_report,
+        'policy_bundle': policy_bundle,
+        'policy_preset': policy_preset,
+        'config_report_format': config_report_format,
+        'config_fail_on': config_fail_on,
+        'report_format': report_format,
+        'fail_on': fail_on,
+        'include_rules': include_rules,
+        'ignore_rules': ignore_rules,
+        'overlapping_rules': overlapping_rules,
+        'policy_sources': policy_sources,
+        'baseline_signature_config': baseline_signature_config,
+        'effective_policy_output': effective_policy_output,
+        'effective_policy': effective_policy,
+    }
+
+
+def _validate_runtime_args(args: argparse.Namespace, policy_context: dict[str, Any]) -> None:
+    config_report_format = policy_context['config_report_format']
+    config_fail_on = policy_context['config_fail_on']
+    overlapping_rules = policy_context['overlapping_rules']
+
+    if not args.target and not args.preflight_only:
+        raise ValueError('--target is required unless --list-policy-presets or --list-policy-config-keys is used')
+    if config_report_format and config_report_format not in {'json', 'sarif'}:
+        raise ValueError('policy-config report_format must be one of: json, sarif')
+    if config_fail_on and config_fail_on not in {'critical', 'serious', 'moderate'}:
+        raise ValueError('policy-config fail_on must be one of: critical, serious, moderate')
+    if overlapping_rules and args.strict_rule_overlap:
+        raise ValueError(
+            '--strict-rule-overlap detected rule ids present in both include and ignore lists: '
+            + ", ".join(overlapping_rules)
+        )
+    if args.skip_axe and args.mock_axe_json:
+        raise ValueError('--skip-axe cannot be combined with --mock-axe-json')
+    if args.skip_lighthouse and args.mock_lighthouse_json:
+        raise ValueError('--skip-lighthouse cannot be combined with --mock-lighthouse-json')
+    if args.dry_run and args.execution_mode != 'apply-fixes':
+        raise ValueError('--dry-run is only supported when --execution-mode is apply-fixes')
+    if args.scanner_retry_attempts < 1:
+        raise ValueError('--scanner-retry-attempts must be >= 1')
+    if args.scanner_retry_backoff_seconds < 0:
+        raise ValueError('--scanner-retry-backoff-seconds must be >= 0')
+    if args.max_findings is not None and args.max_findings < 1:
+        raise ValueError('--max-findings must be >= 1')
+    if args.debt_trend_window < 1:
+        raise ValueError('--debt-trend-window must be >= 1')
+    if args.fail_on_new_only and not args.fail_on:
+        raise ValueError('--fail-on-new-only requires --fail-on')
+    if args.fail_on_new_only and not args.baseline_report:
+        raise ValueError('--fail-on-new-only requires --baseline-report')
+    if args.replay_verify_from and not Path(args.replay_verify_from).exists():
+        raise ValueError('--replay-verify-from directory does not exist: ' + str(args.replay_verify_from))
+    if args.stability_baseline and not Path(args.stability_baseline).exists():
+        raise ValueError('--stability-baseline path does not exist: ' + str(args.stability_baseline))
+
+
+def _resolve_contract_target_context(
+    args: argparse.Namespace,
+) -> tuple[Contract, Path | None, str, bool]:
+    contract = resolve_contract(
+        {
+            "task_mode": args.task_mode,
+            "execution_mode": args.execution_mode,
+            "wcag_version": args.wcag_version,
+            "conformance_level": args.conformance_level,
+            "target": args.target,
+            "output_language": args.output_language,
+        }
+    )
+    local_target = target_to_local_path(contract.target)
+    create_mode_no_target = False
+    try:
+        scanner_target = _resolve_target_for_scanners(contract.target)
+    except ValueError:
+        if contract.task_mode == "create":
+            create_mode_no_target = True
+            scanner_target = contract.target
+        else:
+            raise
+    return contract, local_target, scanner_target, create_mode_no_target
+
+
+def _build_preflight_payload(args: argparse.Namespace) -> dict[str, Any]:
+    preflight_required = not (
+        (args.skip_axe or args.mock_axe_json) and (args.skip_lighthouse or args.mock_lighthouse_json)
+    )
+    if preflight_required:
+        return run_preflight_checks(args.timeout)
+    return {
+        "ok": True,
+        "checks": [
+            {
+                "tool": "runtime",
+                "status": "skipped",
+                "message": "scanner tooling preflight skipped due to mock or skip flags",
+                "command": "",
+                "resolved_command": "",
+                "version": "",
+                "version_provenance": {
+                    "source": "skipped",
+                    "command": "",
+                    "resolved_command": "",
+                    "version": "",
+                },
+            }
+        ],
+        "tools": {
+            "runtime": {
+                "status": "skipped",
+                "command": "",
+                "resolved_command": "",
+                "version": "",
+                "message": "scanner tooling preflight skipped due to mock or skip flags",
+                "version_provenance": {
+                    "source": "skipped",
+                    "command": "",
+                    "resolved_command": "",
+                    "version": "",
+                },
+            }
+        },
+    }
+
+
+def _run_scanners_for_target(
+    args: argparse.Namespace,
+    scanner_target: str,
+    output_dir: Path,
+    *,
+    create_mode_no_target: bool,
+) -> tuple[dict[str, Any] | None, str | None, dict[str, Any] | None, str | None, list[dict[str, Any]]]:
+    axe_data: dict[str, Any] | None = None
+    axe_error: str | None = None
+    lighthouse_data: dict[str, Any] | None = None
+    lighthouse_error: str | None = None
+    scanner_retry_runs: list[dict[str, Any]] = []
+
+    if create_mode_no_target:
+        axe_error = "Skipped: target does not exist (create mode — guidance only)"
+        lighthouse_error = "Skipped: target does not exist (create mode — guidance only)"
+
+    run_axe = not args.skip_axe and not args.mock_axe_json and not create_mode_no_target
+    run_lighthouse = not args.skip_lighthouse and not args.mock_lighthouse_json and not create_mode_no_target
+    if args.mock_axe_json:
+        axe_data = json.loads(Path(args.mock_axe_json).read_text(encoding='utf-8'))
+    if args.mock_lighthouse_json:
+        lighthouse_data = json.loads(Path(args.mock_lighthouse_json).read_text(encoding='utf-8'))
+
+    if run_axe and run_lighthouse:
+        from concurrent.futures import ThreadPoolExecutor
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            axe_future = executor.submit(
+                _run_scanner_with_retry,
+                'axe',
+                lambda: _try_run_axe(scanner_target, output_dir, args.timeout),
+                args.scanner_retry_attempts,
+                args.scanner_retry_backoff_seconds,
+            )
+            lighthouse_future = executor.submit(
+                _run_scanner_with_retry,
+                'lighthouse',
+                lambda: _try_run_lighthouse(scanner_target, output_dir, args.timeout),
+                args.scanner_retry_attempts,
+                args.scanner_retry_backoff_seconds,
+            )
+            axe_data, axe_error, axe_retry = axe_future.result()
+            lighthouse_data, lighthouse_error, lighthouse_retry = lighthouse_future.result()
+            scanner_retry_runs.extend([axe_retry, lighthouse_retry])
+    else:
+        if run_axe:
+            axe_data, axe_error, axe_retry = _run_scanner_with_retry(
+                'axe',
+                lambda: _try_run_axe(scanner_target, output_dir, args.timeout),
+                args.scanner_retry_attempts,
+                args.scanner_retry_backoff_seconds,
+            )
+            scanner_retry_runs.append(axe_retry)
+        if run_lighthouse:
+            lighthouse_data, lighthouse_error, lighthouse_retry = _run_scanner_with_retry(
+                'lighthouse',
+                lambda: _try_run_lighthouse(scanner_target, output_dir, args.timeout),
+                args.scanner_retry_attempts,
+                args.scanner_retry_backoff_seconds,
+            )
+            scanner_retry_runs.append(lighthouse_retry)
+
+    return axe_data, axe_error, lighthouse_data, lighthouse_error, scanner_retry_runs
+
+
+def _record_replay_verification_outputs(
+    *,
+    args: argparse.Namespace,
+    report: dict[str, Any],
+    output_dir: Path,
+    emit_auxiliary_artifacts: bool,
+) -> tuple[Path | None, Path | None, dict[str, Any] | None]:
+    replay_summary_path: Path | None = None
+    replay_diff_path: Path | None = None
+    replay_verification: dict[str, Any] | None = None
+    if not args.replay_verify_from:
+        return replay_summary_path, replay_diff_path, replay_verification
+
+    replay_dir = Path(args.replay_verify_from)
+    replay_source_report, replay_source_path = _load_replay_source_report(replay_dir)
+    replay_verification = _build_replay_verification_summary(
+        current_report=report,
+        replay_source_report=replay_source_report,
+        replay_source_path=replay_source_path,
+        replay_source_dir=replay_dir,
+    )
+    replay_summary_path = output_dir / 'replay-summary.json'
+    replay_diff_path = output_dir / 'replay-diff.md'
+    if emit_auxiliary_artifacts:
+        _write_json_artifact(replay_summary_path, replay_verification)
+        _build_replay_diff_markdown(replay_verification, replay_diff_path)
+    report['run_meta']['replay_verification'] = {
+        'source_report_dir': str(replay_dir),
+        'status_counts': replay_verification.get('status_counts', {}),
+        'non_deterministic_reasons': replay_verification.get('non_deterministic_reasons', []),
+        'gate': replay_verification.get('gate', {}),
+    }
+    if emit_auxiliary_artifacts:
+        report['run_meta']['replay_verification']['summary_path'] = str(replay_summary_path)
+        report['run_meta']['replay_verification']['diff_path'] = str(replay_diff_path)
+    report.setdefault('summary', {})['replay_verification'] = {
+        'status_counts': replay_verification.get('status_counts', {}),
+        'non_deterministic_count': replay_verification.get('status_counts', {}).get('non-deterministic', 0),
+        'gate_failed': bool(replay_verification.get('gate', {}).get('failed')),
+    }
+    report['run_meta']['notes'].append(
+        'Replay verification: '
+        f"resolved={replay_verification['status_counts']['resolved']}, "
+        f"unchanged={replay_verification['status_counts']['unchanged']}, "
+        f"regressed={replay_verification['status_counts']['regressed']}, "
+        f"non-deterministic={replay_verification['status_counts']['non-deterministic']}."
+    )
+    return replay_summary_path, replay_diff_path, replay_verification
+
+
+def _record_scanner_stability_outputs(
+    *,
+    args: argparse.Namespace,
+    report: dict[str, Any],
+    output_dir: Path,
+    emit_auxiliary_artifacts: bool,
+) -> Path:
+    scanner_stability = _build_scanner_stability_payload(
+        now_utc=datetime.now(timezone.utc),
+        mode=args.stability_mode,
+        current_report=report,
+        baseline_path=args.stability_baseline,
+    )
+    scanner_stability_path = output_dir / 'scanner-stability.json'
+    if emit_auxiliary_artifacts:
+        _write_json_artifact(scanner_stability_path, scanner_stability)
+    scanner_stability_comparison = scanner_stability.get('comparison', {})
+    scanner_stability_gate = scanner_stability.get('gate', {})
+    report['run_meta']['scanner_stability'] = {
+        'schema_version': scanner_stability.get('schema_version'),
+        'mode': scanner_stability.get('mode'),
+        'window': scanner_stability.get('window'),
+        'baseline_source': scanner_stability.get('baseline_source'),
+        'history_meta': scanner_stability.get('history_meta', {}),
+        'approved_bounds': scanner_stability.get('approved_bounds', {}),
+        'comparison': {
+            'evaluated_signature_count': scanner_stability_comparison.get('evaluated_signature_count', 0),
+            'breach_count': scanner_stability_comparison.get('breach_count', 0),
+            'max_delta': scanner_stability_comparison.get('max_delta', 0),
+            'scanner_capability_changed': bool(scanner_stability_comparison.get('scanner_capability_changed')),
+            'previous_scanners': scanner_stability_comparison.get('previous_scanners', []),
+            'current_scanners': scanner_stability_comparison.get('current_scanners', []),
+        },
+        'gate': scanner_stability_gate,
+        'points': scanner_stability.get('points', []),
+    }
+    if emit_auxiliary_artifacts:
+        report['run_meta']['scanner_stability']['artifact_path'] = str(scanner_stability_path)
+    report.setdefault('summary', {})['scanner_stability'] = {
+        'mode': scanner_stability.get('mode'),
+        'window': scanner_stability.get('window'),
+        'breach_count': scanner_stability_comparison.get('breach_count', 0),
+        'max_delta': scanner_stability_comparison.get('max_delta', 0),
+        'scanner_capability_changed': bool(scanner_stability_comparison.get('scanner_capability_changed')),
+        'gate_failed': bool(scanner_stability_gate.get('failed')),
+    }
+
+    scanner_stability_downgrade = str(scanner_stability_gate.get('downgrade_reason') or '')
+    if scanner_stability_downgrade == 'missing-history' and args.stability_mode != 'off':
+        report['run_meta']['notes'].append(
+            'Scanner stability downgraded (missing-history): provide --stability-baseline with scanner-stability.json '
+            'or a prior wcag-report.json containing run_meta.scanner_stability.'
+        )
+    elif scanner_stability_downgrade == 'scanner-capability-changed':
+        report['run_meta']['notes'].append(
+            'Scanner stability downgraded (scanner-capability-changed): '
+            'baseline scanners and current scanners differ; comparison is informational only.'
+        )
+    elif args.stability_mode != 'off':
+        report['run_meta']['notes'].append(
+            'Scanner stability: '
+            f"breaches={scanner_stability_comparison.get('breach_count', 0)}, "
+            f"max_delta={scanner_stability_comparison.get('max_delta', 0)} "
+            f"(window={scanner_stability.get('window')}, mode={args.stability_mode})."
+        )
+        if args.stability_mode == 'warn' and scanner_stability_comparison.get('breach_count', 0) > 0:
+            report['run_meta']['notes'].append(
+                'Scanner stability warning: volatility exceeds approved bounds under --stability-mode=warn.'
+            )
+    return scanner_stability_path
+
+
+def _record_debt_trend_outputs(
+    *,
+    args: argparse.Namespace,
+    report: dict[str, Any],
+    output_dir: Path,
+    emit_auxiliary_artifacts: bool,
+    baseline_report: dict[str, Any] | None,
+    debt_transitions: dict[str, Any] | None,
+    waiver_review: dict[str, Any] | None,
+) -> Path:
+    debt_trend_payload = _build_debt_trend_payload(
+        now_utc=datetime.now(timezone.utc),
+        window=args.debt_trend_window,
+        baseline_report=baseline_report,
+        baseline_report_path=args.baseline_report,
+        debt_transitions=debt_transitions,
+        waiver_review=waiver_review,
+    )
+    debt_trend_path = output_dir / 'debt-trend.json'
+    if emit_auxiliary_artifacts:
+        _write_json_artifact(debt_trend_path, debt_trend_payload)
+    trend_summary = debt_trend_payload.get('summary', {})
+    if emit_auxiliary_artifacts:
+        report['run_meta']['debt_trend'] = {
+            'schema_version': debt_trend_payload.get('schema_version'),
+            'window': debt_trend_payload.get('window'),
+            'artifact_path': str(debt_trend_path),
+            'latest_counts': trend_summary.get('latest_counts', _empty_debt_trend_counts()),
+            'delta_from_previous': trend_summary.get('delta_from_previous', _empty_debt_trend_counts()),
+            'history_meta': debt_trend_payload.get('history_meta', {}),
+        }
+    report.setdefault('summary', {})['debt_trend'] = {
+        'window': debt_trend_payload.get('window'),
+        'latest_counts': trend_summary.get('latest_counts', _empty_debt_trend_counts()),
+        'delta_from_previous': trend_summary.get('delta_from_previous', _empty_debt_trend_counts()),
+        'history_points_used': trend_summary.get('history_points_used', 0),
+    }
+    history_reset_reason = str((debt_trend_payload.get('history_meta') or {}).get('history_reset_reason') or '')
+    if history_reset_reason:
+        report['run_meta']['notes'].append(
+            'Debt trend history reset reason: ' + history_reset_reason
+        )
+    report['run_meta']['notes'].append(
+        f"Debt trend: new={report['summary']['debt_trend']['latest_counts'][DEBT_STATE_NEW]}, "
+        f"accepted={report['summary']['debt_trend']['latest_counts'][DEBT_STATE_ACCEPTED]}, "
+        f"retired={report['summary']['debt_trend']['latest_counts'][DEBT_STATE_RETIRED]}, "
+        f"regressed={report['summary']['debt_trend']['latest_counts'][DEBT_STATE_REGRESSED]} "
+        f"(window={args.debt_trend_window})."
+    )
+    return debt_trend_path
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Run WCAG audit with axe+Lighthouse.",
@@ -677,83 +1107,9 @@ def main() -> int:
     if args.list_policy_config_keys:
         print(json.dumps(_policy_config_keys_payload(), ensure_ascii=False, indent=2))
         return 0
-    if not args.target and not args.preflight_only:
-        raise ValueError('--target is required unless --list-policy-presets or --list-policy-config-keys is used')
-
-    policy_config = _load_policy_config(args.policy_config)
-    baseline_report = _load_baseline_report(args.baseline_report)
-    policy_bundle = _resolve_policy_bundle(args.policy_bundle)
-    policy_preset = _resolve_policy_preset(args.policy_preset)
-    config_report_format = policy_config.get('report_format')
-    config_fail_on = policy_config.get('fail_on')
-    config_include = _normalize_rule_list(policy_config.get('include_rules'), 'include_rules')
-    config_ignore = _normalize_rule_list(policy_config.get('ignore_rules'), 'ignore_rules')
-
-    if config_report_format and config_report_format not in {'json', 'sarif'}:
-        raise ValueError('policy-config report_format must be one of: json, sarif')
-    if config_fail_on and config_fail_on not in {'critical', 'serious', 'moderate'}:
-        raise ValueError('policy-config fail_on must be one of: critical, serious, moderate')
-
-    bundle_fail_on = policy_bundle.get('fail_on')
-    bundle_include = _normalize_rule_list(policy_bundle.get('include_rules'), 'bundle.include_rules')
-    bundle_ignore = _normalize_rule_list(policy_bundle.get('ignore_rules'), 'bundle.ignore_rules')
-
-    preset_fail_on = policy_preset.get('fail_on')
-    preset_include = _normalize_rule_list(policy_preset.get('include_rules'), 'preset.include_rules')
-    preset_ignore = _normalize_rule_list(policy_preset.get('ignore_rules'), 'preset.ignore_rules')
-
-    cli_include_rules = [item.strip() for item in args.include_rule if item.strip()]
-    cli_ignore_rules = [item.strip() for item in args.ignore_rule if item.strip()]
-
-    report_format = args.report_format or config_report_format or 'json'
-    fail_on = args.fail_on or config_fail_on or preset_fail_on or bundle_fail_on
-    include_rules = _merge_rule_list(
-        bundle_include,
-        preset_include,
-        config_include,
-        cli_include_rules,
-    )
-    ignore_rules = _merge_rule_list(
-        bundle_ignore,
-        preset_ignore,
-        config_ignore,
-        cli_ignore_rules,
-    )
-    overlapping_rules = _find_rule_policy_overlaps(include_rules, ignore_rules)
-    if overlapping_rules and args.strict_rule_overlap:
-        raise ValueError(
-            '--strict-rule-overlap detected rule ids present in both include and ignore lists: '
-            + ", ".join(overlapping_rules)
-        )
-    policy_sources = {
-        'report_format': _policy_value_source(args.report_format, config_report_format, None, None, 'default'),
-        'fail_on': _policy_value_source(args.fail_on, config_fail_on, preset_fail_on, bundle_fail_on, 'unset'),
-        'include_rules': _build_rule_sources(bundle_include, preset_include, config_include, cli_include_rules),
-        'ignore_rules': _build_rule_sources(bundle_ignore, preset_ignore, config_ignore, cli_ignore_rules),
-    }
-
-    if args.skip_axe and args.mock_axe_json:
-        raise ValueError('--skip-axe cannot be combined with --mock-axe-json')
-    if args.skip_lighthouse and args.mock_lighthouse_json:
-        raise ValueError('--skip-lighthouse cannot be combined with --mock-lighthouse-json')
-    if args.dry_run and args.execution_mode != 'apply-fixes':
-        raise ValueError('--dry-run is only supported when --execution-mode is apply-fixes')
-    if args.scanner_retry_attempts < 1:
-        raise ValueError('--scanner-retry-attempts must be >= 1')
-    if args.scanner_retry_backoff_seconds < 0:
-        raise ValueError('--scanner-retry-backoff-seconds must be >= 0')
-    if args.max_findings is not None and args.max_findings < 1:
-        raise ValueError('--max-findings must be >= 1')
-    if args.debt_trend_window < 1:
-        raise ValueError('--debt-trend-window must be >= 1')
-    if args.fail_on_new_only and not args.fail_on:
-        raise ValueError('--fail-on-new-only requires --fail-on')
-    if args.fail_on_new_only and not args.baseline_report:
-        raise ValueError('--fail-on-new-only requires --baseline-report')
-    if args.replay_verify_from and not Path(args.replay_verify_from).exists():
-        raise ValueError('--replay-verify-from directory does not exist: ' + str(args.replay_verify_from))
-    if args.stability_baseline and not Path(args.stability_baseline).exists():
-        raise ValueError('--stability-baseline path does not exist: ' + str(args.stability_baseline))
+    output_dir = Path(args.output_dir)
+    policy_context = _build_policy_runtime_context(args, output_dir)
+    _validate_runtime_args(args, policy_context)
 
     if args.preflight_only:
         preflight = run_preflight_checks(args.timeout)
@@ -761,149 +1117,16 @@ def main() -> int:
         return 0 if preflight["ok"] else 1
 
     emit_auxiliary_artifacts = _should_emit_auxiliary_artifacts(args.artifacts)
-    output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    effective_policy_output = _resolve_effective_policy_path(args.write_effective_policy, output_dir)
     schema_metadata, staged_schema_path = _stage_report_schema_artifact(output_dir)
-    baseline_signature_config = _build_baseline_signature_config(args)
-    effective_policy = _build_effective_policy(
-        report_format=report_format,
-        fail_on=fail_on,
-        include_rules=include_rules,
-        ignore_rules=ignore_rules,
-        policy_bundle=policy_bundle,
-        policy_preset=policy_preset,
-        policy_config_path=args.policy_config,
-        policy_sources=policy_sources,
-        fail_on_new_only=bool(args.fail_on_new_only),
-        baseline_report_path=args.baseline_report,
-        baseline_signature_config=baseline_signature_config,
-        baseline_evidence_mode=args.baseline_evidence_mode,
-        waiver_expiry_mode=args.waiver_expiry_mode,
-        risk_calibration_mode=args.risk_calibration_mode,
-        risk_calibration_source=args.risk_calibration_source,
-        stability_mode=args.stability_mode,
-        stability_baseline=args.stability_baseline,
-        overlapping_rules=overlapping_rules,
+    contract, local_target, scanner_target, create_mode_no_target = _resolve_contract_target_context(args)
+    preflight = _build_preflight_payload(args)
+    axe_data, axe_error, lighthouse_data, lighthouse_error, scanner_retry_runs = _run_scanners_for_target(
+        args,
+        scanner_target,
+        output_dir,
+        create_mode_no_target=create_mode_no_target,
     )
-
-    contract = resolve_contract(
-        {
-            "task_mode": args.task_mode,
-            "execution_mode": args.execution_mode,
-            "wcag_version": args.wcag_version,
-            "conformance_level": args.conformance_level,
-            "target": args.target,
-            "output_language": args.output_language,
-        }
-    )
-    local_target = target_to_local_path(contract.target)
-    create_mode_no_target = False
-    try:
-        scanner_target = _resolve_target_for_scanners(contract.target)
-    except ValueError:
-        if contract.task_mode == "create":
-            create_mode_no_target = True
-            scanner_target = contract.target
-        else:
-            raise
-
-    preflight_required = not (
-        (args.skip_axe or args.mock_axe_json) and (args.skip_lighthouse or args.mock_lighthouse_json)
-    )
-    if preflight_required:
-        preflight = run_preflight_checks(args.timeout)
-    else:
-        preflight = {
-            "ok": True,
-            "checks": [
-                {
-                    "tool": "runtime",
-                    "status": "skipped",
-                    "message": "scanner tooling preflight skipped due to mock or skip flags",
-                    "command": "",
-                    "resolved_command": "",
-                    "version": "",
-                    "version_provenance": {
-                        "source": "skipped",
-                        "command": "",
-                        "resolved_command": "",
-                        "version": "",
-                    },
-                }
-            ],
-            "tools": {
-                "runtime": {
-                    "status": "skipped",
-                    "command": "",
-                    "resolved_command": "",
-                    "version": "",
-                    "message": "scanner tooling preflight skipped due to mock or skip flags",
-                    "version_provenance": {
-                        "source": "skipped",
-                        "command": "",
-                        "resolved_command": "",
-                        "version": "",
-                    },
-                }
-            },
-        }
-
-    axe_data = None
-    axe_error = None
-    lighthouse_data = None
-    lighthouse_error = None
-    scanner_retry_runs: list[dict[str, Any]] = []
-
-    if create_mode_no_target:
-        axe_error = "Skipped: target does not exist (create mode — guidance only)"
-        lighthouse_error = "Skipped: target does not exist (create mode — guidance only)"
-
-    run_axe = not args.skip_axe and not args.mock_axe_json and not create_mode_no_target
-    run_lighthouse = not args.skip_lighthouse and not args.mock_lighthouse_json and not create_mode_no_target
-    if args.mock_axe_json:
-        axe_data = json.loads(Path(args.mock_axe_json).read_text(encoding='utf-8'))
-    if args.mock_lighthouse_json:
-        lighthouse_data = json.loads(Path(args.mock_lighthouse_json).read_text(encoding='utf-8'))
-
-    if run_axe and run_lighthouse:
-        from concurrent.futures import ThreadPoolExecutor
-
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            axe_future = executor.submit(
-                _run_scanner_with_retry,
-                'axe',
-                lambda: _try_run_axe(scanner_target, output_dir, args.timeout),
-                args.scanner_retry_attempts,
-                args.scanner_retry_backoff_seconds,
-            )
-            lighthouse_future = executor.submit(
-                _run_scanner_with_retry,
-                'lighthouse',
-                lambda: _try_run_lighthouse(scanner_target, output_dir, args.timeout),
-                args.scanner_retry_attempts,
-                args.scanner_retry_backoff_seconds,
-            )
-            axe_data, axe_error, axe_retry = axe_future.result()
-            lighthouse_data, lighthouse_error, lighthouse_retry = lighthouse_future.result()
-            scanner_retry_runs.extend([axe_retry, lighthouse_retry])
-    else:
-        if run_axe:
-            axe_data, axe_error, axe_retry = _run_scanner_with_retry(
-                'axe',
-                lambda: _try_run_axe(scanner_target, output_dir, args.timeout),
-                args.scanner_retry_attempts,
-                args.scanner_retry_backoff_seconds,
-            )
-            scanner_retry_runs.append(axe_retry)
-        if run_lighthouse:
-            lighthouse_data, lighthouse_error, lighthouse_retry = _run_scanner_with_retry(
-                'lighthouse',
-                lambda: _try_run_lighthouse(scanner_target, output_dir, args.timeout),
-                args.scanner_retry_attempts,
-                args.scanner_retry_backoff_seconds,
-            )
-            scanner_retry_runs.append(lighthouse_retry)
 
     report = normalize_report(
         contract=contract,
@@ -927,6 +1150,17 @@ def main() -> int:
         'initial_backoff_seconds': args.scanner_retry_backoff_seconds,
         'max_backoff_seconds': MAX_SCANNER_RETRY_BACKOFF_SECONDS,
     }
+    policy_preset = policy_context['policy_preset']
+    policy_bundle = policy_context['policy_bundle']
+    effective_policy = policy_context['effective_policy']
+    effective_policy_output = policy_context['effective_policy_output']
+    baseline_report = policy_context['baseline_report']
+    baseline_signature_config = policy_context['baseline_signature_config']
+    include_rules = policy_context['include_rules']
+    ignore_rules = policy_context['ignore_rules']
+    overlapping_rules = policy_context['overlapping_rules']
+    fail_on = policy_context['fail_on']
+
     if policy_preset:
         report['run_meta']['policy_preset'] = policy_preset
     if policy_bundle:
@@ -1153,107 +1387,20 @@ def main() -> int:
         ),
         'available_rule_count': scanner_capabilities['available_rule_count'],
     }
-    replay_summary_path: Path | None = None
-    replay_diff_path: Path | None = None
-    replay_verification: dict[str, Any] | None = None
-    if args.replay_verify_from:
-        replay_dir = Path(args.replay_verify_from)
-        replay_source_report, replay_source_path = _load_replay_source_report(replay_dir)
-        replay_verification = _build_replay_verification_summary(
-            current_report=report,
-            replay_source_report=replay_source_report,
-            replay_source_path=replay_source_path,
-            replay_source_dir=replay_dir,
-        )
-        replay_summary_path = output_dir / 'replay-summary.json'
-        replay_diff_path = output_dir / 'replay-diff.md'
-        if emit_auxiliary_artifacts:
-            _write_json_artifact(replay_summary_path, replay_verification)
-            _build_replay_diff_markdown(replay_verification, replay_diff_path)
-        report['run_meta']['replay_verification'] = {
-            'source_report_dir': str(replay_dir),
-            'status_counts': replay_verification.get('status_counts', {}),
-            'non_deterministic_reasons': replay_verification.get('non_deterministic_reasons', []),
-            'gate': replay_verification.get('gate', {}),
-        }
-        if emit_auxiliary_artifacts:
-            report['run_meta']['replay_verification']['summary_path'] = str(replay_summary_path)
-            report['run_meta']['replay_verification']['diff_path'] = str(replay_diff_path)
-        report.setdefault('summary', {})['replay_verification'] = {
-            'status_counts': replay_verification.get('status_counts', {}),
-            'non_deterministic_count': replay_verification.get('status_counts', {}).get('non-deterministic', 0),
-            'gate_failed': bool(replay_verification.get('gate', {}).get('failed')),
-        }
-        report['run_meta']['notes'].append(
-            'Replay verification: '
-            f"resolved={replay_verification['status_counts']['resolved']}, "
-            f"unchanged={replay_verification['status_counts']['unchanged']}, "
-            f"regressed={replay_verification['status_counts']['regressed']}, "
-            f"non-deterministic={replay_verification['status_counts']['non-deterministic']}."
-        )
-    scanner_stability = _build_scanner_stability_payload(
-        now_utc=datetime.now(timezone.utc),
-        mode=args.stability_mode,
-        current_report=report,
-        baseline_path=args.stability_baseline,
+    replay_summary_path, replay_diff_path, replay_verification = _record_replay_verification_outputs(
+        args=args,
+        report=report,
+        output_dir=output_dir,
+        emit_auxiliary_artifacts=emit_auxiliary_artifacts,
     )
-    scanner_stability_path = output_dir / 'scanner-stability.json'
-    if emit_auxiliary_artifacts:
-        _write_json_artifact(scanner_stability_path, scanner_stability)
-    scanner_stability_comparison = scanner_stability.get('comparison', {})
-    scanner_stability_gate = scanner_stability.get('gate', {})
-    report['run_meta']['scanner_stability'] = {
-        'schema_version': scanner_stability.get('schema_version'),
-        'mode': scanner_stability.get('mode'),
-        'window': scanner_stability.get('window'),
-        'baseline_source': scanner_stability.get('baseline_source'),
-        'history_meta': scanner_stability.get('history_meta', {}),
-        'approved_bounds': scanner_stability.get('approved_bounds', {}),
-        'comparison': {
-            'evaluated_signature_count': scanner_stability_comparison.get('evaluated_signature_count', 0),
-            'breach_count': scanner_stability_comparison.get('breach_count', 0),
-            'max_delta': scanner_stability_comparison.get('max_delta', 0),
-            'scanner_capability_changed': bool(scanner_stability_comparison.get('scanner_capability_changed')),
-            'previous_scanners': scanner_stability_comparison.get('previous_scanners', []),
-            'current_scanners': scanner_stability_comparison.get('current_scanners', []),
-        },
-        'gate': scanner_stability_gate,
-        'points': scanner_stability.get('points', []),
-    }
-    if emit_auxiliary_artifacts:
-        report['run_meta']['scanner_stability']['artifact_path'] = str(scanner_stability_path)
-    report.setdefault('summary', {})['scanner_stability'] = {
-        'mode': scanner_stability.get('mode'),
-        'window': scanner_stability.get('window'),
-        'breach_count': scanner_stability_comparison.get('breach_count', 0),
-        'max_delta': scanner_stability_comparison.get('max_delta', 0),
-        'scanner_capability_changed': bool(scanner_stability_comparison.get('scanner_capability_changed')),
-        'gate_failed': bool(scanner_stability_gate.get('failed')),
-    }
+    scanner_stability_path = _record_scanner_stability_outputs(
+        args=args,
+        report=report,
+        output_dir=output_dir,
+        emit_auxiliary_artifacts=emit_auxiliary_artifacts,
+    )
 
-    scanner_stability_downgrade = str(scanner_stability_gate.get('downgrade_reason') or '')
-    if scanner_stability_downgrade == 'missing-history' and args.stability_mode != 'off':
-        report['run_meta']['notes'].append(
-            'Scanner stability downgraded (missing-history): provide --stability-baseline with scanner-stability.json '
-            'or a prior wcag-report.json containing run_meta.scanner_stability.'
-        )
-    elif scanner_stability_downgrade == 'scanner-capability-changed':
-        report['run_meta']['notes'].append(
-            'Scanner stability downgraded (scanner-capability-changed): '
-            'baseline scanners and current scanners differ; comparison is informational only.'
-        )
-    elif args.stability_mode != 'off':
-        report['run_meta']['notes'].append(
-            'Scanner stability: '
-            f"breaches={scanner_stability_comparison.get('breach_count', 0)}, "
-            f"max_delta={scanner_stability_comparison.get('max_delta', 0)} "
-            f"(window={scanner_stability.get('window')}, mode={args.stability_mode})."
-        )
-        if args.stability_mode == 'warn' and scanner_stability_comparison.get('breach_count', 0) > 0:
-            report['run_meta']['notes'].append(
-                'Scanner stability warning: volatility exceeds approved bounds under --stability-mode=warn.'
-            )
-
+    report_format = policy_context['report_format']
     report_output_paths = _build_report_output_paths(output_dir, report_format)
     output_json = report_output_paths['output_json']
     output_md = report_output_paths['output_md']
@@ -1317,44 +1464,14 @@ def main() -> int:
         exit_code = advanced_gate_exit_code
     report['run_meta']['notes'].extend(advanced_gate_notes)
 
-    debt_trend_payload = _build_debt_trend_payload(
-        now_utc=datetime.now(timezone.utc),
-        window=args.debt_trend_window,
+    debt_trend_path = _record_debt_trend_outputs(
+        args=args,
+        report=report,
+        output_dir=output_dir,
+        emit_auxiliary_artifacts=emit_auxiliary_artifacts,
         baseline_report=baseline_report,
-        baseline_report_path=args.baseline_report,
         debt_transitions=debt_transitions,
         waiver_review=waiver_review,
-    )
-    debt_trend_path = output_dir / 'debt-trend.json'
-    if emit_auxiliary_artifacts:
-        _write_json_artifact(debt_trend_path, debt_trend_payload)
-    trend_summary = debt_trend_payload.get('summary', {})
-    if emit_auxiliary_artifacts:
-        report['run_meta']['debt_trend'] = {
-            'schema_version': debt_trend_payload.get('schema_version'),
-            'window': debt_trend_payload.get('window'),
-            'artifact_path': str(debt_trend_path),
-            'latest_counts': trend_summary.get('latest_counts', _empty_debt_trend_counts()),
-            'delta_from_previous': trend_summary.get('delta_from_previous', _empty_debt_trend_counts()),
-            'history_meta': debt_trend_payload.get('history_meta', {}),
-        }
-    report.setdefault('summary', {})['debt_trend'] = {
-        'window': debt_trend_payload.get('window'),
-        'latest_counts': trend_summary.get('latest_counts', _empty_debt_trend_counts()),
-        'delta_from_previous': trend_summary.get('delta_from_previous', _empty_debt_trend_counts()),
-        'history_points_used': trend_summary.get('history_points_used', 0),
-    }
-    history_reset_reason = str((debt_trend_payload.get('history_meta') or {}).get('history_reset_reason') or '')
-    if history_reset_reason:
-        report['run_meta']['notes'].append(
-            'Debt trend history reset reason: ' + history_reset_reason
-        )
-    report['run_meta']['notes'].append(
-        f"Debt trend: new={report['summary']['debt_trend']['latest_counts'][DEBT_STATE_NEW]}, "
-        f"accepted={report['summary']['debt_trend']['latest_counts'][DEBT_STATE_ACCEPTED]}, "
-        f"retired={report['summary']['debt_trend']['latest_counts'][DEBT_STATE_RETIRED]}, "
-        f"regressed={report['summary']['debt_trend']['latest_counts'][DEBT_STATE_REGRESSED]} "
-        f"(window={args.debt_trend_window})."
     )
 
     artifact_manifest_path = output_dir / 'artifact-manifest.json'

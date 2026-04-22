@@ -116,6 +116,121 @@ class RunnerTests(unittest.TestCase):
         self.assertTrue(args.dry_run)
         self.assertTrue(args.preflight_only)
 
+    def test_validate_runtime_args_allows_preflight_without_target(self) -> None:
+        args = runner.argparse.Namespace(
+            target=None,
+            preflight_only=True,
+            skip_axe=False,
+            mock_axe_json=None,
+            skip_lighthouse=False,
+            mock_lighthouse_json=None,
+            dry_run=False,
+            execution_mode='suggest-only',
+            scanner_retry_attempts=1,
+            scanner_retry_backoff_seconds=0,
+            max_findings=None,
+            debt_trend_window=1,
+            fail_on_new_only=False,
+            fail_on=None,
+            baseline_report=None,
+            replay_verify_from=None,
+            stability_baseline=None,
+            strict_rule_overlap=False,
+        )
+
+        runner._validate_runtime_args(
+            args,
+            {
+                'config_report_format': None,
+                'config_fail_on': None,
+                'overlapping_rules': [],
+            },
+        )
+
+    def test_build_preflight_payload_skips_runtime_checks_when_scanners_are_not_needed(self) -> None:
+        args = runner.argparse.Namespace(
+            skip_axe=True,
+            mock_axe_json=None,
+            skip_lighthouse=False,
+            mock_lighthouse_json='lighthouse.json',
+            timeout=DEFAULT_TIMEOUT_SECONDS,
+        )
+
+        with patch.object(runner, 'run_preflight_checks') as mock_preflight:
+            payload = runner._build_preflight_payload(args)
+
+        mock_preflight.assert_not_called()
+        self.assertTrue(payload['ok'])
+        self.assertEqual(payload['tools']['runtime']['status'], 'skipped')
+
+    def test_run_scanners_for_target_create_mode_returns_guidance_only_errors(self) -> None:
+        workspace = self._workspace('m41-create-mode-scanner-skip')
+        args = runner.argparse.Namespace(
+            skip_axe=False,
+            mock_axe_json=None,
+            skip_lighthouse=False,
+            mock_lighthouse_json=None,
+            timeout=DEFAULT_TIMEOUT_SECONDS,
+            scanner_retry_attempts=1,
+            scanner_retry_backoff_seconds=0,
+        )
+
+        axe_data, axe_error, lighthouse_data, lighthouse_error, scanner_retry_runs = runner._run_scanners_for_target(
+            args,
+            'missing-target.html',
+            workspace,
+            create_mode_no_target=True,
+        )
+
+        self.assertIsNone(axe_data)
+        self.assertIsNone(lighthouse_data)
+        self.assertEqual(axe_error, 'Skipped: target does not exist (create mode — guidance only)')
+        self.assertEqual(lighthouse_error, 'Skipped: target does not exist (create mode — guidance only)')
+        self.assertEqual(scanner_retry_runs, [])
+
+    def test_build_policy_runtime_context_resolves_effective_policy_output(self) -> None:
+        workspace = self._workspace('m41-policy-runtime-context')
+        output_dir = workspace / 'out'
+        policy_config = workspace / 'policy.json'
+        policy_config.write_text(
+            json.dumps(
+                {
+                    'report_format': 'sarif',
+                    'ignore_rules': ['color-contrast'],
+                }
+            ),
+            encoding='utf-8',
+        )
+        args = runner.argparse.Namespace(
+            policy_config=str(policy_config),
+            baseline_report=None,
+            policy_bundle=None,
+            policy_preset=None,
+            report_format=None,
+            fail_on=None,
+            include_rule=['image-alt'],
+            ignore_rule=[],
+            write_effective_policy='AUTO',
+            fail_on_new_only=False,
+            baseline_evidence_mode='none',
+            waiver_expiry_mode='warn',
+            risk_calibration_mode='off',
+            risk_calibration_source=None,
+            stability_mode='off',
+            stability_baseline=None,
+            baseline_include_target=False,
+            baseline_target_normalization='none',
+            baseline_selector_canonicalization='none',
+        )
+
+        context = runner._build_policy_runtime_context(args, output_dir)
+
+        self.assertEqual(context['report_format'], 'sarif')
+        self.assertEqual(context['ignore_rules'], ['color-contrast'])
+        self.assertEqual(context['include_rules'], ['image-alt'])
+        self.assertEqual(context['effective_policy_output'], output_dir / 'wcag-effective-policy.json')
+        self.assertEqual(context['effective_policy']['sources']['report_format'], 'policy-config')
+
     def test_cli_accepts_baseline_diff_flags(self) -> None:
         original = sys.argv
         sys.argv = [
