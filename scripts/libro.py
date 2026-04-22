@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import os
+import ntpath
 import re
 import subprocess
 import sys
@@ -349,6 +350,9 @@ def _scan_target_label(target: str) -> str:
         path_name = Path(parsed.path).stem if parsed.path else ""
         host_name = parsed.netloc.replace(".", "-")
         return "-".join(part for part in [host_name, path_name] if part) or "target"
+    if "\\" in target or re.match(r"^[A-Za-z]:[\\/]", target):
+        windows_stem = Path(ntpath.basename(target)).stem
+        return windows_stem or "target"
     return Path(target).stem or "target"
 
 
