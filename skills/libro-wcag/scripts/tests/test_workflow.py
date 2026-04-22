@@ -26,6 +26,8 @@ from wcag_workflow import (
     to_markdown_table,
     write_report_files,
 )
+from report_artifacts import _build_compact_summary
+from report_renderers import render_badge, render_markdown
 
 
 class WorkflowTests(unittest.TestCase):
@@ -104,6 +106,54 @@ class WorkflowTests(unittest.TestCase):
         )
         markdown = to_markdown_table(report)
         self.assertIn('⚠️ 掃描器覆蓋不完整: lighthouse (timeout)', markdown)
+
+    def test_aggregate_markdown_renderer_uses_single_report_generated_at_and_baseline_alias(self) -> None:
+        contract = resolve_contract({"target": "https://example.com", "output_language": "en"})
+        report = normalize_report(contract, {"violations": []}, {"audits": {}}, None, None)
+        report["run_meta"]["baseline_diff"] = {
+            "introduced_count": 2,
+            "resolved_count": 1,
+            "persistent_count": 3,
+        }
+
+        markdown = render_markdown(report, language="en")
+
+        self.assertIn(f"> Generated at: {report['run_meta']['generated_at']}", markdown)
+        self.assertIn("| New findings | 2 |", markdown)
+        self.assertIn("| Resolved | 1 |", markdown)
+        self.assertIn("| Persistent | 3 |", markdown)
+
+    def test_badge_renderer_accepts_single_report_semantics(self) -> None:
+        contract = resolve_contract({"target": "https://example.com"})
+        report = normalize_report(contract, {"violations": []}, {"audits": {}}, None, None)
+
+        badge = json.loads(render_badge(report))
+
+        self.assertEqual(badge["color"], "brightgreen")
+        self.assertEqual(badge["message"], "100% (0 findings)")
+
+    def test_compact_summary_normalizes_baseline_new_count_alias(self) -> None:
+        contract = resolve_contract({"target": "https://example.com"})
+        report = normalize_report(contract, {"violations": []}, {"audits": {}}, None, None)
+        report["run_meta"]["baseline_diff"] = {
+            "new_count": 4,
+            "resolved_count": 1,
+            "persistent_count": 2,
+        }
+
+        compact = _build_compact_summary(
+            report=report,
+            report_format="json",
+            machine_output=Path("wcag-report.json"),
+            output_md=Path("wcag-report.md"),
+            should_fail=False,
+            fail_on=None,
+            exit_code=0,
+        )
+
+        self.assertEqual(compact["baseline_diff"]["introduced_count"], 4)
+        self.assertEqual(compact["baseline_diff"]["resolved_count"], 1)
+        self.assertEqual(compact["baseline_diff"]["persistent_count"], 2)
 
     def test_citation_presence_for_major_finding(self) -> None:
         contract = resolve_contract({"target": "https://example.com"})

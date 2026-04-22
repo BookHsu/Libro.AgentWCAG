@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import importlib.util
+import io
 import os
 import shutil
 import subprocess
@@ -368,6 +370,122 @@ class RepoScriptTests(unittest.TestCase):
             max_lines=2,
         )
         self.assertEqual(summary, 'error one | error two')
+
+    def test_libro_run_scan_target_collects_log_and_summary(self) -> None:
+        libro = self._load_libro_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            output_dir = Path(tmp)
+            completed = subprocess.CompletedProcess(
+                args=['python', 'run_accessibility_audit.py'],
+                returncode=2,
+                stdout='stdout line\n',
+                stderr='stderr line\n',
+            )
+            with mock.patch.object(libro.subprocess, 'run', return_value=completed) as run_mock:
+                result = libro._run_scan_target(
+                    'https://example.com/page.html',
+                    0,
+                    output_dir=output_dir,
+                    execution_mode='suggest-only',
+                )
+
+            self.assertEqual(result.target, 'https://example.com/page.html')
+            self.assertEqual(result.returncode, 2)
+            self.assertEqual(result.summary, 'stderr line')
+            self.assertIsNotNone(result.log_path)
+            self.assertTrue(result.target_dir.exists())
+            self.assertTrue(result.log_path.exists())
+            self.assertIn('=== STDOUT ===', result.log_path.read_text(encoding='utf-8'))
+            self.assertIn('=== STDERR ===', result.log_path.read_text(encoding='utf-8'))
+            command = run_mock.call_args.args[0]
+            self.assertEqual(command[0], sys.executable)
+            self.assertIn('--execution-mode', command)
+            self.assertIn('--output-dir', command)
+
+    def test_libro_print_scan_summary_reports_failures(self) -> None:
+        libro = self._load_libro_module()
+        log_path = Path('wcag-reports') / 'broken' / libro.SCAN_LOG_NAME
+        failure = libro.ScanExecutionResult(
+            target='broken.html',
+            returncode=2,
+            target_dir=Path('wcag-reports') / 'broken',
+            log_path=log_path,
+            summary='scanner crashed',
+        )
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            returncode = libro._print_scan_summary(Path('wcag-reports'), 3, [failure])
+
+        self.assertEqual(returncode, 1)
+        rendered = stdout.getvalue()
+        self.assertIn('Completed: 2/3 succeeded', rendered)
+        self.assertIn('Failed: 1 target(s)', rendered)
+        self.assertIn('  - broken.html (exit code 2)', rendered)
+        self.assertIn(f'    log: {log_path}', rendered)
+        self.assertIn('    summary: scanner crashed', rendered)
+
+    def test_libro_write_output_creates_parent_and_announces_destination(self) -> None:
+        libro = self._load_libro_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            output_path = Path(tmp) / 'nested' / 'report.md'
+            stdout = io.StringIO()
+            with contextlib.redirect_stdout(stdout):
+                libro._write_output('aggregate body', str(output_path))
+
+            self.assertEqual(output_path.read_text(encoding='utf-8'), 'aggregate body')
+            self.assertIn(f'Aggregate report written to {output_path}', stdout.getvalue())
+
+    def test_libro_write_json_output_prints_stdout_when_no_destination(self) -> None:
+        libro = self._load_libro_module()
+        writer = mock.Mock()
+        stdout = io.StringIO()
+        with contextlib.redirect_stdout(stdout):
+            libro._write_json_output({'message': '測試'}, None, writer)
+
+        writer.assert_not_called()
+        self.assertIn('"message": "測試"', stdout.getvalue())
+
+    def test_libro_should_use_terminal_color_respects_output_and_unicode(self) -> None:
+        libro = self._load_libro_module()
+        with mock.patch.object(libro, '_stdout_supports_unicode', return_value=False):
+            self.assertFalse(libro._should_use_terminal_color(output_path=None, no_color=False))
+            self.assertTrue(libro._should_use_terminal_color(output_path='report.txt', no_color=False))
+        self.assertFalse(libro._should_use_terminal_color(output_path='report.txt', no_color=True))
+
+    def test_libro_render_report_output_dispatches_selected_renderer(self) -> None:
+        libro = self._load_libro_module()
+        runtime = {
+            'render_terminal': lambda aggregate, language, use_color: f"terminal:{language}:{use_color}:{aggregate['count']}",
+            'render_markdown': lambda aggregate, language: f"markdown:{language}:{aggregate['count']}",
+            'render_html': lambda aggregate, language: f"html:{language}:{aggregate['count']}",
+            'render_csv': lambda reports, aggregate: f"csv:{len(reports)}:{aggregate['count']}",
+            'render_badge': lambda aggregate: f"badge:{aggregate['count']}",
+        }
+        aggregate = {'count': 2}
+        reports = [{'id': 1}]
+
+        self.assertEqual(
+            libro._render_report_output(
+                'csv',
+                aggregate=aggregate,
+                reports=reports,
+                language='en',
+                use_color=False,
+                runtime=runtime,
+            ),
+            'csv:1:2',
+        )
+        self.assertEqual(
+            libro._render_report_output(
+                'unknown',
+                aggregate=aggregate,
+                reports=reports,
+                language='en',
+                use_color=False,
+                runtime=runtime,
+            ),
+            'terminal:en:False:2',
+        )
 
     def test_force_reinstall_replaces_existing_installation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

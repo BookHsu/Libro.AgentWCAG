@@ -1096,70 +1096,21 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> int:
-    args = parse_args()
-    if args.print_examples:
-        print(AUDIT_EXAMPLES.rstrip())
-        return 0
-    if args.list_policy_presets:
-        print(json.dumps(_policy_presets_payload(), ensure_ascii=False, indent=2))
-        return 0
-    if args.list_policy_config_keys:
-        print(json.dumps(_policy_config_keys_payload(), ensure_ascii=False, indent=2))
-        return 0
-    output_dir = Path(args.output_dir)
-    policy_context = _build_policy_runtime_context(args, output_dir)
-    _validate_runtime_args(args, policy_context)
-
-    if args.preflight_only:
-        preflight = run_preflight_checks(args.timeout)
-        print(json.dumps(preflight, ensure_ascii=False, indent=2))
-        return 0 if preflight["ok"] else 1
-
-    emit_auxiliary_artifacts = _should_emit_auxiliary_artifacts(args.artifacts)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    schema_metadata, staged_schema_path = _stage_report_schema_artifact(output_dir)
-    contract, local_target, scanner_target, create_mode_no_target = _resolve_contract_target_context(args)
-    preflight = _build_preflight_payload(args)
-    axe_data, axe_error, lighthouse_data, lighthouse_error, scanner_retry_runs = _run_scanners_for_target(
-        args,
-        scanner_target,
-        output_dir,
-        create_mode_no_target=create_mode_no_target,
-    )
-
-    report = normalize_report(
-        contract=contract,
-        axe_data=axe_data,
-        lighthouse_data=lighthouse_data,
-        axe_error=axe_error,
-        lighthouse_error=lighthouse_error,
-        axe_skipped=args.skip_axe,
-        lighthouse_skipped=args.skip_lighthouse,
-    )
-    product_metadata = _build_report_product_metadata()
-    report['run_meta']['product'] = product_metadata
-    report['run_meta']['product_version'] = product_metadata['product_version']
-    report['run_meta']['source_revision'] = product_metadata['source_revision']
-    report['run_meta']['preflight'] = preflight
-    report['report_schema'] = schema_metadata
-    report['run_meta']['report_schema_version'] = REPORT_SCHEMA_VERSION
-    report['run_meta']['report_schema_artifact'] = str(staged_schema_path)
-    report['run_meta']['retry_policy'] = {
-        'attempts': args.scanner_retry_attempts,
-        'initial_backoff_seconds': args.scanner_retry_backoff_seconds,
-        'max_backoff_seconds': MAX_SCANNER_RETRY_BACKOFF_SECONDS,
-    }
+def _enrich_report_with_policy_context(
+    *,
+    report: dict[str, Any],
+    args: argparse.Namespace,
+    policy_context: dict[str, Any],
+    preflight: dict[str, Any],
+    scanner_retry_runs: list[dict[str, Any]],
+) -> None:
     policy_preset = policy_context['policy_preset']
     policy_bundle = policy_context['policy_bundle']
     effective_policy = policy_context['effective_policy']
     effective_policy_output = policy_context['effective_policy_output']
-    baseline_report = policy_context['baseline_report']
-    baseline_signature_config = policy_context['baseline_signature_config']
     include_rules = policy_context['include_rules']
     ignore_rules = policy_context['ignore_rules']
     overlapping_rules = policy_context['overlapping_rules']
-    fail_on = policy_context['fail_on']
 
     if policy_preset:
         report['run_meta']['policy_preset'] = policy_preset
@@ -1219,45 +1170,67 @@ def main() -> int:
             'Rule policy overlap detected (ignore-rules-win): ' + ", ".join(overlapping_rules)
         )
 
+
+def _handle_apply_fixes_flow(
+    *,
+    report: dict[str, Any],
+    args: argparse.Namespace,
+    execution_mode: str,
+    local_target: Path | None,
+    output_dir: Path,
+) -> tuple[dict[str, Any], Path | None, Path | None]:
     diff_path: Path | None = None
     snapshot_path: Path | None = None
-    if contract.execution_mode == 'apply-fixes':
+    if execution_mode != 'apply-fixes':
+        return report, diff_path, snapshot_path
+
+    if args.dry_run:
+        diff_path = output_dir / 'wcag-fixes.dry-run.diff'
+        snapshot_path = output_dir / 'wcag-fixed-report.dry-run.snapshot.json'
+    else:
+        diff_path = output_dir / 'wcag-fixes.diff'
+        snapshot_path = output_dir / 'wcag-fixed-report.snapshot.json'
+
+    if local_target is None:
+        report['run_meta']['notes'].append('apply-fixes skipped: target is not a local file path.')
+        _remove_if_exists(diff_path)
+        _remove_if_exists(snapshot_path)
+        return report, diff_path, snapshot_path
+    if not supports_apply_fixes_target(local_target):
+        report['run_meta']['notes'].append(
+            f'apply-fixes skipped: unsupported local target extension "{local_target.suffix or "<none>"}".'
+        )
+        _remove_if_exists(diff_path)
+        _remove_if_exists(snapshot_path)
+        return report, diff_path, snapshot_path
+
+    report, diff_text = apply_report_fixes(local_target, report, dry_run=args.dry_run)
+    if diff_text:
+        write_diff(diff_text, diff_path)
+        diff_type = 'projected-unified-diff' if args.dry_run else 'unified-diff'
+        report['run_meta'].setdefault('diff_artifacts', []).append(
+            {'path': str(diff_path), 'type': diff_type}
+        )
         if args.dry_run:
-            diff_path = output_dir / 'wcag-fixes.dry-run.diff'
-            snapshot_path = output_dir / 'wcag-fixed-report.dry-run.snapshot.json'
-        else:
-            diff_path = output_dir / 'wcag-fixes.diff'
-            snapshot_path = output_dir / 'wcag-fixed-report.snapshot.json'
-
-        if local_target is None:
-            report['run_meta']['notes'].append('apply-fixes skipped: target is not a local file path.')
-            _remove_if_exists(diff_path)
-            _remove_if_exists(snapshot_path)
-        elif not supports_apply_fixes_target(local_target):
             report['run_meta']['notes'].append(
-                f'apply-fixes skipped: unsupported local target extension "{local_target.suffix or "<none>"}".'
+                f'Saved projected auto-fix diff (--dry-run): {diff_path}'
             )
-            _remove_if_exists(diff_path)
-            _remove_if_exists(snapshot_path)
         else:
-            report, diff_text = apply_report_fixes(local_target, report, dry_run=args.dry_run)
-            if diff_text:
-                write_diff(diff_text, diff_path)
-                diff_type = 'projected-unified-diff' if args.dry_run else 'unified-diff'
-                report['run_meta'].setdefault('diff_artifacts', []).append(
-                    {'path': str(diff_path), 'type': diff_type}
-                )
-                if args.dry_run:
-                    report['run_meta']['notes'].append(
-                        f'Saved projected auto-fix diff (--dry-run): {diff_path}'
-                    )
-                else:
-                    report['run_meta']['notes'].append(f'Saved auto-fix diff: {diff_path}')
-                write_snapshot(report, snapshot_path)
-            else:
-                _remove_if_exists(diff_path)
-                _remove_if_exists(snapshot_path)
+            report['run_meta']['notes'].append(f'Saved auto-fix diff: {diff_path}')
+        write_snapshot(report, snapshot_path)
+    else:
+        _remove_if_exists(diff_path)
+        _remove_if_exists(snapshot_path)
+    return report, diff_path, snapshot_path
 
+
+def _enrich_report_with_baseline_context(
+    *,
+    report: dict[str, Any],
+    args: argparse.Namespace,
+    baseline_report: dict[str, Any] | None,
+    baseline_signature_config: dict[str, Any],
+) -> dict[str, Any]:
     baseline_diff: dict[str, Any] | None = None
     waiver_review: dict[str, Any] | None = None
     debt_transitions: dict[str, Any] | None = None
@@ -1318,13 +1291,19 @@ def main() -> int:
                 + f" (mode={args.baseline_evidence_mode})."
             )
 
-    _sort_report_findings(report, args.sort_findings)
-    report['run_meta']['sorting'] = {
-        'mode': args.sort_findings,
-        'deterministic': True,
-        'finding_count': len(report.get('findings', [])),
+    return {
+        'baseline_diff': baseline_diff,
+        'baseline_evidence': baseline_evidence,
+        'waiver_review': waiver_review,
+        'debt_transitions': debt_transitions,
     }
 
+
+def _enrich_report_with_risk_calibration(
+    *,
+    report: dict[str, Any],
+    args: argparse.Namespace,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     gate_findings = list(report.get('findings', []))
     risk_calibration_gate_failed = False
     risk_calibration = _evaluate_risk_calibration(
@@ -1365,47 +1344,21 @@ def main() -> int:
             'Continuing without calibration gate.'
         )
         report['run_meta']['notes'].append(note)
+    return gate_findings, risk_calibration
 
-    if args.max_findings is not None:
-        findings_cap = _cap_report_findings(report, args.max_findings)
-        report['run_meta']['findings_cap'] = {
-            'max_findings': args.max_findings,
-            **findings_cap,
-        }
-        if findings_cap['truncated'] > 0:
-            report['run_meta']['notes'].append(
-                f"Applied --max-findings={args.max_findings}: truncated {findings_cap['truncated']} findings."
-            )
-    scanner_capabilities = _build_scanner_capabilities(preflight, report, args, axe_data, lighthouse_data)
-    report['run_meta']['scanner_capabilities'] = scanner_capabilities
-    report.setdefault('summary', {})['scanner_capabilities'] = {
-        'available_scanners': sorted(
-            [name for name, details in scanner_capabilities['scanners'].items() if details.get('available')]
-        ),
-        'unavailable_scanners': sorted(
-            [name for name, details in scanner_capabilities['scanners'].items() if not details.get('available')]
-        ),
-        'available_rule_count': scanner_capabilities['available_rule_count'],
-    }
-    replay_summary_path, replay_diff_path, replay_verification = _record_replay_verification_outputs(
-        args=args,
-        report=report,
-        output_dir=output_dir,
-        emit_auxiliary_artifacts=emit_auxiliary_artifacts,
-    )
-    scanner_stability_path = _record_scanner_stability_outputs(
-        args=args,
-        report=report,
-        output_dir=output_dir,
-        emit_auxiliary_artifacts=emit_auxiliary_artifacts,
-    )
 
-    report_format = policy_context['report_format']
-    report_output_paths = _build_report_output_paths(output_dir, report_format)
-    output_json = report_output_paths['output_json']
-    output_md = report_output_paths['output_md']
-    machine_output = report_output_paths['machine_output']
-
+def _evaluate_policy_waiver_and_advanced_gates(
+    *,
+    report: dict[str, Any],
+    args: argparse.Namespace,
+    fail_on: str | None,
+    gate_findings: list[dict[str, Any]],
+    baseline_diff: dict[str, Any] | None,
+    baseline_signature_config: dict[str, Any],
+    waiver_review: dict[str, Any] | None,
+    risk_calibration: dict[str, Any] | None,
+    replay_verification: dict[str, Any] | None,
+) -> tuple[bool, int]:
     if fail_on:
         gate_report = {'findings': gate_findings}
         gate_scope = 'all-unresolved'
@@ -1463,7 +1416,69 @@ def main() -> int:
         should_fail = True
         exit_code = advanced_gate_exit_code
     report['run_meta']['notes'].extend(advanced_gate_notes)
+    return should_fail, exit_code
 
+
+def _failure_stdout_message(report: dict[str, Any], fail_on: str | None) -> str | None:
+    if report['run_meta'].get('waiver_gate', {}).get('failed'):
+        return 'Waiver gate failed: one or more accepted debt waivers are expired.'
+    if report['run_meta'].get('risk_calibration', {}).get('gate', {}).get('failed'):
+        return 'Risk calibration gate failed: unstable high-severity rule outcomes detected.'
+    if report['run_meta'].get('replay_verification', {}).get('gate', {}).get('failed'):
+        return 'Replay verification gate failed: high-severity regressed findings detected.'
+    if report['run_meta'].get('scanner_stability', {}).get('gate', {}).get('failed'):
+        return 'Scanner stability gate failed: volatility exceeded approved bounds.'
+    if fail_on:
+        return f'Policy gate failed: unresolved finding severity >= {fail_on}'
+    return None
+
+
+def _emit_standard_stdout(
+    *,
+    report: dict[str, Any],
+    report_format: str,
+    machine_output: Path,
+    output_md: Path,
+    should_fail: bool,
+    fail_on: str | None,
+) -> None:
+    print(f'Saved machine-readable report ({report_format}): {machine_output}')
+    print(f'Saved Markdown table: {output_md}')
+    if report['run_meta']['notes']:
+        print('Notes:')
+        for note in report['run_meta']['notes']:
+            print(f'- {note}')
+    if should_fail:
+        failure_message = _failure_stdout_message(report, fail_on)
+        if failure_message:
+            print(failure_message)
+
+
+def _finalize_report_outputs(
+    *,
+    args: argparse.Namespace,
+    report: dict[str, Any],
+    output_dir: Path,
+    report_format: str,
+    contract_target: str,
+    local_target: Path | None,
+    product_metadata: dict[str, Any],
+    emit_auxiliary_artifacts: bool,
+    staged_schema_path: Path,
+    baseline_evidence: dict[str, Any] | None,
+    effective_policy_output: Path | None,
+    replay_summary_path: Path | None,
+    replay_diff_path: Path | None,
+    diff_path: Path | None,
+    snapshot_path: Path | None,
+    scanner_stability_path: Path,
+    baseline_report: dict[str, Any] | None,
+    debt_transitions: dict[str, Any] | None,
+    waiver_review: dict[str, Any] | None,
+    should_fail: bool,
+    fail_on: str | None,
+    exit_code: int,
+) -> None:
     debt_trend_path = _record_debt_trend_outputs(
         args=args,
         report=report,
@@ -1473,6 +1488,11 @@ def main() -> int:
         debt_transitions=debt_transitions,
         waiver_review=waiver_review,
     )
+
+    report_output_paths = _build_report_output_paths(output_dir, report_format)
+    output_json = report_output_paths['output_json']
+    output_md = report_output_paths['output_md']
+    machine_output = report_output_paths['machine_output']
 
     artifact_manifest_path = output_dir / 'artifact-manifest.json'
     report['run_meta']['artifact_manifest'] = {
@@ -1485,7 +1505,7 @@ def main() -> int:
         output_json=output_json,
         output_md=output_md,
         machine_output=machine_output,
-        contract_target=contract.target,
+        contract_target=contract_target,
         local_target=local_target,
         product_metadata=product_metadata,
     )
@@ -1512,7 +1532,7 @@ def main() -> int:
     _, manifest_path = _build_artifact_manifest(
         output_dir=output_dir,
         report_format=report_format,
-        target=contract.target,
+        target=contract_target,
         artifact_paths=artifact_paths,
         baseline_evidence=baseline_evidence,
     )
@@ -1529,24 +1549,174 @@ def main() -> int:
             exit_code=exit_code,
         )
         _emit_summary_only_stdout(compact_summary)
-    else:
-        print(f'Saved machine-readable report ({report_format}): {machine_output}')
-        print(f'Saved Markdown table: {output_md}')
-        if report['run_meta']['notes']:
-            print('Notes:')
-            for note in report['run_meta']['notes']:
-                print(f'- {note}')
-        if should_fail:
-            if report['run_meta'].get('waiver_gate', {}).get('failed'):
-                print('Waiver gate failed: one or more accepted debt waivers are expired.')
-            elif report['run_meta'].get('risk_calibration', {}).get('gate', {}).get('failed'):
-                print('Risk calibration gate failed: unstable high-severity rule outcomes detected.')
-            elif report['run_meta'].get('replay_verification', {}).get('gate', {}).get('failed'):
-                print('Replay verification gate failed: high-severity regressed findings detected.')
-            elif report['run_meta'].get('scanner_stability', {}).get('gate', {}).get('failed'):
-                print('Scanner stability gate failed: volatility exceeded approved bounds.')
-            elif fail_on:
-                print(f'Policy gate failed: unresolved finding severity >= {fail_on}')
+        return
+
+    _emit_standard_stdout(
+        report=report,
+        report_format=report_format,
+        machine_output=machine_output,
+        output_md=output_md,
+        should_fail=should_fail,
+        fail_on=fail_on,
+    )
+
+
+def main() -> int:
+    args = parse_args()
+    if args.print_examples:
+        print(AUDIT_EXAMPLES.rstrip())
+        return 0
+    if args.list_policy_presets:
+        print(json.dumps(_policy_presets_payload(), ensure_ascii=False, indent=2))
+        return 0
+    if args.list_policy_config_keys:
+        print(json.dumps(_policy_config_keys_payload(), ensure_ascii=False, indent=2))
+        return 0
+    output_dir = Path(args.output_dir)
+    policy_context = _build_policy_runtime_context(args, output_dir)
+    _validate_runtime_args(args, policy_context)
+
+    if args.preflight_only:
+        preflight = run_preflight_checks(args.timeout)
+        print(json.dumps(preflight, ensure_ascii=False, indent=2))
+        return 0 if preflight["ok"] else 1
+
+    emit_auxiliary_artifacts = _should_emit_auxiliary_artifacts(args.artifacts)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    schema_metadata, staged_schema_path = _stage_report_schema_artifact(output_dir)
+    contract, local_target, scanner_target, create_mode_no_target = _resolve_contract_target_context(args)
+    preflight = _build_preflight_payload(args)
+    axe_data, axe_error, lighthouse_data, lighthouse_error, scanner_retry_runs = _run_scanners_for_target(
+        args,
+        scanner_target,
+        output_dir,
+        create_mode_no_target=create_mode_no_target,
+    )
+
+    report = normalize_report(
+        contract=contract,
+        axe_data=axe_data,
+        lighthouse_data=lighthouse_data,
+        axe_error=axe_error,
+        lighthouse_error=lighthouse_error,
+        axe_skipped=args.skip_axe,
+        lighthouse_skipped=args.skip_lighthouse,
+    )
+    product_metadata = _build_report_product_metadata()
+    report['run_meta']['product'] = product_metadata
+    report['run_meta']['product_version'] = product_metadata['product_version']
+    report['run_meta']['source_revision'] = product_metadata['source_revision']
+    report['run_meta']['preflight'] = preflight
+    report['report_schema'] = schema_metadata
+    report['run_meta']['report_schema_version'] = REPORT_SCHEMA_VERSION
+    report['run_meta']['report_schema_artifact'] = str(staged_schema_path)
+    report['run_meta']['retry_policy'] = {
+        'attempts': args.scanner_retry_attempts,
+        'initial_backoff_seconds': args.scanner_retry_backoff_seconds,
+        'max_backoff_seconds': MAX_SCANNER_RETRY_BACKOFF_SECONDS,
+    }
+    _enrich_report_with_policy_context(
+        report=report,
+        args=args,
+        policy_context=policy_context,
+        preflight=preflight,
+        scanner_retry_runs=scanner_retry_runs,
+    )
+
+    report, diff_path, snapshot_path = _handle_apply_fixes_flow(
+        report=report,
+        args=args,
+        execution_mode=contract.execution_mode,
+        local_target=local_target,
+        output_dir=output_dir,
+    )
+
+    baseline_context = _enrich_report_with_baseline_context(
+        report=report,
+        args=args,
+        baseline_report=policy_context['baseline_report'],
+        baseline_signature_config=policy_context['baseline_signature_config'],
+    )
+
+    _sort_report_findings(report, args.sort_findings)
+    report['run_meta']['sorting'] = {
+        'mode': args.sort_findings,
+        'deterministic': True,
+        'finding_count': len(report.get('findings', [])),
+    }
+
+    gate_findings, risk_calibration = _enrich_report_with_risk_calibration(report=report, args=args)
+
+    if args.max_findings is not None:
+        findings_cap = _cap_report_findings(report, args.max_findings)
+        report['run_meta']['findings_cap'] = {
+            'max_findings': args.max_findings,
+            **findings_cap,
+        }
+        if findings_cap['truncated'] > 0:
+            report['run_meta']['notes'].append(
+                f"Applied --max-findings={args.max_findings}: truncated {findings_cap['truncated']} findings."
+            )
+    scanner_capabilities = _build_scanner_capabilities(preflight, report, args, axe_data, lighthouse_data)
+    report['run_meta']['scanner_capabilities'] = scanner_capabilities
+    report.setdefault('summary', {})['scanner_capabilities'] = {
+        'available_scanners': sorted(
+            [name for name, details in scanner_capabilities['scanners'].items() if details.get('available')]
+        ),
+        'unavailable_scanners': sorted(
+            [name for name, details in scanner_capabilities['scanners'].items() if not details.get('available')]
+        ),
+        'available_rule_count': scanner_capabilities['available_rule_count'],
+    }
+    replay_summary_path, replay_diff_path, replay_verification = _record_replay_verification_outputs(
+        args=args,
+        report=report,
+        output_dir=output_dir,
+        emit_auxiliary_artifacts=emit_auxiliary_artifacts,
+    )
+    scanner_stability_path = _record_scanner_stability_outputs(
+        args=args,
+        report=report,
+        output_dir=output_dir,
+        emit_auxiliary_artifacts=emit_auxiliary_artifacts,
+    )
+
+    should_fail, exit_code = _evaluate_policy_waiver_and_advanced_gates(
+        report=report,
+        args=args,
+        fail_on=policy_context['fail_on'],
+        gate_findings=gate_findings,
+        baseline_diff=baseline_context['baseline_diff'],
+        baseline_signature_config=policy_context['baseline_signature_config'],
+        waiver_review=baseline_context['waiver_review'],
+        risk_calibration=risk_calibration,
+        replay_verification=replay_verification,
+    )
+
+    _finalize_report_outputs(
+        args=args,
+        report=report,
+        output_dir=output_dir,
+        report_format=policy_context['report_format'],
+        contract_target=contract.target,
+        local_target=local_target,
+        product_metadata=product_metadata,
+        emit_auxiliary_artifacts=emit_auxiliary_artifacts,
+        staged_schema_path=staged_schema_path,
+        baseline_evidence=baseline_context['baseline_evidence'],
+        effective_policy_output=policy_context['effective_policy_output'],
+        replay_summary_path=replay_summary_path,
+        replay_diff_path=replay_diff_path,
+        diff_path=diff_path,
+        snapshot_path=snapshot_path,
+        scanner_stability_path=scanner_stability_path,
+        baseline_report=policy_context['baseline_report'],
+        debt_transitions=baseline_context['debt_transitions'],
+        waiver_review=baseline_context['waiver_review'],
+        should_fail=should_fail,
+        fail_on=policy_context['fail_on'],
+        exit_code=exit_code,
+    )
     if should_fail:
         return exit_code
     return 0

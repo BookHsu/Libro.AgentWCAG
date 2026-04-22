@@ -50,6 +50,8 @@ This project follows a simple versioned release-notes practice inspired by Keep 
 ### Changed
 
 - `run_accessibility_audit.py` now routes policy resolution, runtime validation, preflight payload construction, scanner execution, and auxiliary artifact emission through focused internal helpers, reducing `main()` duplication while preserving CLI behavior.
+- `scripts/libro.py` now routes scan execution, progress reporting, report runtime loading, and aggregate output dispatch through focused helpers while keeping the public CLI surface unchanged.
+- `report_renderers.py` and `report_artifacts.py` now normalize single-report context and baseline diff aliases consistently, so compact summaries and aggregate-oriented renderers share the same fallback semantics.
 - `release.yml` `clean-release-smoke` now uses a matrix strategy to smoke-test all four agents (codex, claude, gemini, copilot) in parallel instead of only codex.
 - `run_accessibility_audit.py` now runs axe and Lighthouse scanners in parallel using `concurrent.futures.ThreadPoolExecutor` when both are active, reducing total audit wall-clock time.
 - `run_accessibility_audit.py` now gracefully handles `task_mode=create` with non-existent targets by skipping scanners and producing guidance-only manual-review findings instead of crashing.

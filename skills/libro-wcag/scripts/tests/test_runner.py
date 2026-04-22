@@ -940,6 +940,158 @@ class RunnerPolicyTests(unittest.TestCase):
         self.assertEqual(report['findings'][0]['rule_id'], 'image-alt')
         self.assertEqual(report['summary']['total_findings'], 1)
 
+    def test_handle_apply_fixes_flow_skips_non_local_target_and_cleans_stale_artifacts(self) -> None:
+        workspace = self._workspace('m42-apply-fixes-non-local')
+        diff_path = workspace / 'wcag-fixes.diff'
+        snapshot_path = workspace / 'wcag-fixed-report.snapshot.json'
+        diff_path.write_text('stale diff', encoding='utf-8')
+        snapshot_path.write_text('{}', encoding='utf-8')
+
+        report = {
+            'run_meta': {
+                'notes': [],
+            }
+        }
+
+        updated_report, returned_diff, returned_snapshot = runner._handle_apply_fixes_flow(
+            report=report,
+            args=runner.argparse.Namespace(dry_run=False),
+            execution_mode='apply-fixes',
+            local_target=None,
+            output_dir=workspace,
+        )
+
+        self.assertIs(updated_report, report)
+        self.assertEqual(returned_diff, diff_path)
+        self.assertEqual(returned_snapshot, snapshot_path)
+        self.assertFalse(diff_path.exists())
+        self.assertFalse(snapshot_path.exists())
+        self.assertIn('apply-fixes skipped: target is not a local file path.', report['run_meta']['notes'])
+
+    def test_enrich_report_with_baseline_context_updates_run_meta_summary_and_notes(self) -> None:
+        report = {
+            'target': {'value': 'https://example.com'},
+            'findings': [
+                {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'status': 'open'},
+                {'rule_id': 'button-name', 'changed_target': 'button.icon', 'status': 'open'},
+            ],
+            'summary': {},
+            'run_meta': {
+                'notes': [],
+            },
+        }
+        baseline_report = {
+            'findings': [
+                {'rule_id': 'image-alt', 'changed_target': 'img.hero', 'status': 'open'},
+            ],
+            'debt_waivers': [
+                {
+                    'signature': 'image-alt|img.hero',
+                    'owner': 'team-a',
+                    'approved_at': '2026-01-10T09:00:00Z',
+                    'expires_at': '2099-01-01T00:00:00Z',
+                    'reason': 'legacy queue',
+                }
+            ],
+        }
+        signature_config = {
+            'include_target_in_signature': False,
+            'target_normalization': 'none',
+            'selector_canonicalization': 'none',
+        }
+
+        context = runner._enrich_report_with_baseline_context(
+            report=report,
+            args=runner.argparse.Namespace(
+                baseline_report='baseline.json',
+                baseline_evidence_mode='hash',
+            ),
+            baseline_report=baseline_report,
+            baseline_signature_config=signature_config,
+        )
+
+        self.assertEqual(context['baseline_diff']['introduced_count'], 1)
+        self.assertEqual(context['baseline_diff']['persistent_count'], 1)
+        self.assertEqual(report['run_meta']['baseline_diff']['baseline_report_path'], 'baseline.json')
+        self.assertEqual(report['summary']['debt_transitions']['new']['count'], 1)
+        self.assertEqual(report['summary']['waiver_review']['valid_count'], 1)
+        self.assertEqual(report['summary']['baseline_evidence']['mode'], 'hash')
+        self.assertFalse(report['summary']['baseline_evidence']['baseline_verification']['declared'])
+        self.assertTrue(report['summary']['baseline_evidence']['baseline_verification']['verified'])
+        notes = ' '.join(report['run_meta']['notes'])
+        self.assertIn('Baseline diff: introduced=1, resolved=0, persistent=1.', notes)
+        self.assertIn('Baseline evidence verification: passed (mode=hash).', notes)
+        findings = {item['rule_id']: item for item in report['findings']}
+        self.assertEqual(findings['image-alt']['debt_state'], 'accepted')
+        self.assertEqual(findings['button-name']['debt_state'], 'new')
+
+    def test_evaluate_policy_waiver_and_advanced_gates_preserves_waiver_precedence(self) -> None:
+        report = {
+            'target': {'value': 'https://example.com'},
+            'run_meta': {
+                'notes': [],
+                'scanner_stability': {'gate': {'failed': False}},
+            },
+        }
+        gate_findings = [
+            {
+                'rule_id': 'button-name',
+                'changed_target': 'button.icon',
+                'severity': 'serious',
+                'status': 'open',
+            }
+        ]
+
+        should_fail, exit_code = runner._evaluate_policy_waiver_and_advanced_gates(
+            report=report,
+            args=runner.argparse.Namespace(
+                fail_on_new_only=False,
+                waiver_expiry_mode='fail',
+            ),
+            fail_on='moderate',
+            gate_findings=gate_findings,
+            baseline_diff=None,
+            baseline_signature_config={},
+            waiver_review={
+                'accepted_count': 1,
+                'expired_count': 1,
+            },
+            risk_calibration={
+                'gate': {'failed': True},
+                'unstable_high_severity_rules': ['image-alt'],
+            },
+            replay_verification={
+                'gate': {'failed': True},
+            },
+        )
+
+        self.assertTrue(should_fail)
+        self.assertEqual(exit_code, 45)
+        self.assertTrue(report['run_meta']['policy_gate']['failed'])
+        self.assertEqual(report['run_meta']['policy_gate']['exit_code'], 44)
+        self.assertTrue(report['run_meta']['waiver_gate']['failed'])
+        notes = ' '.join(report['run_meta']['notes'])
+        self.assertIn('Waiver expiry gate failed', notes)
+        self.assertIn('Risk calibration gate failed', notes)
+        self.assertIn('Replay verification gate failed', notes)
+
+    def test_failure_stdout_message_prefers_more_specific_gate_over_policy_threshold(self) -> None:
+        report = {
+            'run_meta': {
+                'waiver_gate': {'failed': False},
+                'risk_calibration': {'gate': {'failed': True}},
+                'replay_verification': {'gate': {'failed': True}},
+                'scanner_stability': {'gate': {'failed': True}},
+            }
+        }
+
+        message = runner._failure_stdout_message(report, 'moderate')
+
+        self.assertEqual(
+            message,
+            'Risk calibration gate failed: unstable high-severity rule outcomes detected.',
+        )
+
     def test_sort_and_cap_report_findings_are_deterministic(self) -> None:
         report = {
             'findings': [

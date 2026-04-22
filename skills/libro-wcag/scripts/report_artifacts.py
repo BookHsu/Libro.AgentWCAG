@@ -14,6 +14,47 @@ REPORT_SCHEMA_NAME = 'libro-wcag-report'
 REPORT_SCHEMA_FILENAME = f'wcag-report-{REPORT_SCHEMA_VERSION}.schema.json'
 
 
+def _as_dict(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _as_list(value: Any) -> list[Any]:
+    return value if isinstance(value, list) else []
+
+
+def _normalize_baseline_diff(baseline_diff: Any) -> dict[str, Any] | None:
+    if not isinstance(baseline_diff, dict) or not baseline_diff:
+        return None
+
+    normalized = dict(baseline_diff)
+    introduced_count = normalized.get('introduced_count')
+    if introduced_count is None:
+        introduced_count = normalized.get('new_count', 0)
+    normalized['introduced_count'] = introduced_count
+    normalized['new_count'] = normalized.get('new_count', introduced_count)
+    normalized['resolved_count'] = normalized.get('resolved_count', 0)
+    normalized['persistent_count'] = normalized.get('persistent_count', 0)
+    return normalized
+
+
+def _extract_report_context(report: dict[str, Any]) -> dict[str, Any]:
+    run_meta = _as_dict(report.get('run_meta'))
+    summary = _as_dict(report.get('summary'))
+    standard = _as_dict(report.get('standard'))
+    product = _as_dict(run_meta.get('product'))
+
+    return {
+        'findings': _as_list(report.get('findings')),
+        'product': product,
+        'run_meta': run_meta,
+        'summary': summary,
+        'standard': standard,
+        'target': _as_dict(report.get('target')),
+        'generated_at': report.get('generated_at') or run_meta.get('generated_at') or 'N/A',
+        'baseline_diff': _normalize_baseline_diff(run_meta.get('baseline_diff') or report.get('baseline_diff')),
+    }
+
+
 def _report_schema_source_path() -> Path:
     return Path(__file__).resolve().parents[1] / 'schemas' / REPORT_SCHEMA_FILENAME
 
@@ -171,8 +212,10 @@ def _build_compact_summary(
     fail_on: str | None,
     exit_code: int,
 ) -> dict[str, Any]:
-    summary = report.get('summary', {})
-    product_metadata = report.get('run_meta', {}).get('product', {})
+    context = _extract_report_context(report)
+    run_meta = context['run_meta']
+    summary = context['summary']
+    product_metadata = context['product']
     compact: dict[str, Any] = {
         'status': 'failed' if should_fail else 'ok',
         'report_format': report_format,
@@ -192,14 +235,14 @@ def _build_compact_summary(
         if 'build_timestamp' in product_metadata:
             compact['product']['build_timestamp'] = product_metadata.get('build_timestamp')
     if fail_on:
-        policy_gate = report.get('run_meta', {}).get('policy_gate', {})
+        policy_gate = run_meta.get('policy_gate', {})
         compact['policy_gate'] = {
             'fail_on': fail_on,
             'failed': bool(policy_gate.get('failed', False)),
             'exit_code': int(policy_gate.get('exit_code', 0)),
             'scope': policy_gate.get('scope', 'all-unresolved'),
         }
-    baseline_diff = report.get('run_meta', {}).get('baseline_diff')
+    baseline_diff = context['baseline_diff']
     if baseline_diff:
         compact['baseline_diff'] = {
             'introduced_count': baseline_diff.get('introduced_count', 0),
@@ -220,28 +263,28 @@ def _build_compact_summary(
     scanner_capabilities = summary.get('scanner_capabilities')
     if scanner_capabilities:
         compact['scanner_capabilities'] = scanner_capabilities
-    effective_policy = report.get('run_meta', {}).get('policy_effective')
+    effective_policy = run_meta.get('policy_effective')
     if effective_policy:
         compact['policy_effective'] = effective_policy
-    policy_rule_overlap = report.get('run_meta', {}).get('policy_rule_overlap')
+    policy_rule_overlap = run_meta.get('policy_rule_overlap')
     if policy_rule_overlap:
         compact['policy_rule_overlap'] = policy_rule_overlap
-    baseline_evidence = report.get('run_meta', {}).get('baseline_evidence')
+    baseline_evidence = run_meta.get('baseline_evidence')
     if baseline_evidence:
         compact['baseline_evidence'] = {
             'mode': baseline_evidence.get('mode'),
             'baseline_verification': baseline_evidence.get('baseline_verification', {}),
         }
-    artifact_manifest = report.get('run_meta', {}).get('artifact_manifest')
+    artifact_manifest = run_meta.get('artifact_manifest')
     if artifact_manifest:
         compact['artifact_manifest'] = artifact_manifest
-    waiver_gate = report.get('run_meta', {}).get('waiver_gate')
+    waiver_gate = run_meta.get('waiver_gate')
     if waiver_gate:
         compact['waiver_gate'] = waiver_gate
     debt_trend = summary.get('debt_trend')
     if debt_trend:
         compact['debt_trend'] = debt_trend
-    risk_calibration = report.get('run_meta', {}).get('risk_calibration')
+    risk_calibration = run_meta.get('risk_calibration')
     if risk_calibration:
         compact['risk_calibration'] = {
             'mode': risk_calibration.get('mode'),
@@ -249,10 +292,10 @@ def _build_compact_summary(
             'downgrade_reason': risk_calibration.get('downgrade_reason'),
             'unstable_high_severity_rules': risk_calibration.get('unstable_high_severity_rules', []),
         }
-    replay_verification = report.get('run_meta', {}).get('replay_verification')
+    replay_verification = run_meta.get('replay_verification')
     if replay_verification:
         compact['replay_verification'] = replay_verification
-    scanner_stability = report.get('run_meta', {}).get('scanner_stability')
+    scanner_stability = run_meta.get('scanner_stability')
     if scanner_stability:
         compact['scanner_stability'] = {
             'mode': scanner_stability.get('mode'),
